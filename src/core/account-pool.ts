@@ -208,7 +208,7 @@ export class AccountPool {
    */
   async updateAccountConfig(
     accountIdOrName: string,
-    updates: { proxy?: string; status?: 'active' | 'suspended' | 'banned' }
+    updates: { name?: string; proxy?: string; status?: 'active' | 'suspended' | 'banned' }
   ): Promise<boolean> {
     const account = this.resolveAccount(accountIdOrName);
 

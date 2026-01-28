@@ -24,7 +24,10 @@
     "start:bun:http": "bun dist/index.js --http",
     "test:login": "bun scripts/test-xhs.ts login",
     "test:search": "bun scripts/test-xhs.ts search",
-    "test:note": "bun scripts/test-xhs.ts note"
+    "test:note": "bun scripts/test-xhs.ts note",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
   },
   "keywords": [
     "mcp",
@@ -68,6 +71,7 @@
     "@types/bun": "^1.2.1",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^24.10.1",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitepress": "^1.6.4"
   }
 }

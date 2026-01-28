@@ -233,11 +233,15 @@ export class XhsDatabase {
   /**
    * Update account configuration
    */
-  updateAccountConfig(id: string, updates: { proxy?: string; status?: 'active' | 'suspended' | 'banned' }): void {
+  updateAccountConfig(id: string, updates: { name?: string; proxy?: string; status?: 'active' | 'suspended' | 'banned' }): void {
     const now = new Date().toISOString();
     const sets: string[] = ['updated_at = ?'];
     const values: any[] = [now];
 
+    if (updates.name !== undefined) {
+      sets.push('name = ?');
+      values.push(updates.name);
+    }
     if (updates.proxy !== undefined) {
       sets.push('proxy = ?');
       values.push(updates.proxy || null);

@@ -55,13 +55,17 @@ export const accountTools: Tool[] = [
   },
   {
     name: 'xhs_set_account_config',
-    description: 'Update account configuration such as proxy or status.',
+    description: 'Update account configuration such as name, proxy or status.',
     inputSchema: {
       type: 'object',
       properties: {
         account: {
           type: 'string',
           description: 'Account name or ID to update',
+        },
+        name: {
+          type: 'string',
+          description: 'New name for the account',
         },
         proxy: {
           type: 'string',
@@ -262,6 +266,7 @@ export async function handleAccountTools(
       const params = z
         .object({
           account: z.string(),
+          name: z.string().min(1).max(64).optional(),
           proxy: z.string().optional(),
           status: z.enum(['active', 'suspended', 'banned']).optional(),
         })
@@ -280,7 +285,10 @@ export async function handleAccountTools(
         };
       }
 
-      const updates: { proxy?: string; status?: 'active' | 'suspended' | 'banned' } = {};
+      const updates: { name?: string; proxy?: string; status?: 'active' | 'suspended' | 'banned' } = {};
+      if (params.name !== undefined) {
+        updates.name = params.name;
+      }
       if (params.proxy !== undefined) {
         updates.proxy = params.proxy;
       }
