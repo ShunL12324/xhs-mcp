@@ -1,6 +1,6 @@
 {
   "name": "@sillyl12324/xhs-mcp",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "type": "module",
   "description": "MCP server for Xiaohongshu (小红书/RedNote) - search, publish, and interact with content",
   "main": "dist/index.js",
@@ -16,6 +16,7 @@
     "dev": "bun run --watch src/index.ts",
     "build": "tsc && npm run copy-assets",
     "copy-assets": "node -e \"require('fs').cpSync('src/xhs/utils/stealth.js', 'dist/xhs/utils/stealth.js')\"",
+    "postinstall": "npx playwright install chromium",
     "prepublishOnly": "npm run build",
     "start": "node dist/index.js",
     "start:http": "node dist/index.js --http",
