@@ -50,6 +50,11 @@ export interface XhsNote {
     commentCount: string;
     shareCount: string;
   };
+  // 互动状态
+  interactInfo?: {
+    liked: boolean;
+    collected: boolean;
+  };
   // 评论列表（从详情页一起获取）
   comments?: XhsCommentList;
 }
@@ -85,4 +90,57 @@ export interface XhsUserInfo {
     interaction: string;
   };
   notes?: XhsSearchItem[];
+}
+
+// 搜索过滤器选项
+export type SearchSortBy = 'general' | 'latest' | 'most_liked' | 'most_commented' | 'most_collected';
+export type SearchNoteType = 'all' | 'video' | 'image';
+export type SearchPublishTime = 'all' | 'day' | 'week' | 'half_year';
+export type SearchScope = 'all' | 'viewed' | 'not_viewed' | 'following';
+
+export interface XhsSearchFilters {
+  sortBy?: SearchSortBy;
+  noteType?: SearchNoteType;
+  publishTime?: SearchPublishTime;
+  searchScope?: SearchScope;
+}
+
+// 发布参数
+export interface PublishContentParams {
+  title: string;
+  content: string;
+  images: string[];
+  tags?: string[];
+  scheduleTime?: string;
+}
+
+export interface PublishVideoParams {
+  title: string;
+  content: string;
+  videoPath: string;
+  coverPath?: string;
+  tags?: string[];
+  scheduleTime?: string;
+}
+
+// 发布结果
+export interface PublishResult {
+  success: boolean;
+  noteId?: string;
+  error?: string;
+}
+
+// 互动结果
+export interface InteractionResult {
+  success: boolean;
+  action: string;
+  noteId: string;
+  error?: string;
+}
+
+// 评论结果
+export interface CommentResult {
+  success: boolean;
+  commentId?: string;
+  error?: string;
 }

@@ -1,83 +1,62 @@
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-  ErrorCode,
-  McpError,
-} from '@modelcontextprotocol/sdk/types.js';
-import { z } from 'zod';
+import { createMcpServer } from './server.js';
 import { XhsClient } from './xhs/index.js';
-import { authTools, handleAuthTools } from './tools/auth.js';
-import { contentTools, handleContentTools } from './tools/content.js';
+import { startHttpServer } from './http-server.js';
 
-const client = new XhsClient();
+// Parse command line arguments
+function parseArgs(): { http: boolean; port: number } {
+  const args = process.argv.slice(2);
+  let http = false;
+  let port = 18060;
 
-const server = new Server(
-  {
-    name: 'xhs-mcp',
-    version: '1.0.0',
-  },
-  {
-    capabilities: {
-      tools: {},
-    },
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === '--http' || arg === '-h') {
+      http = true;
+    } else if (arg === '--port' || arg === '-p') {
+      const nextArg = args[i + 1];
+      if (nextArg && !nextArg.startsWith('-')) {
+        port = parseInt(nextArg, 10);
+        i++;
+      }
+    } else if (arg.startsWith('--port=')) {
+      port = parseInt(arg.split('=')[1], 10);
+    }
   }
-);
 
-server.setRequestHandler(ListToolsRequestSchema, async () => {
-  return {
-    tools: [
-      ...authTools,
-      ...contentTools,
-    ],
-  };
-});
+  return { http, port };
+}
 
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  try {
-    const { name, arguments: args } = request.params;
-
-    if (authTools.some(t => t.name === name)) {
-      return await handleAuthTools(name, args, client);
-    }
-
-    if (contentTools.some(t => t.name === name)) {
-      return await handleContentTools(name, args, client);
-    }
-
-    throw new McpError(
-      ErrorCode.MethodNotFound,
-      `Unknown tool: ${name}`
-    );
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      throw new McpError(
-        ErrorCode.InvalidParams,
-        `Invalid arguments: ${error.message}`
-      );
-    }
-    throw error;
-  }
-});
-
-async function main() {
+async function runStdioMode() {
+  const client = new XhsClient();
+  const server = createMcpServer(client);
   const transport = new StdioServerTransport();
+
   await server.connect(transport);
   console.error('Xiaohongshu MCP Server running on stdio');
+
+  // Graceful shutdown
+  const shutdown = async () => {
+    console.error('Shutting down...');
+    await client.close();
+    process.exit(0);
+  };
+
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
 }
 
-// Graceful shutdown
-async function shutdown() {
-  console.error('Shutting down...');
-  await client.close();
-  process.exit(0);
-}
+async function main() {
+  const { http, port } = parseArgs();
 
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
+  if (http) {
+    await startHttpServer(port);
+  } else {
+    await runStdioMode();
+  }
+}
 
 main().catch((error) => {
   console.error('Server error:', error);
-  client.close().finally(() => process.exit(1));
+  process.exit(1);
 });

@@ -2,29 +2,31 @@
   "name": "xhs-mcp",
   "version": "1.0.0",
   "type": "module",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "test:login": "tsx scripts/test-xhs.ts login",
-    "test:search": "tsx scripts/test-xhs.ts search",
-    "test:note": "tsx scripts/test-xhs.ts note"
+    "dev": "bun run --watch src/index.ts",
+    "build": "bun build src/index.ts --outdir dist --target bun",
+    "start": "bun dist/index.js",
+    "start:http": "bun dist/index.js --http",
+    "test:login": "bun scripts/test-xhs.ts login",
+    "test:search": "bun scripts/test-xhs.ts search",
+    "test:note": "bun scripts/test-xhs.ts note"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "MCP server for Xiaohongshu (RedNote) automation",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.23.0",
-    "axios": "^1.13.2",
     "fs-extra": "^11.3.2",
+    "hono": "^4.7.0",
     "playwright": "^1.57.0",
     "zod": "^4.1.13"
   },
   "devDependencies": {
+    "@types/bun": "^1.2.1",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^24.10.1",
-    "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
 }

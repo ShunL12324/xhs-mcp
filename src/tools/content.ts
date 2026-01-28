@@ -1,11 +1,12 @@
 import { XhsClient } from '../xhs/index.js';
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
+import type { XhsSearchFilters } from '../xhs/types.js';
 
 export const contentTools: Tool[] = [
   {
     name: 'xhs_search',
-    description: 'Search for notes on Xiaohongshu. Supports scrolling to load more results. Returns notes with id, xsecToken, title, cover, user info, and likes.',
+    description: 'Search for notes on Xiaohongshu. Supports scrolling to load more results and filtering. Returns notes with id, xsecToken, title, cover, user info, and likes.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -20,6 +21,26 @@ export const contentTools: Tool[] = [
         timeout: {
           type: 'number',
           description: 'Timeout in milliseconds (default: 60000). Increase for larger counts.',
+        },
+        sortBy: {
+          type: 'string',
+          enum: ['general', 'latest', 'most_liked', 'most_commented', 'most_collected'],
+          description: 'Sort order: general (default), latest, most_liked, most_commented, most_collected',
+        },
+        noteType: {
+          type: 'string',
+          enum: ['all', 'video', 'image'],
+          description: 'Filter by note type: all (default), video, image',
+        },
+        publishTime: {
+          type: 'string',
+          enum: ['all', 'day', 'week', 'half_year'],
+          description: 'Filter by publish time: all (default), day, week, half_year',
+        },
+        searchScope: {
+          type: 'string',
+          enum: ['all', 'viewed', 'not_viewed', 'following'],
+          description: 'Filter by search scope: all (default), viewed, not_viewed, following',
         },
       },
       required: ['keyword'],
@@ -79,10 +100,25 @@ export async function handleContentTools(name: string, args: any, client: XhsCli
           keyword: z.string(),
           count: z.number().optional().default(20),
           timeout: z.number().optional().default(60000),
+          sortBy: z.enum(['general', 'latest', 'most_liked', 'most_commented', 'most_collected']).optional(),
+          noteType: z.enum(['all', 'video', 'image']).optional(),
+          publishTime: z.enum(['all', 'day', 'week', 'half_year']).optional(),
+          searchScope: z.enum(['all', 'viewed', 'not_viewed', 'following']).optional(),
         })
         .parse(args);
 
-      const results = await client.search(params.keyword, params.count, params.timeout);
+      // Build filters object
+      const filters: XhsSearchFilters | undefined =
+        params.sortBy || params.noteType || params.publishTime || params.searchScope
+          ? {
+              sortBy: params.sortBy,
+              noteType: params.noteType,
+              publishTime: params.publishTime,
+              searchScope: params.searchScope,
+            }
+          : undefined;
+
+      const results = await client.search(params.keyword, params.count, params.timeout, filters);
       return {
         content: [
           {

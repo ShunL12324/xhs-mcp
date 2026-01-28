@@ -2,7 +2,17 @@ import { chromium, Browser, BrowserContext, Page } from 'playwright';
 import fs from 'fs-extra';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { XhsNote, XhsSearchItem, XhsUserInfo, XhsComment, XhsCommentList } from '../types.js';
+import {
+  XhsNote,
+  XhsSearchItem,
+  XhsUserInfo,
+  XhsSearchFilters,
+  PublishContentParams,
+  PublishVideoParams,
+  PublishResult,
+  InteractionResult,
+  CommentResult,
+} from '../types.js';
 import { getStealthScript, sleep, generateWebId, humanScroll } from '../utils/index.js';
 
 // 固定 User-Agent，与 Playwright Chromium 版本匹配 (Chrome 143)
@@ -33,6 +43,63 @@ const TIMEOUTS = {
 
 // 请求间隔（毫秒）
 const REQUEST_INTERVAL = 2000;
+
+// 发布页面选择器（参考 xpzouying/xiaohongshu-mcp）
+const PUBLISH_SELECTORS = {
+  uploadInput: '.upload-input',
+  titleInput: 'div.d-input input',
+  contentEditor: 'div.ql-editor',
+  contentTextbox: '[role="textbox"]',
+  publishBtn: 'button.publishBtn',
+  topicContainer: '#creator-editor-topic-container .item',
+  scheduleRadio: '[class*="radio"]:has-text("定时发布")',
+  uploadImageTab: '.creator-tab:has-text("上传图文")',
+  uploadVideoTab: '.creator-tab:has-text("上传视频")',
+};
+
+// 互动选择器
+const INTERACTION_SELECTORS = {
+  likeButton: '.interact-container .left .like-wrapper, .engage-bar .like-wrapper',
+  likeActive: '.like-active, .liked',
+  collectButton: '.interact-container .left .collect-wrapper, .engage-bar .collect-wrapper',
+  collectActive: '.collect-active, .collected',
+};
+
+// 评论选择器
+const COMMENT_SELECTORS = {
+  commentInputTrigger: 'div.input-box div.content-edit span, .comment-input',
+  commentInput: 'div.input-box div.content-edit p.content-input, .comment-input textarea',
+  submitButton: 'div.bottom button.submit, .comment-submit',
+  replyButton: '.right .interactions .reply, .reply-btn',
+};
+
+// 搜索过滤器映射
+const SEARCH_FILTER_MAP = {
+  sortBy: {
+    general: '综合',
+    latest: '最新',
+    most_liked: '最多点赞',
+    most_commented: '最多评论',
+    most_collected: '最多收藏',
+  },
+  noteType: {
+    all: '不限',
+    video: '视频',
+    image: '图文',
+  },
+  publishTime: {
+    all: '不限',
+    day: '一天内',
+    week: '一周内',
+    half_year: '半年内',
+  },
+  searchScope: {
+    all: '不限',
+    viewed: '已看过',
+    not_viewed: '未看过',
+    following: '已关注',
+  },
+};
 
 export class BrowserClient {
   private browser: Browser | null = null;
@@ -132,12 +199,18 @@ export class BrowserClient {
   }
 
   /**
-   * 搜索笔记 - 支持滚动加载更多
+   * 搜索笔记 - 支持滚动加载更多和过滤器
    * @param keyword 搜索关键词
    * @param count 需要获取的数量，默认20（首屏），最大500
    * @param timeout 超时时间（毫秒），默认60000
+   * @param filters 搜索过滤器选项
    */
-  async search(keyword: string, count: number = 20, timeout: number = 60000): Promise<XhsSearchItem[]> {
+  async search(
+    keyword: string,
+    count: number = 20,
+    timeout: number = 60000,
+    filters?: XhsSearchFilters
+  ): Promise<XhsSearchItem[]> {
     if (!this.context) await this.init();
     const page = await this.context!.newPage();
 
@@ -159,6 +232,12 @@ export class BrowserClient {
       });
 
       await sleep(REQUEST_INTERVAL);
+
+      // 应用搜索过滤器
+      if (filters) {
+        await this.applySearchFilters(page, filters);
+        await sleep(REQUEST_INTERVAL);
+      }
 
       // 用于去重的 Map（id -> item）
       const uniqueItems = new Map<string, any>();
@@ -561,6 +640,612 @@ export class BrowserClient {
       return { loggedIn: false, message: 'Check failed - please try xhs_login' };
     } finally {
       await page.close();
+    }
+  }
+
+  /**
+   * 应用搜索过滤器
+   */
+  private async applySearchFilters(page: Page, filters: XhsSearchFilters): Promise<void> {
+    // 点击筛选按钮展开过滤器面板
+    const filterBtn = await page.$('.filter-btn, .search-filter-btn, [class*="filter"]');
+    if (filterBtn) {
+      await filterBtn.click();
+      await sleep(500);
+    }
+
+    // 应用排序方式
+    if (filters.sortBy && filters.sortBy !== 'general') {
+      const sortText = SEARCH_FILTER_MAP.sortBy[filters.sortBy];
+      const sortOption = await page.$(`text="${sortText}"`);
+      if (sortOption) {
+        await sortOption.click();
+        await sleep(300);
+      }
+    }
+
+    // 应用笔记类型
+    if (filters.noteType && filters.noteType !== 'all') {
+      const typeText = SEARCH_FILTER_MAP.noteType[filters.noteType];
+      const typeOption = await page.$(`text="${typeText}"`);
+      if (typeOption) {
+        await typeOption.click();
+        await sleep(300);
+      }
+    }
+
+    // 应用发布时间
+    if (filters.publishTime && filters.publishTime !== 'all') {
+      const timeText = SEARCH_FILTER_MAP.publishTime[filters.publishTime];
+      const timeOption = await page.$(`text="${timeText}"`);
+      if (timeOption) {
+        await timeOption.click();
+        await sleep(300);
+      }
+    }
+
+    // 应用搜索范围
+    if (filters.searchScope && filters.searchScope !== 'all') {
+      const scopeText = SEARCH_FILTER_MAP.searchScope[filters.searchScope];
+      const scopeOption = await page.$(`text="${scopeText}"`);
+      if (scopeOption) {
+        await scopeOption.click();
+        await sleep(300);
+      }
+    }
+  }
+
+  /**
+   * 发布图文笔记
+   */
+  async publishContent(params: PublishContentParams): Promise<PublishResult> {
+    // 需要使用可见浏览器进行发布
+    if (this.browser) {
+      await this.browser.close();
+    }
+
+    this.browser = await chromium.launch({
+      headless: false,
+      args: BROWSER_ARGS,
+    });
+
+    const stealthScript = await getStealthScript();
+
+    // 尝试加载已保存的会话
+    if (await fs.pathExists(STATE_FILE)) {
+      this.context = await this.browser.newContext({
+        userAgent: USER_AGENT,
+        storageState: STATE_FILE,
+        viewport: { width: 1920, height: 1080 },
+      });
+    } else {
+      return { success: false, error: 'Not logged in. Please use xhs_login first.' };
+    }
+
+    if (stealthScript) {
+      await this.context.addInitScript(stealthScript);
+    }
+
+    const page = await this.context.newPage();
+
+    try {
+      // 导航到创作者中心发布页面
+      await page.goto('https://creator.xiaohongshu.com/publish/publish', {
+        waitUntil: 'domcontentloaded',
+      });
+
+      await page.waitForLoadState('networkidle').catch(() => {});
+      await sleep(2000);
+
+      // 点击"上传图文"标签
+      const imageTab = await page.$(PUBLISH_SELECTORS.uploadImageTab);
+      if (imageTab) {
+        await imageTab.click();
+        await sleep(1000);
+      }
+
+      // 上传图片
+      const uploadInput = await page.$(PUBLISH_SELECTORS.uploadInput);
+      if (!uploadInput) {
+        return { success: false, error: 'Upload input not found' };
+      }
+
+      // 设置文件
+      await uploadInput.setInputFiles(params.images);
+      console.error(`[publish] Uploading ${params.images.length} images...`);
+
+      // 等待图片上传完成（等待预览出现）
+      await page.waitForSelector('.upload-item, .image-item, .cover-container', {
+        timeout: 60000,
+      });
+      await sleep(2000);
+
+      // 填写标题
+      const titleInput = await page.$(PUBLISH_SELECTORS.titleInput);
+      if (titleInput) {
+        await titleInput.fill(params.title);
+        console.error(`[publish] Title set: ${params.title}`);
+      }
+
+      // 填写内容
+      const contentEditor = await page.$(PUBLISH_SELECTORS.contentEditor);
+      if (contentEditor) {
+        await contentEditor.click();
+        await page.keyboard.type(params.content);
+        console.error(`[publish] Content set`);
+      } else {
+        const contentTextbox = await page.$(PUBLISH_SELECTORS.contentTextbox);
+        if (contentTextbox) {
+          await contentTextbox.click();
+          await page.keyboard.type(params.content);
+        }
+      }
+
+      await sleep(1000);
+
+      // 添加标签
+      if (params.tags && params.tags.length > 0) {
+        for (const tag of params.tags) {
+          await page.keyboard.type(`#${tag}`);
+          await sleep(500);
+
+          // 等待并点击标签建议
+          const suggestion = await page.$(`${PUBLISH_SELECTORS.topicContainer}:has-text("${tag}")`);
+          if (suggestion) {
+            await suggestion.click();
+            await sleep(300);
+          } else {
+            // 按空格确认标签
+            await page.keyboard.press('Space');
+          }
+          await sleep(300);
+        }
+      }
+
+      // 处理定时发布
+      if (params.scheduleTime) {
+        const scheduleRadio = await page.$(PUBLISH_SELECTORS.scheduleRadio);
+        if (scheduleRadio) {
+          await scheduleRadio.click();
+          await sleep(500);
+          // TODO: 实现时间选择器操作
+          console.error(`[publish] Schedule time: ${params.scheduleTime} (not implemented)`);
+        }
+      }
+
+      // 点击发布按钮
+      const publishBtn = await page.$(PUBLISH_SELECTORS.publishBtn);
+      if (!publishBtn) {
+        return { success: false, error: 'Publish button not found' };
+      }
+
+      await publishBtn.click();
+      console.error('[publish] Publish button clicked');
+
+      // 等待发布完成（检测 URL 变化或成功提示）
+      await sleep(3000);
+
+      // 检查是否发布成功
+      const currentUrl = page.url();
+      if (currentUrl.includes('success') || currentUrl.includes('publish')) {
+        // 尝试从 URL 或页面提取笔记 ID
+        const noteIdMatch = currentUrl.match(/note\/([a-zA-Z0-9]+)/);
+        return {
+          success: true,
+          noteId: noteIdMatch?.[1],
+        };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('[publish] Error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    } finally {
+      // 保持浏览器打开一段时间以便用户查看结果
+      await sleep(2000);
+    }
+  }
+
+  /**
+   * 发布视频笔记
+   */
+  async publishVideo(params: PublishVideoParams): Promise<PublishResult> {
+    // 需要使用可见浏览器进行发布
+    if (this.browser) {
+      await this.browser.close();
+    }
+
+    this.browser = await chromium.launch({
+      headless: false,
+      args: BROWSER_ARGS,
+    });
+
+    const stealthScript = await getStealthScript();
+
+    if (await fs.pathExists(STATE_FILE)) {
+      this.context = await this.browser.newContext({
+        userAgent: USER_AGENT,
+        storageState: STATE_FILE,
+        viewport: { width: 1920, height: 1080 },
+      });
+    } else {
+      return { success: false, error: 'Not logged in. Please use xhs_login first.' };
+    }
+
+    if (stealthScript) {
+      await this.context.addInitScript(stealthScript);
+    }
+
+    const page = await this.context.newPage();
+
+    try {
+      await page.goto('https://creator.xiaohongshu.com/publish/publish', {
+        waitUntil: 'domcontentloaded',
+      });
+
+      await page.waitForLoadState('networkidle').catch(() => {});
+      await sleep(2000);
+
+      // 点击"上传视频"标签
+      const videoTab = await page.$(PUBLISH_SELECTORS.uploadVideoTab);
+      if (videoTab) {
+        await videoTab.click();
+        await sleep(1000);
+      }
+
+      // 上传视频
+      const uploadInput = await page.$(PUBLISH_SELECTORS.uploadInput);
+      if (!uploadInput) {
+        return { success: false, error: 'Upload input not found' };
+      }
+
+      await uploadInput.setInputFiles(params.videoPath);
+      console.error(`[publish] Uploading video: ${params.videoPath}`);
+
+      // 等待视频上传和处理（可能需要较长时间）
+      await page.waitForSelector('.upload-success, .video-preview, .cover-container', {
+        timeout: 300000, // 5 分钟超时
+      });
+      await sleep(2000);
+
+      // 如果提供了封面图，上传封面
+      if (params.coverPath) {
+        const coverInput = await page.$('.cover-upload input, [class*="cover"] input[type="file"]');
+        if (coverInput) {
+          await coverInput.setInputFiles(params.coverPath);
+          await sleep(2000);
+        }
+      }
+
+      // 填写标题
+      const titleInput = await page.$(PUBLISH_SELECTORS.titleInput);
+      if (titleInput) {
+        await titleInput.fill(params.title);
+      }
+
+      // 填写内容
+      const contentEditor = await page.$(PUBLISH_SELECTORS.contentEditor);
+      if (contentEditor) {
+        await contentEditor.click();
+        await page.keyboard.type(params.content);
+      }
+
+      await sleep(1000);
+
+      // 添加标签
+      if (params.tags && params.tags.length > 0) {
+        for (const tag of params.tags) {
+          await page.keyboard.type(`#${tag}`);
+          await sleep(500);
+          const suggestion = await page.$(`${PUBLISH_SELECTORS.topicContainer}:has-text("${tag}")`);
+          if (suggestion) {
+            await suggestion.click();
+          } else {
+            await page.keyboard.press('Space');
+          }
+          await sleep(300);
+        }
+      }
+
+      // 点击发布
+      const publishBtn = await page.$(PUBLISH_SELECTORS.publishBtn);
+      if (!publishBtn) {
+        return { success: false, error: 'Publish button not found' };
+      }
+
+      await publishBtn.click();
+      await sleep(3000);
+
+      return { success: true };
+    } catch (error) {
+      console.error('[publish] Error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    } finally {
+      await sleep(2000);
+    }
+  }
+
+  /**
+   * 点赞/取消点赞笔记
+   */
+  async likeFeed(noteId: string, xsecToken: string, unlike: boolean = false): Promise<InteractionResult> {
+    if (!this.context) await this.init();
+    const page = await this.context!.newPage();
+
+    try {
+      let url = `https://www.xiaohongshu.com/explore/${noteId}`;
+      if (xsecToken) {
+        url += `?xsec_token=${encodeURIComponent(xsecToken)}&xsec_source=pc_feed`;
+      }
+
+      await page.goto(url, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle').catch(() => {});
+      await sleep(REQUEST_INTERVAL);
+
+      // 获取当前点赞状态
+      const isLiked = await page.evaluate(() => {
+        const state = (window as any).__INITIAL_STATE__;
+        const noteDetailMap = state?.note?.noteDetailMap;
+        if (noteDetailMap) {
+          const firstKey = Object.keys(noteDetailMap)[0];
+          return noteDetailMap[firstKey]?.note?.interactInfo?.liked || false;
+        }
+        return false;
+      });
+
+      // 根据当前状态和目标操作决定是否需要点击
+      const shouldClick = (unlike && isLiked) || (!unlike && !isLiked);
+
+      if (shouldClick) {
+        const likeBtn = await page.$(INTERACTION_SELECTORS.likeButton);
+        if (likeBtn) {
+          await likeBtn.click();
+          await sleep(500);
+        } else {
+          return {
+            success: false,
+            action: unlike ? 'unlike' : 'like',
+            noteId,
+            error: 'Like button not found',
+          };
+        }
+      }
+
+      return {
+        success: true,
+        action: unlike ? 'unlike' : 'like',
+        noteId,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        action: unlike ? 'unlike' : 'like',
+        noteId,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    } finally {
+      await page.close();
+    }
+  }
+
+  /**
+   * 收藏/取消收藏笔记
+   */
+  async favoriteFeed(noteId: string, xsecToken: string, unfavorite: boolean = false): Promise<InteractionResult> {
+    if (!this.context) await this.init();
+    const page = await this.context!.newPage();
+
+    try {
+      let url = `https://www.xiaohongshu.com/explore/${noteId}`;
+      if (xsecToken) {
+        url += `?xsec_token=${encodeURIComponent(xsecToken)}&xsec_source=pc_feed`;
+      }
+
+      await page.goto(url, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle').catch(() => {});
+      await sleep(REQUEST_INTERVAL);
+
+      // 获取当前收藏状态
+      const isCollected = await page.evaluate(() => {
+        const state = (window as any).__INITIAL_STATE__;
+        const noteDetailMap = state?.note?.noteDetailMap;
+        if (noteDetailMap) {
+          const firstKey = Object.keys(noteDetailMap)[0];
+          return noteDetailMap[firstKey]?.note?.interactInfo?.collected || false;
+        }
+        return false;
+      });
+
+      const shouldClick = (unfavorite && isCollected) || (!unfavorite && !isCollected);
+
+      if (shouldClick) {
+        const collectBtn = await page.$(INTERACTION_SELECTORS.collectButton);
+        if (collectBtn) {
+          await collectBtn.click();
+          await sleep(500);
+        } else {
+          return {
+            success: false,
+            action: unfavorite ? 'unfavorite' : 'favorite',
+            noteId,
+            error: 'Collect button not found',
+          };
+        }
+      }
+
+      return {
+        success: true,
+        action: unfavorite ? 'unfavorite' : 'favorite',
+        noteId,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        action: unfavorite ? 'unfavorite' : 'favorite',
+        noteId,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    } finally {
+      await page.close();
+    }
+  }
+
+  /**
+   * 发表评论
+   */
+  async postComment(noteId: string, xsecToken: string, content: string): Promise<CommentResult> {
+    if (!this.context) await this.init();
+    const page = await this.context!.newPage();
+
+    try {
+      let url = `https://www.xiaohongshu.com/explore/${noteId}`;
+      if (xsecToken) {
+        url += `?xsec_token=${encodeURIComponent(xsecToken)}&xsec_source=pc_feed`;
+      }
+
+      await page.goto(url, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle').catch(() => {});
+      await sleep(REQUEST_INTERVAL);
+
+      // 点击评论输入框触发器
+      const inputTrigger = await page.$(COMMENT_SELECTORS.commentInputTrigger);
+      if (inputTrigger) {
+        await inputTrigger.click();
+        await sleep(500);
+      }
+
+      // 输入评论内容
+      const commentInput = await page.$(COMMENT_SELECTORS.commentInput);
+      if (!commentInput) {
+        return { success: false, error: 'Comment input not found' };
+      }
+
+      await commentInput.click();
+      await page.keyboard.type(content);
+      await sleep(300);
+
+      // 点击提交按钮
+      const submitBtn = await page.$(COMMENT_SELECTORS.submitButton);
+      if (!submitBtn) {
+        return { success: false, error: 'Submit button not found' };
+      }
+
+      await submitBtn.click();
+      await sleep(1000);
+
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    } finally {
+      await page.close();
+    }
+  }
+
+  /**
+   * 回复评论
+   */
+  async replyComment(
+    noteId: string,
+    xsecToken: string,
+    commentId: string,
+    content: string
+  ): Promise<CommentResult> {
+    if (!this.context) await this.init();
+    const page = await this.context!.newPage();
+
+    try {
+      let url = `https://www.xiaohongshu.com/explore/${noteId}`;
+      if (xsecToken) {
+        url += `?xsec_token=${encodeURIComponent(xsecToken)}&xsec_source=pc_feed`;
+      }
+
+      await page.goto(url, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle').catch(() => {});
+      await sleep(REQUEST_INTERVAL);
+
+      // 找到目标评论并点击回复按钮
+      // 评论 ID 通常在 data-id 属性中
+      const replyBtn = await page.$(`[data-id="${commentId}"] ${COMMENT_SELECTORS.replyButton}, .comment-item[data-id="${commentId}"] .reply-btn`);
+      if (replyBtn) {
+        await replyBtn.click();
+        await sleep(500);
+      } else {
+        // 尝试其他方式找到评论
+        const commentElements = await page.$$('.comment-item, .comment-wrapper');
+        for (const el of commentElements) {
+          const id = await el.getAttribute('data-id');
+          if (id === commentId) {
+            const reply = await el.$(COMMENT_SELECTORS.replyButton);
+            if (reply) {
+              await reply.click();
+              await sleep(500);
+              break;
+            }
+          }
+        }
+      }
+
+      // 输入回复内容
+      const commentInput = await page.$(COMMENT_SELECTORS.commentInput);
+      if (!commentInput) {
+        return { success: false, error: 'Reply input not found' };
+      }
+
+      await commentInput.click();
+      await page.keyboard.type(content);
+      await sleep(300);
+
+      // 提交回复
+      const submitBtn = await page.$(COMMENT_SELECTORS.submitButton);
+      if (!submitBtn) {
+        return { success: false, error: 'Submit button not found' };
+      }
+
+      await submitBtn.click();
+      await sleep(1000);
+
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    } finally {
+      await page.close();
+    }
+  }
+
+  /**
+   * 删除登录 cookies
+   */
+  async deleteCookies(): Promise<{ success: boolean; error?: string }> {
+    try {
+      if (await fs.pathExists(STATE_FILE)) {
+        await fs.remove(STATE_FILE);
+      }
+
+      // 关闭当前浏览器实例
+      if (this.browser) {
+        await this.browser.close();
+        this.browser = null;
+        this.context = null;
+      }
+
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
     }
   }
 
