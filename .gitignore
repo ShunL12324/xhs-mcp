@@ -24,3 +24,7 @@ npm-debug.log*
 # Environment
 .env
 .env.local
+.claude/settings.local.json
+
+# Reference projects
+reference_projects/

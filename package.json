@@ -1,6 +1,6 @@
 {
   "name": "@sillyl12324/xhs-mcp",
-  "version": "1.0.2",
+  "version": "2.0.0",
   "type": "module",
   "description": "MCP server for Xiaohongshu (小红书/RedNote) - search, publish, and interact with content",
   "main": "dist/index.js",
@@ -52,12 +52,19 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.23.0",
+    "@types/pngjs": "^6.0.5",
+    "@types/qrcode": "^1.5.6",
+    "better-sqlite3": "^12.6.2",
     "fs-extra": "^11.3.2",
     "hono": "^4.7.0",
+    "jsqr": "^1.4.0",
     "playwright": "^1.57.0",
+    "pngjs": "^7.0.0",
+    "qrcode": "^1.5.4",
     "zod": "^4.1.13"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
     "@types/bun": "^1.2.1",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^24.10.1",

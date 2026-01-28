@@ -1,10 +1,20 @@
 #!/usr/bin/env node
+/**
+ * @fileoverview Entry point for the xhs-mcp server.
+ * Supports both stdio and HTTP transport modes.
+ * @module index
+ */
+
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { createMcpServer } from './server.js';
-import { XhsClient } from './xhs/index.js';
+import { initDatabase, getDatabase } from './db/index.js';
+import { AccountPool, getAccountPool } from './core/account-pool.js';
 import { startHttpServer } from './http-server.js';
 
-// Parse command line arguments
+/**
+ * Parse command line arguments.
+ * @returns Parsed options for server startup
+ */
 function parseArgs(): { http: boolean; port: number } {
   const args = process.argv.slice(2);
   let http = false;
@@ -28,9 +38,16 @@ function parseArgs(): { http: boolean; port: number } {
   return { http, port };
 }
 
+/**
+ * Run the MCP server in stdio mode.
+ * Connects via stdin/stdout for communication with MCP clients.
+ */
 async function runStdioMode() {
-  const client = new XhsClient();
-  const server = createMcpServer(client);
+  // Initialize database
+  const db = await initDatabase();
+  const pool = getAccountPool(db);
+
+  const server = createMcpServer(pool, db);
   const transport = new StdioServerTransport();
 
   await server.connect(transport);
@@ -39,7 +56,8 @@ async function runStdioMode() {
   // Graceful shutdown
   const shutdown = async () => {
     console.error('Shutting down...');
-    await client.close();
+    await pool.closeAll();
+    db.close();
     process.exit(0);
   };
 
@@ -47,6 +65,10 @@ async function runStdioMode() {
   process.on('SIGTERM', shutdown);
 }
 
+/**
+ * Main entry point.
+ * Starts the server in either stdio or HTTP mode based on command line arguments.
+ */
 async function main() {
   const { http, port } = parseArgs();
 

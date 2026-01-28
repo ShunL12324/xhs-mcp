@@ -1,7 +1,18 @@
-import { XhsClient } from '../xhs/index.js';
+/**
+ * @fileoverview MCP tool definitions and handlers for publishing content.
+ * Provides tools for publishing image/text and video notes.
+ * @module tools/publish
+ */
+
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
+import { AccountPool } from '../core/account-pool.js';
+import { XhsDatabase } from '../db/index.js';
+import { executeWithMultipleAccounts, MultiAccountParams } from '../core/multi-account.js';
 
+/**
+ * Publishing tool definitions for MCP.
+ */
 export const publishTools: Tool[] = [
   {
     name: 'xhs_publish_content',
@@ -30,6 +41,17 @@ export const publishTools: Tool[] = [
         scheduleTime: {
           type: 'string',
           description: 'Optional scheduled publish time (ISO 8601 format). If not provided, publishes immediately.',
+        },
+        account: {
+          type: 'string',
+          description: 'Account name or ID to use for publishing',
+        },
+        accounts: {
+          oneOf: [
+            { type: 'array', items: { type: 'string' } },
+            { type: 'string', enum: ['all'] },
+          ],
+          description: 'Multiple accounts to publish to (array of names/IDs, or "all")',
         },
       },
       required: ['title', 'content', 'images'],
@@ -66,13 +88,38 @@ export const publishTools: Tool[] = [
           type: 'string',
           description: 'Optional scheduled publish time (ISO 8601 format). If not provided, publishes immediately.',
         },
+        account: {
+          type: 'string',
+          description: 'Account name or ID to use for publishing',
+        },
+        accounts: {
+          oneOf: [
+            { type: 'array', items: { type: 'string' } },
+            { type: 'string', enum: ['all'] },
+          ],
+          description: 'Multiple accounts to publish to (array of names/IDs, or "all")',
+        },
       },
       required: ['title', 'content', 'videoPath'],
     },
   },
 ];
 
-export async function handlePublishTools(name: string, args: any, client: XhsClient) {
+/**
+ * Handle publishing tool calls.
+ *
+ * @param name - Tool name
+ * @param args - Tool arguments
+ * @param pool - Account pool instance
+ * @param db - Database instance
+ * @returns MCP tool response
+ */
+export async function handlePublishTools(
+  name: string,
+  args: any,
+  pool: AccountPool,
+  db: XhsDatabase
+) {
   switch (name) {
     case 'xhs_publish_content': {
       const params = z
@@ -82,17 +129,60 @@ export async function handlePublishTools(name: string, args: any, client: XhsCli
           images: z.array(z.string()).min(1),
           tags: z.array(z.string()).optional(),
           scheduleTime: z.string().optional(),
+          account: z.string().optional(),
+          accounts: z.union([z.array(z.string()), z.literal('all')]).optional(),
         })
         .parse(args);
 
-      const result = await client.publishContent(params);
+      const multiParams: MultiAccountParams = {
+        account: params.account,
+        accounts: params.accounts,
+      };
+
+      const results = await executeWithMultipleAccounts(
+        pool,
+        db,
+        multiParams,
+        'publish_content',
+        async (ctx) => {
+          const result = await ctx.client.publishContent({
+            title: params.title,
+            content: params.content,
+            images: params.images,
+            tags: params.tags,
+            scheduleTime: params.scheduleTime,
+          });
+
+          // Record in database if successful
+          if (result.success) {
+            db.recordPublishedNote({
+              accountId: ctx.accountId,
+              noteId: result.noteId,
+              title: params.title,
+              content: params.content,
+              noteType: 'image',
+              images: params.images,
+              tags: params.tags,
+              status: params.scheduleTime ? 'scheduled' : 'published',
+            });
+          }
+
+          return result;
+        },
+        {
+          logParams: { title: params.title, imageCount: params.images.length },
+          sequential: true, // Publish one at a time to avoid browser conflicts
+        }
+      );
+
+      if (results.length === 1) {
+        return {
+          content: [{ type: 'text', text: JSON.stringify(results[0], null, 2) }],
+        };
+      }
+
       return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(result, null, 2),
-          },
-        ],
+        content: [{ type: 'text', text: JSON.stringify(results, null, 2) }],
       };
     }
 
@@ -105,17 +195,61 @@ export async function handlePublishTools(name: string, args: any, client: XhsCli
           coverPath: z.string().optional(),
           tags: z.array(z.string()).optional(),
           scheduleTime: z.string().optional(),
+          account: z.string().optional(),
+          accounts: z.union([z.array(z.string()), z.literal('all')]).optional(),
         })
         .parse(args);
 
-      const result = await client.publishVideo(params);
+      const multiParams: MultiAccountParams = {
+        account: params.account,
+        accounts: params.accounts,
+      };
+
+      const results = await executeWithMultipleAccounts(
+        pool,
+        db,
+        multiParams,
+        'publish_video',
+        async (ctx) => {
+          const result = await ctx.client.publishVideo({
+            title: params.title,
+            content: params.content,
+            videoPath: params.videoPath,
+            coverPath: params.coverPath,
+            tags: params.tags,
+            scheduleTime: params.scheduleTime,
+          });
+
+          // Record in database if successful
+          if (result.success) {
+            db.recordPublishedNote({
+              accountId: ctx.accountId,
+              noteId: result.noteId,
+              title: params.title,
+              content: params.content,
+              noteType: 'video',
+              videoPath: params.videoPath,
+              tags: params.tags,
+              status: params.scheduleTime ? 'scheduled' : 'published',
+            });
+          }
+
+          return result;
+        },
+        {
+          logParams: { title: params.title, videoPath: params.videoPath },
+          sequential: true,
+        }
+      );
+
+      if (results.length === 1) {
+        return {
+          content: [{ type: 'text', text: JSON.stringify(results[0], null, 2) }],
+        };
+      }
+
       return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(result, null, 2),
-          },
-        ],
+        content: [{ type: 'text', text: JSON.stringify(results, null, 2) }],
       };
     }
 

@@ -1,14 +1,51 @@
+/**
+ * @fileoverview HTTP transport server for the MCP protocol.
+ * Provides a Hono-based HTTP server as an alternative to stdio transport.
+ * Uses StreamableHTTPServerTransport for MCP communication.
+ * @module http-server
+ */
+
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { createMcpServer } from './server.js';
-import { XhsClient } from './xhs/index.js';
+import { initDatabase } from './db/index.js';
+import { getAccountPool } from './core/account-pool.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 
 const DEFAULT_PORT = 18060;
 
+/**
+ * Start the HTTP transport server for the MCP protocol.
+ * Uses Hono as the HTTP framework and Bun as the runtime.
+ *
+ * @param port - Port number to listen on (default: 18060)
+ */
 export async function startHttpServer(port: number = DEFAULT_PORT) {
+  // Initialize database and account pool
+  const db = await initDatabase();
+  const pool = getAccountPool(db);
+
+  /**
+   * Create a new MCP server and transport for each request.
+   * In stateless HTTP mode, each request is independent.
+   */
+  const getOrCreateServer = async (): Promise<{ server: Server; transport: StreamableHTTPServerTransport }> => {
+    // For stateless mode, we need a fresh transport per request
+    // but can potentially reuse the server logic
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: undefined, // Stateless mode
+    });
+
+    // Create server if not exists, or create new one for each request in stateless mode
+    // Note: In stateless HTTP mode, each request is independent
+    const server = createMcpServer(pool, db);
+    await server.connect(transport);
+
+    return { server, transport };
+  };
+
   const app = new Hono();
-  const client = new XhsClient();
 
   // Enable CORS for all origins
   app.use('*', cors({
@@ -18,14 +55,13 @@ export async function startHttpServer(port: number = DEFAULT_PORT) {
 
   // MCP endpoint using StreamableHTTPServerTransport
   app.post('/mcp', async (c) => {
-    const server = createMcpServer(client);
+    let server: Server | null = null;
+    let transport: StreamableHTTPServerTransport | null = null;
 
     try {
-      const transport = new StreamableHTTPServerTransport({
-        sessionIdGenerator: undefined, // Stateless mode
-      });
-
-      await server.connect(transport);
+      const result = await getOrCreateServer();
+      server = result.server;
+      transport = result.transport;
 
       // Get the raw request body
       const body = await c.req.json();
@@ -88,10 +124,6 @@ export async function startHttpServer(port: number = DEFAULT_PORT) {
         headers: responseHeaders,
       });
 
-      // Clean up
-      await transport.close();
-      await server.close();
-
       return response;
     } catch (error) {
       console.error('Error handling MCP request:', error);
@@ -103,6 +135,14 @@ export async function startHttpServer(port: number = DEFAULT_PORT) {
         },
         id: null,
       }, 500);
+    } finally {
+      // Clean up transport and server
+      if (transport) {
+        await transport.close().catch(() => {});
+      }
+      if (server) {
+        await server.close().catch(() => {});
+      }
     }
   });
 
@@ -131,15 +171,15 @@ export async function startHttpServer(port: number = DEFAULT_PORT) {
 
   // Health check endpoint
   app.get('/health', (c) => {
-    return c.json({ status: 'ok', server: 'xhs-mcp' });
+    return c.json({ status: 'ok', server: 'xhs-mcp', version: '2.0.0' });
   });
 
   // Info endpoint
   app.get('/', (c) => {
     return c.json({
       name: 'xhs-mcp',
-      version: '1.0.0',
-      description: 'Xiaohongshu MCP Server',
+      version: '2.0.0',
+      description: 'Xiaohongshu MCP Server with Multi-Account Support',
       endpoints: {
         mcp: '/mcp',
         health: '/health',
@@ -153,7 +193,8 @@ export async function startHttpServer(port: number = DEFAULT_PORT) {
   // Graceful shutdown
   const shutdown = async () => {
     console.error('Shutting down HTTP server...');
-    await client.close();
+    await pool.closeAll();
+    db.close();
     process.exit(0);
   };
 

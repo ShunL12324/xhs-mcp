@@ -13,6 +13,8 @@
 
 A Model Context Protocol (MCP) server for [Xiaohongshu](https://www.xiaohongshu.com) (小红书/RedNote), enabling AI assistants to search, browse, publish, and interact with content on the platform.
 
+**v2.0: Multi-account support with SQLite database storage**
+
 </div>
 
 ---
@@ -21,10 +23,13 @@ A Model Context Protocol (MCP) server for [Xiaohongshu](https://www.xiaohongshu.
 
 | Category | Features |
 |----------|----------|
+| **Multi-Account** | Multiple account management, account pool, concurrent operation prevention |
 | **Content Query** | Search notes with filters, get note details with comments, user profiles, homepage feeds |
 | **Publishing** | Publish image/text notes, publish video notes with scheduled posting support |
 | **Interaction** | Like/unlike, favorite/unfavorite, post comments, reply to comments |
-| **Authentication** | QR code login, session persistence, cookie management |
+| **Authentication** | Headless QR code login with remote URL, session persistence in SQLite |
+| **Statistics** | Operation logs, account statistics, success rate tracking |
+| **Download** | Download images and videos from notes |
 | **Transport** | Stdio (default) and HTTP (StreamableHTTP) transport modes |
 | **Anti-Detection** | Stealth script injection, human-like scrolling, webId bypass |
 
@@ -117,12 +122,20 @@ For web-based clients or custom integrations:
 
 ## Available Tools
 
+### Account Management (v2.0)
+
+| Tool | Description |
+|------|-------------|
+| `xhs_list_accounts` | List all registered accounts with status |
+| `xhs_add_account` | Add new account or re-login existing account via QR code URL |
+| `xhs_remove_account` | Remove an account and its data |
+| `xhs_set_account_config` | Update proxy or status for an account |
+
 ### Authentication
 
 | Tool | Description |
 |------|-------------|
 | `xhs_check_login` | Check current login status |
-| `xhs_login` | Login via QR code (opens visible browser) |
 | `xhs_delete_cookies` | Delete saved session for re-authentication |
 
 ### Content Query
@@ -150,6 +163,20 @@ For web-based clients or custom integrations:
 | `xhs_post_comment` | Post a comment on a note |
 | `xhs_reply_comment` | Reply to an existing comment |
 
+### Statistics (v2.0)
+
+| Tool | Description |
+|------|-------------|
+| `xhs_get_account_stats` | Get operation statistics for an account |
+| `xhs_get_operation_logs` | Query operation history |
+
+### Download (v2.0)
+
+| Tool | Description |
+|------|-------------|
+| `xhs_download_images` | Download all images from a note |
+| `xhs_download_video` | Download video from a note |
+
 ### Search Filters
 
 The `xhs_search` tool supports the following filter parameters:
@@ -163,13 +190,27 @@ The `xhs_search` tool supports the following filter parameters:
 
 ## Usage Examples
 
-### Login Flow
+### Login Flow (v2.0)
 
 ```
-1. Call xhs_check_login to verify status
-2. If not logged in, call xhs_login
-3. Scan the QR code with Xiaohongshu mobile app
-4. Session is automatically saved for future use
+1. Call xhs_add_account with account name
+2. Server returns a temporary QR code URL (uploaded to image hosting)
+3. Scan the QR code with Xiaohongshu mobile app from any device
+4. Session is automatically saved to SQLite database
+5. Use xhs_check_login to verify status
+```
+
+### Multi-Account Operations
+
+```json
+// Single account
+{"keyword": "travel", "account": "main"}
+
+// Multiple accounts
+{"noteId": "xxx", "xsecToken": "yyy", "accounts": ["acc-1", "acc-2"]}
+
+// All active accounts
+{"title": "...", "content": "...", "images": [...], "accounts": "all"}
 ```
 
 ### Search with Filters
@@ -219,15 +260,32 @@ bun run test:note <noteId>
 ## Architecture
 
 ```
+~/.xhs-mcp/                   # Data directory (v2.0)
+├── data.db                   # SQLite database
+└── downloads/
+    ├── images/{noteId}/
+    └── videos/{noteId}/
+
 src/
 ├── index.ts              # Entry point (stdio/http switch)
 ├── server.ts             # MCP server configuration
 ├── http-server.ts        # HTTP transport (Hono + StreamableHTTP)
+├── core/
+│   ├── paths.ts          # Path constants (~/.xhs-mcp)
+│   ├── account-pool.ts   # Multi-account client pool
+│   ├── account-lock.ts   # Concurrent access prevention
+│   └── multi-account.ts  # Multi-account helpers
+├── db/
+│   ├── index.ts          # Database class (better-sqlite3)
+│   └── schema.ts         # Table definitions
 ├── tools/
+│   ├── account.ts        # Account management tools
 │   ├── auth.ts           # Authentication tools
 │   ├── content.ts        # Content query tools
 │   ├── publish.ts        # Publishing tools
-│   └── interaction.ts    # Interaction tools
+│   ├── interaction.ts    # Interaction tools
+│   ├── stats.ts          # Statistics tools
+│   └── download.ts       # Download tools
 └── xhs/
     ├── index.ts          # XhsClient facade
     ├── types.ts          # TypeScript interfaces
@@ -248,9 +306,9 @@ src/
 - Random mouse movements and occasional scroll-back behavior
 - Custom User-Agent matching Playwright's Chrome version
 
-### Session Persistence
+### Session Persistence (v2.0)
 
-Login state is saved to `xhs-state.json` and automatically restored on restart. Use `xhs_delete_cookies` to clear the session.
+Login state is stored in SQLite database (`~/.xhs-mcp/data.db`). Each account has its own session, supporting multi-account management. Use `xhs_delete_cookies` to clear a session.
 
 ### Data Extraction
 
@@ -283,6 +341,8 @@ MIT
 
 小红书 MCP 服务器 - 让 AI 助手能够搜索、浏览、发布和互动小红书内容
 
+**v2.0: 多账号支持，SQLite 数据库存储**
+
 </div>
 
 ---
@@ -291,10 +351,13 @@ MIT
 
 | 类别 | 功能 |
 |------|------|
+| **多账号管理** | 多账号支持、账号池、并发操作保护 |
 | **内容查询** | 带过滤器的笔记搜索、获取笔记详情和评论、用户资料、首页推荐 |
 | **内容发布** | 发布图文笔记、发布视频笔记、支持定时发布 |
 | **互动功能** | 点赞/取消点赞、收藏/取消收藏、发表评论、回复评论 |
-| **身份认证** | 二维码登录、会话持久化、Cookie 管理 |
+| **身份认证** | 无头模式二维码登录（返回远程URL）、SQLite 会话持久化 |
+| **数据统计** | 操作日志、账号统计、成功率追踪 |
+| **下载功能** | 下载笔记图片和视频 |
 | **传输模式** | 标准输入输出 (stdio) 和 HTTP (StreamableHTTP) 双模式 |
 | **反检测** | Stealth 脚本注入、人类模拟滚动、webId 绕过验证 |
 
@@ -387,12 +450,20 @@ npm run build
 
 ## 可用工具
 
+### 账号管理 (v2.0)
+
+| 工具 | 描述 |
+|------|------|
+| `xhs_list_accounts` | 列出所有已注册账号及状态 |
+| `xhs_add_account` | 添加新账号或重新登录现有账号（通过二维码URL） |
+| `xhs_remove_account` | 删除账号及其数据 |
+| `xhs_set_account_config` | 更新账号的代理或状态设置 |
+
 ### 身份认证
 
 | 工具 | 描述 |
 |------|------|
 | `xhs_check_login` | 检查当前登录状态 |
-| `xhs_login` | 通过二维码登录（打开可见浏览器） |
 | `xhs_delete_cookies` | 删除已保存的会话以重新认证 |
 
 ### 内容查询
@@ -420,6 +491,20 @@ npm run build
 | `xhs_post_comment` | 在笔记下发表评论 |
 | `xhs_reply_comment` | 回复已有评论 |
 
+### 数据统计 (v2.0)
+
+| 工具 | 描述 |
+|------|------|
+| `xhs_get_account_stats` | 获取账号操作统计 |
+| `xhs_get_operation_logs` | 查询操作历史记录 |
+
+### 下载功能 (v2.0)
+
+| 工具 | 描述 |
+|------|------|
+| `xhs_download_images` | 下载笔记的所有图片 |
+| `xhs_download_video` | 下载笔记的视频 |
+
 ### 搜索过滤器
 
 `xhs_search` 工具支持以下过滤参数：
@@ -433,13 +518,27 @@ npm run build
 
 ## 使用示例
 
-### 登录流程
+### 登录流程 (v2.0)
 
 ```
-1. 调用 xhs_check_login 验证状态
-2. 如未登录，调用 xhs_login
-3. 使用小红书 App 扫描二维码
-4. 会话自动保存供后续使用
+1. 调用 xhs_add_account 并提供账号名称
+2. 服务器返回临时二维码URL（上传至图床）
+3. 在任意设备上使用小红书 App 扫描二维码
+4. 会话自动保存至 SQLite 数据库
+5. 使用 xhs_check_login 验证状态
+```
+
+### 多账号操作
+
+```json
+// 单账号
+{"keyword": "旅行", "account": "main"}
+
+// 多账号
+{"noteId": "xxx", "xsecToken": "yyy", "accounts": ["acc-1", "acc-2"]}
+
+// 所有活跃账号
+{"title": "...", "content": "...", "images": [...], "accounts": "all"}
 ```
 
 ### 带过滤器搜索
@@ -489,15 +588,32 @@ bun run test:note <笔记ID>
 ## 架构
 
 ```
+~/.xhs-mcp/                   # 数据目录 (v2.0)
+├── data.db                   # SQLite 数据库
+└── downloads/
+    ├── images/{noteId}/
+    └── videos/{noteId}/
+
 src/
 ├── index.ts              # 入口点（stdio/http 切换）
 ├── server.ts             # MCP 服务器配置
 ├── http-server.ts        # HTTP 传输（Hono + StreamableHTTP）
+├── core/
+│   ├── paths.ts          # 路径常量 (~/.xhs-mcp)
+│   ├── account-pool.ts   # 多账号客户端池
+│   ├── account-lock.ts   # 并发访问保护
+│   └── multi-account.ts  # 多账号辅助函数
+├── db/
+│   ├── index.ts          # 数据库类 (better-sqlite3)
+│   └── schema.ts         # 表结构定义
 ├── tools/
+│   ├── account.ts        # 账号管理工具
 │   ├── auth.ts           # 认证工具
 │   ├── content.ts        # 内容查询工具
 │   ├── publish.ts        # 发布工具
-│   └── interaction.ts    # 互动工具
+│   ├── interaction.ts    # 互动工具
+│   ├── stats.ts          # 统计工具
+│   └── download.ts       # 下载工具
 └── xhs/
     ├── index.ts          # XhsClient 门面类
     ├── types.ts          # TypeScript 接口
@@ -518,9 +634,9 @@ src/
 - 随机鼠标移动和偶尔的回滚行为
 - 自定义 User-Agent 匹配 Playwright Chrome 版本
 
-### 会话持久化
+### 会话持久化 (v2.0)
 
-登录状态保存在 `xhs-state.json` 文件中，重启后自动恢复。使用 `xhs_delete_cookies` 清除会话。
+登录状态保存在 SQLite 数据库（`~/.xhs-mcp/data.db`）中。每个账号拥有独立的会话，支持多账号管理。使用 `xhs_delete_cookies` 清除会话。
 
 ### 数据提取
 

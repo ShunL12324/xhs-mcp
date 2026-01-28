@@ -1,4 +1,10 @@
-import { BrowserClient } from './clients/browser.js';
+/**
+ * @fileoverview XhsClient facade class for Xiaohongshu operations.
+ * Provides a clean API wrapping the underlying BrowserClient.
+ * @module xhs
+ */
+
+import { BrowserClient, BrowserClientOptions } from './clients/browser.js';
 import {
   XhsNote,
   XhsSearchItem,
@@ -11,19 +17,62 @@ import {
   CommentResult,
 } from './types.js';
 
+/**
+ * Configuration options for XhsClient.
+ */
+export interface XhsClientOptions {
+  /** Account ID for this client instance */
+  accountId?: string;
+  /** Playwright storage state (cookies, localStorage) for session persistence */
+  state?: any;
+  /** Proxy server URL (e.g., "http://proxy:8080") */
+  proxy?: string;
+  /** Callback invoked when session state changes (e.g., after login) */
+  onStateChange?: (state: any) => void | Promise<void>;
+}
+
+/**
+ * High-level client for interacting with Xiaohongshu.
+ *
+ * Wraps BrowserClient to provide a clean facade for all Xiaohongshu operations.
+ * Each XhsClient instance is associated with a single account.
+ *
+ * @example
+ * ```typescript
+ * const client = new XhsClient({
+ *   accountId: 'my-account',
+ *   state: savedState,
+ *   onStateChange: (state) => saveState(state),
+ * });
+ *
+ * const results = await client.search('keyword');
+ * await client.close();
+ * ```
+ */
 export class XhsClient {
   private browserClient: BrowserClient;
+  private options: XhsClientOptions;
 
-  constructor() {
-    this.browserClient = new BrowserClient();
+  constructor(options: XhsClientOptions = {}) {
+    this.options = options;
+    this.browserClient = new BrowserClient({
+      accountId: options.accountId,
+      state: options.state,
+      proxy: options.proxy,
+      onStateChange: options.onStateChange,
+    });
+  }
+
+  get accountId(): string | undefined {
+    return this.options.accountId;
   }
 
   async init() {
     await this.browserClient.init();
   }
 
-  async login() {
-    await this.browserClient.login();
+  async login(): Promise<{ qrCodePath: string; waitForLogin: () => Promise<any> }> {
+    return await this.browserClient.login();
   }
 
   async checkLoginStatus(): Promise<{ loggedIn: boolean; message: string }> {

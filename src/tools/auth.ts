@@ -1,54 +1,122 @@
-import { XhsClient } from '../xhs/index.js';
-import { Tool } from '@modelcontextprotocol/sdk/types.js';
+/**
+ * @fileoverview MCP tool definitions and handlers for authentication.
+ * Provides tools for checking login status.
+ * @module tools/auth
+ */
 
+import { Tool } from '@modelcontextprotocol/sdk/types.js';
+import { z } from 'zod';
+import { AccountPool } from '../core/account-pool.js';
+import { XhsDatabase } from '../db/index.js';
+import { resolveAccount, executeWithAccount } from '../core/multi-account.js';
+
+/**
+ * Authentication tool definitions for MCP.
+ */
 export const authTools: Tool[] = [
   {
     name: 'xhs_check_login',
-    description: 'Check if currently logged in to Xiaohongshu. Returns login status and verification method.',
+    description: 'Check if an account is currently logged in to Xiaohongshu. Returns login status.',
     inputSchema: {
       type: 'object',
-      properties: {},
-    },
-  },
-  {
-    name: 'xhs_login',
-    description: 'Login to Xiaohongshu by scanning a QR code. This will open a visible browser window. Use xhs_check_login first to see if already logged in.',
-    inputSchema: {
-      type: 'object',
-      properties: {},
+      properties: {
+        account: {
+          type: 'string',
+          description: 'Account name or ID to check. If not specified and only one account exists, uses that.',
+        },
+      },
     },
   },
 ];
 
-export async function handleAuthTools(name: string, args: any, client: XhsClient) {
+/**
+ * Handle authentication tool calls.
+ *
+ * @param name - Tool name
+ * @param args - Tool arguments
+ * @param pool - Account pool instance
+ * @param db - Database instance
+ * @returns MCP tool response
+ */
+export async function handleAuthTools(
+  name: string,
+  args: any,
+  pool: AccountPool,
+  db: XhsDatabase
+) {
   switch (name) {
     case 'xhs_check_login': {
-      const status = await client.checkLoginStatus();
+      const params = z
+        .object({
+          account: z.string().optional(),
+        })
+        .parse(args);
+
+      const resolved = resolveAccount(pool, params);
+      if (!resolved.account) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(
+                {
+                  loggedIn: false,
+                  error: resolved.error,
+                },
+                null,
+                2
+              ),
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      const result = await executeWithAccount(
+        pool,
+        db,
+        resolved.account,
+        'check_login',
+        async (ctx) => {
+          return await ctx.client.checkLoginStatus();
+        }
+      );
+
+      if (!result.success) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(
+                {
+                  account: result.account,
+                  loggedIn: false,
+                  error: result.error,
+                },
+                null,
+                2
+              ),
+            },
+          ],
+        };
+      }
+
       return {
         content: [
           {
             type: 'text',
-            text: JSON.stringify({
-              loggedIn: status.loggedIn,
-              message: status.message,
-              hint: status.loggedIn
-                ? 'You can now use other xhs tools.'
-                : 'Please use xhs_login to login first.',
-            }, null, 2),
-          },
-        ],
-      };
-    }
-
-    case 'xhs_login': {
-      // 直接启动登录流程，不预先检查（避免超时）
-      await client.login();
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: 'Login process completed. Session saved if successful.',
+            text: JSON.stringify(
+              {
+                account: result.account,
+                loggedIn: result.result!.loggedIn,
+                message: result.result!.message,
+                hint: result.result!.loggedIn
+                  ? 'You can now use other xhs tools.'
+                  : 'Please use xhs_add_account to login.',
+              },
+              null,
+              2
+            ),
           },
         ],
       };

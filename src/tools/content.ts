@@ -1,8 +1,19 @@
-import { XhsClient } from '../xhs/index.js';
+/**
+ * @fileoverview MCP tool definitions and handlers for content queries.
+ * Provides tools for searching notes, fetching note details, user profiles, and feeds.
+ * @module tools/content
+ */
+
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import type { XhsSearchFilters } from '../xhs/types.js';
+import { AccountPool } from '../core/account-pool.js';
+import { XhsDatabase } from '../db/index.js';
+import { executeWithMultipleAccounts, MultiAccountParams } from '../core/multi-account.js';
 
+/**
+ * Content query tool definitions for MCP.
+ */
 export const contentTools: Tool[] = [
   {
     name: 'xhs_search',
@@ -42,6 +53,10 @@ export const contentTools: Tool[] = [
           enum: ['all', 'viewed', 'not_viewed', 'following'],
           description: 'Filter by search scope: all (default), viewed, not_viewed, following',
         },
+        account: {
+          type: 'string',
+          description: 'Account name or ID to use for search',
+        },
       },
       required: ['keyword'],
     },
@@ -59,6 +74,10 @@ export const contentTools: Tool[] = [
         xsecToken: {
           type: 'string',
           description: 'Security token from search results (required for reliable access)',
+        },
+        account: {
+          type: 'string',
+          description: 'Account name or ID to use',
         },
       },
       required: ['noteId', 'xsecToken'],
@@ -78,6 +97,10 @@ export const contentTools: Tool[] = [
           type: 'string',
           description: 'Security token (optional)',
         },
+        account: {
+          type: 'string',
+          description: 'Account name or ID to use',
+        },
       },
       required: ['userId'],
     },
@@ -87,12 +110,31 @@ export const contentTools: Tool[] = [
     description: 'Get homepage recommended feeds.',
     inputSchema: {
       type: 'object',
-      properties: {},
+      properties: {
+        account: {
+          type: 'string',
+          description: 'Account name or ID to use',
+        },
+      },
     },
   },
 ];
 
-export async function handleContentTools(name: string, args: any, client: XhsClient) {
+/**
+ * Handle content query tool calls.
+ *
+ * @param name - Tool name
+ * @param args - Tool arguments
+ * @param pool - Account pool instance
+ * @param db - Database instance
+ * @returns MCP tool response
+ */
+export async function handleContentTools(
+  name: string,
+  args: any,
+  pool: AccountPool,
+  db: XhsDatabase
+) {
   switch (name) {
     case 'xhs_search': {
       const params = z
@@ -104,10 +146,10 @@ export async function handleContentTools(name: string, args: any, client: XhsCli
           noteType: z.enum(['all', 'video', 'image']).optional(),
           publishTime: z.enum(['all', 'day', 'week', 'half_year']).optional(),
           searchScope: z.enum(['all', 'viewed', 'not_viewed', 'following']).optional(),
+          account: z.string().optional(),
         })
         .parse(args);
 
-      // Build filters object
       const filters: XhsSearchFilters | undefined =
         params.sortBy || params.noteType || params.publishTime || params.searchScope
           ? {
@@ -118,15 +160,54 @@ export async function handleContentTools(name: string, args: any, client: XhsCli
             }
           : undefined;
 
-      const results = await client.search(params.keyword, params.count, params.timeout, filters);
+      const multiParams: MultiAccountParams = { account: params.account };
+
+      const results = await executeWithMultipleAccounts(
+        pool,
+        db,
+        multiParams,
+        'search',
+        async (ctx) => {
+          return await ctx.client.search(params.keyword, params.count, params.timeout, filters);
+        },
+        { logParams: { keyword: params.keyword, count: params.count } }
+      );
+
+      // For single account, return simple format
+      if (results.length === 1) {
+        const r = results[0];
+        if (!r.success) {
+          return {
+            content: [{ type: 'text', text: `Search failed: ${r.error}` }],
+            isError: true,
+          };
+        }
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({ count: r.result!.length, items: r.result }, null, 2),
+            },
+          ],
+        };
+      }
+
+      // Multi-account format
       return {
         content: [
           {
             type: 'text',
-            text: JSON.stringify({
-              count: results.length,
-              items: results,
-            }, null, 2),
+            text: JSON.stringify(
+              results.map((r) => ({
+                account: r.account,
+                success: r.success,
+                count: r.success ? r.result!.length : 0,
+                items: r.success ? r.result : undefined,
+                error: r.error,
+              })),
+              null,
+              2
+            ),
           },
         ],
       };
@@ -137,11 +218,32 @@ export async function handleContentTools(name: string, args: any, client: XhsCli
         .object({
           noteId: z.string(),
           xsecToken: z.string(),
+          account: z.string().optional(),
         })
         .parse(args);
 
-      const note = await client.getNote(params.noteId, params.xsecToken);
-      if (!note) {
+      const multiParams: MultiAccountParams = { account: params.account };
+
+      const results = await executeWithMultipleAccounts(
+        pool,
+        db,
+        multiParams,
+        'get_note',
+        async (ctx) => {
+          return await ctx.client.getNote(params.noteId, params.xsecToken);
+        },
+        { logParams: { noteId: params.noteId } }
+      );
+
+      const r = results[0];
+      if (!r.success) {
+        return {
+          content: [{ type: 'text', text: `Failed to get note: ${r.error}` }],
+          isError: true,
+        };
+      }
+
+      if (!r.result) {
         return {
           content: [
             {
@@ -154,12 +256,7 @@ export async function handleContentTools(name: string, args: any, client: XhsCli
       }
 
       return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(note, null, 2),
-          },
-        ],
+        content: [{ type: 'text', text: JSON.stringify(r.result, null, 2) }],
       };
     }
 
@@ -168,18 +265,66 @@ export async function handleContentTools(name: string, args: any, client: XhsCli
         .object({
           userId: z.string(),
           xsecToken: z.string().optional(),
+          account: z.string().optional(),
         })
         .parse(args);
 
-      const profile = await client.getUserProfile(params.userId, params.xsecToken);
-      if (!profile) {
+      const multiParams: MultiAccountParams = { account: params.account };
+
+      const results = await executeWithMultipleAccounts(
+        pool,
+        db,
+        multiParams,
+        'user_profile',
+        async (ctx) => {
+          return await ctx.client.getUserProfile(params.userId, params.xsecToken);
+        },
+        { logParams: { userId: params.userId } }
+      );
+
+      const r = results[0];
+      if (!r.success) {
         return {
-          content: [
-            {
-              type: 'text',
-              text: 'User profile not found.',
-            },
-          ],
+          content: [{ type: 'text', text: `Failed to get user profile: ${r.error}` }],
+          isError: true,
+        };
+      }
+
+      if (!r.result) {
+        return {
+          content: [{ type: 'text', text: 'User profile not found.' }],
+          isError: true,
+        };
+      }
+
+      return {
+        content: [{ type: 'text', text: JSON.stringify(r.result, null, 2) }],
+      };
+    }
+
+    case 'xhs_list_feeds': {
+      const params = z
+        .object({
+          account: z.string().optional(),
+        })
+        .parse(args);
+
+      const multiParams: MultiAccountParams = { account: params.account };
+
+      const results = await executeWithMultipleAccounts(
+        pool,
+        db,
+        multiParams,
+        'list_feeds',
+        async (ctx) => {
+          return await ctx.client.listFeeds();
+        }
+      );
+
+      const r = results[0];
+      if (!r.success) {
+        return {
+          content: [{ type: 'text', text: `Failed to get feeds: ${r.error}` }],
           isError: true,
         };
       }
@@ -188,22 +333,7 @@ export async function handleContentTools(name: string, args: any, client: XhsCli
         content: [
           {
             type: 'text',
-            text: JSON.stringify(profile, null, 2),
-          },
-        ],
-      };
-    }
-
-    case 'xhs_list_feeds': {
-      const items = await client.listFeeds();
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({
-              count: items.length,
-              items: items,
-            }, null, 2),
+            text: JSON.stringify({ count: r.result!.length, items: r.result }, null, 2),
           },
         ],
       };

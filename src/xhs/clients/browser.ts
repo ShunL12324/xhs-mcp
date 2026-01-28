@@ -1,7 +1,10 @@
+/**
+ * @fileoverview Browser automation client for Xiaohongshu.
+ * Uses Playwright to interact with the Xiaohongshu website with anti-detection measures.
+ * @module xhs/clients/browser
+ */
+
 import { chromium, Browser, BrowserContext, Page } from 'playwright';
-import fs from 'fs-extra';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import {
   XhsNote,
   XhsSearchItem,
@@ -14,37 +17,48 @@ import {
   CommentResult,
 } from '../types.js';
 import { getStealthScript, sleep, generateWebId, humanScroll } from '../utils/index.js';
+import { saveAndOpenQrCode } from '../../core/qrcode-utils.js';
 
-// 固定 User-Agent，与 Playwright Chromium 版本匹配 (Chrome 143)
+// Fixed User-Agent matching Playwright's Chromium version (Chrome 143)
 const USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36';
-// 固定存储在项目目录，避免工作目录不确定的问题
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const STATE_FILE = path.join(__dirname, '../../..', 'xhs-state.json');
 
-// 反检测浏览器启动参数（参考 MediaCrawler）
+/**
+ * Options for BrowserClient initialization
+ */
+export interface BrowserClientOptions {
+  /** Account ID for this client instance */
+  accountId?: string;
+  /** Playwright storage state (cookies, localStorage) as JSON object */
+  state?: any;
+  /** Proxy server URL */
+  proxy?: string;
+  /** Callback to save state when it changes */
+  onStateChange?: (state: any) => void | Promise<void>;
+}
+
+// Anti-detection browser launch arguments (based on MediaCrawler)
 const BROWSER_ARGS = [
   '--no-sandbox',
   '--disable-setuid-sandbox',
-  '--disable-blink-features=AutomationControlled',  // 禁用自动化控制标记
-  '--disable-infobars',                              // 禁用信息栏
+  '--disable-blink-features=AutomationControlled',  // Disable automation control flag
+  '--disable-infobars',                              // Disable info bars
   '--disable-background-timer-throttling',
   '--disable-backgrounding-occluded-windows',
   '--disable-renderer-backgrounding',
 ];
 
-// 超时常量（毫秒）
+// Timeout constants (milliseconds)
 const TIMEOUTS = {
-  PAGE_LOAD: 30000,       // 页面加载超时
-  LOGIN_WAIT: 120000,     // 登录等待超时
-  LOGIN_CHECK: 15000,     // 登录状态检查超时
-  NETWORK_IDLE: 30000,    // 网络空闲超时
+  PAGE_LOAD: 30000,       // Page load timeout
+  LOGIN_WAIT: 120000,     // Login wait timeout
+  LOGIN_CHECK: 15000,     // Login status check timeout
+  NETWORK_IDLE: 30000,    // Network idle timeout
 } as const;
 
-// 请求间隔（毫秒）
+// Request interval to avoid rate limiting (milliseconds)
 const REQUEST_INTERVAL = 2000;
 
-// 发布页面选择器（参考 xpzouying/xiaohongshu-mcp）
+// Publishing page selectors (based on xpzouying/xiaohongshu-mcp)
 const PUBLISH_SELECTORS = {
   uploadInput: '.upload-input',
   titleInput: 'div.d-input input',
@@ -57,7 +71,7 @@ const PUBLISH_SELECTORS = {
   uploadVideoTab: '.creator-tab:has-text("上传视频")',
 };
 
-// 互动选择器
+// Interaction button selectors
 const INTERACTION_SELECTORS = {
   likeButton: '.interact-container .left .like-wrapper, .engage-bar .like-wrapper',
   likeActive: '.like-active, .liked',
@@ -65,7 +79,7 @@ const INTERACTION_SELECTORS = {
   collectActive: '.collect-active, .collected',
 };
 
-// 评论选择器
+// Comment input selectors
 const COMMENT_SELECTORS = {
   commentInputTrigger: 'div.input-box div.content-edit span, .comment-input',
   commentInput: 'div.input-box div.content-edit p.content-input, .comment-input textarea',
@@ -73,7 +87,7 @@ const COMMENT_SELECTORS = {
   replyButton: '.right .interactions .reply, .reply-btn',
 };
 
-// 搜索过滤器映射
+// Search filter text mappings (Chinese UI labels)
 const SEARCH_FILTER_MAP = {
   sortBy: {
     general: '综合',
@@ -101,37 +115,73 @@ const SEARCH_FILTER_MAP = {
   },
 };
 
+// QR code selector for login
+const QR_CODE_SELECTOR = '#app > div:nth-child(1) > div > div.login-container > div.left > div.code-area > div.qrcode.force-light > img';
+
+/**
+ * Low-level browser automation client for Xiaohongshu.
+ *
+ * Uses Playwright to control a Chromium browser with anti-detection measures.
+ * Handles all direct interactions with the Xiaohongshu website including:
+ * - Login via QR code
+ * - Searching notes
+ * - Fetching note details
+ * - Publishing content
+ * - Interacting with notes (like, favorite, comment)
+ *
+ * @example
+ * ```typescript
+ * const client = new BrowserClient({ state: savedState });
+ * await client.init();
+ * const results = await client.search('keyword');
+ * await client.close();
+ * ```
+ */
 export class BrowserClient {
   private browser: Browser | null = null;
   private context: BrowserContext | null = null;
+  private options: BrowserClientOptions;
+
+  constructor(options: BrowserClientOptions = {}) {
+    this.options = options;
+  }
+
+  /**
+   * Get the current account ID
+   */
+  get accountId(): string | undefined {
+    return this.options.accountId;
+  }
 
   async init(headless = true) {
-    this.browser = await chromium.launch({
+    const launchOptions: any = {
       headless,
-      args: BROWSER_ARGS
-    });
+      args: BROWSER_ARGS,
+    };
+
+    if (this.options.proxy) {
+      launchOptions.proxy = { server: this.options.proxy };
+    }
+
+    this.browser = await chromium.launch(launchOptions);
 
     const stealthScript = await getStealthScript();
 
-    if (await fs.pathExists(STATE_FILE)) {
-      this.context = await this.browser.newContext({
-        userAgent: USER_AGENT,
-        storageState: STATE_FILE,
-        viewport: { width: 1920, height: 1080 }
-      });
-    } else {
-      this.context = await this.browser.newContext({
-        userAgent: USER_AGENT,
-        viewport: { width: 1920, height: 1080 }
-      });
+    const contextOptions: any = {
+      userAgent: USER_AGENT,
+      viewport: { width: 1920, height: 1080 },
+    };
+
+    if (this.options.state) {
+      contextOptions.storageState = this.options.state;
     }
 
-    // 注入 stealth 脚本
+    this.context = await this.browser.newContext(contextOptions);
+
     if (stealthScript) {
       await this.context.addInitScript(stealthScript);
     }
 
-    // 添加 webId Cookie 绕过滑块验证
     await this.context.addCookies([
       {
         name: 'webId',
@@ -142,16 +192,24 @@ export class BrowserClient {
     ]);
   }
 
-  async login() {
+  /**
+   * Login result with QR code URL for remote scanning
+   */
+  async login(): Promise<{ qrCodePath: string; waitForLogin: () => Promise<any> }> {
     if (this.browser) {
       await this.browser.close();
     }
 
-    // Launch headed browser for login
-    this.browser = await chromium.launch({
-      headless: false,
-      args: BROWSER_ARGS
-    });
+    const launchOptions: any = {
+      headless: true,  // Headless mode - no visible browser window
+      args: BROWSER_ARGS,
+    };
+
+    if (this.options.proxy) {
+      launchOptions.proxy = { server: this.options.proxy };
+    }
+
+    this.browser = await chromium.launch(launchOptions);
 
     const stealthScript = await getStealthScript();
 
@@ -174,36 +232,75 @@ export class BrowserClient {
     ]);
 
     const page = await this.context.newPage();
-    await page.goto('https://www.xiaohongshu.com/explore');
+    await page.goto('https://www.xiaohongshu.com');
 
-    console.error('Please scan the QR code to login...');
+    // Wait for QR code to appear
+    console.error('[login] Waiting for QR code...');
 
-    try {
-      console.error('Waiting for login...');
-      await Promise.any([
-        page.waitForSelector('.user-side-content', { timeout: TIMEOUTS.LOGIN_WAIT }),
-        page.waitForSelector('.avatar-wrapper', { timeout: TIMEOUTS.LOGIN_WAIT }),
-        page.waitForSelector('.reds-avatar', { timeout: TIMEOUTS.LOGIN_WAIT }),
-      ]);
+    const qrImg = await page.waitForSelector(QR_CODE_SELECTOR, { timeout: 30000 });
+    await sleep(1000);  // Wait for QR code to fully render
 
-      console.error('Login detected!');
-      await sleep(2000);
-
-      // Save state
-      await this.context.storageState({ path: STATE_FILE });
-      console.error('Session saved to', STATE_FILE);
-    } catch (e) {
-      console.error('Login timeout or failed.', e);
-      throw e;
+    // Get the base64 data from src attribute
+    const src = await qrImg.getAttribute('src');
+    if (!src || !src.startsWith('data:image')) {
+      throw new Error('QR code image not found or not base64 encoded');
     }
+
+    const base64Data = src.split(',')[1];
+    const qrCodeBuffer = Buffer.from(base64Data, 'base64');
+    console.error('[login] QR code captured from base64 img');
+
+    // Save QR code to file and open with system default viewer
+    console.error('[login] Opening QR code in default viewer...');
+    const qrCodePath = await saveAndOpenQrCode(qrCodeBuffer, `login-${Date.now()}.png`);
+    console.error(`[login] QR code saved to: ${qrCodePath}`);
+
+    // Return the path and a function to wait for login completion
+    const context = this.context;
+    const options = this.options;
+
+    return {
+      qrCodePath,
+      waitForLogin: async (): Promise<any> => {
+        try {
+          console.error('[login] Waiting for login...');
+          await Promise.any([
+            page.waitForSelector('.user-side-content', { timeout: TIMEOUTS.LOGIN_WAIT }),
+            page.waitForSelector('.avatar-wrapper', { timeout: TIMEOUTS.LOGIN_WAIT }),
+            page.waitForSelector('.reds-avatar', { timeout: TIMEOUTS.LOGIN_WAIT }),
+          ]);
+
+          console.error('[login] Login detected!');
+          await sleep(2000);
+
+          // Get state and notify via callback
+          const state = await context.storageState();
+          if (options.onStateChange) {
+            await options.onStateChange(state);
+          }
+
+          // Update internal state
+          options.state = state;
+
+          console.error('[login] Login successful');
+          return state;
+        } catch (e) {
+          console.error('[login] Login timeout or failed.', e);
+          throw e;
+        }
+      }
+    };
   }
 
   /**
-   * 搜索笔记 - 支持滚动加载更多和过滤器
-   * @param keyword 搜索关键词
-   * @param count 需要获取的数量，默认20（首屏），最大500
-   * @param timeout 超时时间（毫秒），默认60000
-   * @param filters 搜索过滤器选项
+   * Search for notes on Xiaohongshu.
+   * Supports scrolling to load more results and applying filters.
+   *
+   * @param keyword - Search keyword
+   * @param count - Number of results to fetch (default: 20, max: 500)
+   * @param timeout - Timeout in milliseconds (default: 60000)
+   * @param filters - Optional search filter options
+   * @returns Array of search result items
    */
   async search(
     keyword: string,
@@ -339,7 +436,12 @@ export class BrowserClient {
   }
 
   /**
-   * 获取笔记详情（包含评论）- 参照 xiaohongshu-mcp 实现
+   * Get note details including content, images, stats, and comments.
+   * Uses the page's __INITIAL_STATE__ to extract data.
+   *
+   * @param noteId - Note ID to fetch
+   * @param xsecToken - Security token from search results (required for reliable access)
+   * @returns Note details or null if not found
    */
   async getNote(noteId: string, xsecToken?: string): Promise<XhsNote | null> {
     if (!this.context) await this.init();
@@ -452,7 +554,11 @@ export class BrowserClient {
   }
 
   /**
-   * 获取用户信息和笔记 - 参照 xiaohongshu-mcp 实现
+   * Get user profile information and their published notes.
+   *
+   * @param userId - User ID to fetch
+   * @param xsecToken - Optional security token
+   * @returns User profile or null if not found
    */
   async getUserProfile(userId: string, xsecToken?: string): Promise<XhsUserInfo | null> {
     if (!this.context) await this.init();
@@ -541,7 +647,9 @@ export class BrowserClient {
   }
 
   /**
-   * 获取首页推荐 - 参照 xiaohongshu-mcp 实现
+   * Get homepage recommended feeds.
+   *
+   * @returns Array of recommended notes
    */
   async listFeeds(): Promise<XhsSearchItem[]> {
     if (!this.context) await this.init();
@@ -595,23 +703,13 @@ export class BrowserClient {
   }
 
   /**
-   * 检查登录状态
+   * Check login status by detecting the presence of the login button.
+   * If #login-btn exists, user is NOT logged in.
+   *
+   * @returns Login status and message
    */
   async checkLoginStatus(): Promise<{ loggedIn: boolean; message: string }> {
-    // 方法1: 检查本地状态文件
-    if (await fs.pathExists(STATE_FILE)) {
-      try {
-        const state = await fs.readJson(STATE_FILE);
-        const hasWebSession = state.cookies?.some((c: any) => c.name === 'web_session' && c.value);
-        if (hasWebSession) {
-          return { loggedIn: true, message: 'Session file exists with web_session cookie' };
-        }
-      } catch {
-        // 继续其他检查
-      }
-    }
-
-    // 方法2: 启动浏览器检查
+    // Check via browser - this is more reliable than checking cookies
     if (!this.context) {
       await this.init();
     }
@@ -619,32 +717,34 @@ export class BrowserClient {
     const page = await this.context!.newPage();
 
     try {
-      await page.goto('https://www.xiaohongshu.com/explore', {
+      await page.goto('https://www.xiaohongshu.com', {
         timeout: TIMEOUTS.LOGIN_CHECK,
         waitUntil: 'domcontentloaded'
       });
 
       await sleep(2000);
 
-      // 检查页面上的用户元素
-      const userElement = await page.$('.user-side-content, .avatar-wrapper, .reds-avatar');
+      // Check if #login-btn exists - if it does, user is NOT logged in
+      const loginBtn = await page.$('#login-btn');
 
-      if (userElement) {
-        return { loggedIn: true, message: 'Logged in (user element found)' };
+      if (loginBtn) {
+        return { loggedIn: false, message: 'Not logged in (login button visible)' };
       }
 
-      return { loggedIn: false, message: 'Not logged in' };
+      return { loggedIn: true, message: 'Logged in (login button not found)' };
 
     } catch (e) {
       console.error('checkLoginStatus error:', e);
-      return { loggedIn: false, message: 'Check failed - please try xhs_login' };
+      return { loggedIn: false, message: 'Check failed - please try xhs_add_account' };
     } finally {
       await page.close();
     }
   }
 
   /**
-   * 应用搜索过滤器
+   * Apply search filters by clicking filter options.
+   * @param page - Playwright page instance
+   * @param filters - Filter options to apply
    */
   private async applySearchFilters(page: Page, filters: XhsSearchFilters): Promise<void> {
     // 点击筛选按钮展开过滤器面板
@@ -696,31 +796,39 @@ export class BrowserClient {
   }
 
   /**
-   * 发布图文笔记
+   * Publish an image/text note.
+   * Opens a visible browser window for the publishing process.
+   *
+   * @param params - Publishing parameters
+   * @returns Publish result with success status
    */
   async publishContent(params: PublishContentParams): Promise<PublishResult> {
-    // 需要使用可见浏览器进行发布
+    if (!this.options.state) {
+      return { success: false, error: 'Not logged in. Please use xhs_login first.' };
+    }
+
     if (this.browser) {
       await this.browser.close();
     }
 
-    this.browser = await chromium.launch({
+    const launchOptions: any = {
       headless: false,
       args: BROWSER_ARGS,
-    });
+    };
+
+    if (this.options.proxy) {
+      launchOptions.proxy = { server: this.options.proxy };
+    }
+
+    this.browser = await chromium.launch(launchOptions);
 
     const stealthScript = await getStealthScript();
 
-    // 尝试加载已保存的会话
-    if (await fs.pathExists(STATE_FILE)) {
-      this.context = await this.browser.newContext({
-        userAgent: USER_AGENT,
-        storageState: STATE_FILE,
-        viewport: { width: 1920, height: 1080 },
-      });
-    } else {
-      return { success: false, error: 'Not logged in. Please use xhs_login first.' };
-    }
+    this.context = await this.browser.newContext({
+      userAgent: USER_AGENT,
+      storageState: this.options.state,
+      viewport: { width: 1920, height: 1080 },
+    });
 
     if (stealthScript) {
       await this.context.addInitScript(stealthScript);
@@ -846,34 +954,44 @@ export class BrowserClient {
     } finally {
       // 保持浏览器打开一段时间以便用户查看结果
       await sleep(2000);
+      await page.close();
     }
   }
 
   /**
-   * 发布视频笔记
+   * Publish a video note.
+   * Opens a visible browser window for the publishing process.
+   *
+   * @param params - Publishing parameters
+   * @returns Publish result with success status
    */
   async publishVideo(params: PublishVideoParams): Promise<PublishResult> {
-    // 需要使用可见浏览器进行发布
+    if (!this.options.state) {
+      return { success: false, error: 'Not logged in. Please use xhs_login first.' };
+    }
+
     if (this.browser) {
       await this.browser.close();
     }
 
-    this.browser = await chromium.launch({
+    const launchOptions: any = {
       headless: false,
       args: BROWSER_ARGS,
-    });
+    };
+
+    if (this.options.proxy) {
+      launchOptions.proxy = { server: this.options.proxy };
+    }
+
+    this.browser = await chromium.launch(launchOptions);
 
     const stealthScript = await getStealthScript();
 
-    if (await fs.pathExists(STATE_FILE)) {
-      this.context = await this.browser.newContext({
-        userAgent: USER_AGENT,
-        storageState: STATE_FILE,
-        viewport: { width: 1920, height: 1080 },
-      });
-    } else {
-      return { success: false, error: 'Not logged in. Please use xhs_login first.' };
-    }
+    this.context = await this.browser.newContext({
+      userAgent: USER_AGENT,
+      storageState: this.options.state,
+      viewport: { width: 1920, height: 1080 },
+    });
 
     if (stealthScript) {
       await this.context.addInitScript(stealthScript);
@@ -968,11 +1086,17 @@ export class BrowserClient {
       };
     } finally {
       await sleep(2000);
+      await page.close();
     }
   }
 
   /**
-   * 点赞/取消点赞笔记
+   * Like or unlike a note.
+   *
+   * @param noteId - Target note ID
+   * @param xsecToken - Security token from search results
+   * @param unlike - If true, unlike the note; otherwise like it
+   * @returns Interaction result
    */
   async likeFeed(noteId: string, xsecToken: string, unlike: boolean = false): Promise<InteractionResult> {
     if (!this.context) await this.init();
@@ -1035,7 +1159,12 @@ export class BrowserClient {
   }
 
   /**
-   * 收藏/取消收藏笔记
+   * Favorite (collect) or unfavorite a note.
+   *
+   * @param noteId - Target note ID
+   * @param xsecToken - Security token from search results
+   * @param unfavorite - If true, unfavorite the note; otherwise favorite it
+   * @returns Interaction result
    */
   async favoriteFeed(noteId: string, xsecToken: string, unfavorite: boolean = false): Promise<InteractionResult> {
     if (!this.context) await this.init();
@@ -1097,7 +1226,12 @@ export class BrowserClient {
   }
 
   /**
-   * 发表评论
+   * Post a comment on a note.
+   *
+   * @param noteId - Target note ID
+   * @param xsecToken - Security token from search results
+   * @param content - Comment content
+   * @returns Comment result
    */
   async postComment(noteId: string, xsecToken: string, content: string): Promise<CommentResult> {
     if (!this.context) await this.init();
@@ -1151,7 +1285,13 @@ export class BrowserClient {
   }
 
   /**
-   * 回复评论
+   * Reply to a comment on a note.
+   *
+   * @param noteId - Target note ID
+   * @param xsecToken - Security token from search results
+   * @param commentId - Comment ID to reply to
+   * @param content - Reply content
+   * @returns Comment result
    */
   async replyComment(
     noteId: string,
@@ -1225,15 +1365,17 @@ export class BrowserClient {
   }
 
   /**
-   * 删除登录 cookies
+   * Delete login cookies and clear session state.
+   * Used to log out or force re-authentication.
+   *
+   * @returns Success status
    */
   async deleteCookies(): Promise<{ success: boolean; error?: string }> {
     try {
-      if (await fs.pathExists(STATE_FILE)) {
-        await fs.remove(STATE_FILE);
-      }
+      // Clear internal state
+      this.options.state = undefined;
 
-      // 关闭当前浏览器实例
+      // Close browser instance
       if (this.browser) {
         await this.browser.close();
         this.browser = null;
