@@ -1,68 +1,114 @@
 ---
 name: release
-description: Release a new version - bump version, tag, commit and push to trigger npm publish (project)
+description: Release a new version - auto-detect bump type from changes, tag, commit and push (project)
 user-invocable: true
-allowed-tools: Bash, AskUserQuestion, Read, Edit
+allowed-tools: Bash, Read, Edit
 ---
 
 # Release Skill
 
-This skill automates the release process for the xhs-mcp package.
+Automates the release process for the xhs-mcp package with intelligent version detection.
+
+## Version Detection Rules
+
+Analyze changes since the last tag to determine version bump:
+
+### Major (x.0.0) - Breaking changes
+- Removing or renaming MCP tools
+- Changing tool parameter names or types
+- Removing features or changing behavior incompatibly
+- Keywords in commits: "BREAKING", "breaking change", "major"
+
+### Minor (0.x.0) - New features
+- Adding new MCP tools
+- Adding new optional parameters to existing tools
+- New functionality that's backward compatible
+- Keywords in commits: "feat:", "feature", "add"
+- New files in `src/tools/`
+
+### Patch (0.0.x) - Bug fixes and small changes
+- Bug fixes
+- Documentation updates
+- Refactoring without API changes
+- Keywords in commits: "fix:", "chore:", "docs:", "refactor:", "style:"
 
 ## Workflow
 
-1. **Get current version** from package.json
-2. **Ask user** for version bump type (patch, minor, major)
-3. **Bump version** in package.json using npm version (without git tag, we'll do it manually)
-4. **Commit** the version change
-5. **Create git tag** with the new version (v prefix)
-6. **Push** commits and tags to remote
-7. The push will trigger GitHub Actions to publish to npm
+1. **Get last tag and current version**
+2. **Analyze changes** since last tag using git log and diff
+3. **Auto-detect version bump** based on commit messages and file changes
+4. **Bump version** in package.json
+5. **Commit** with release message
+6. **Create git tag** with v prefix
+7. **Push** commits and tags to trigger GitHub Actions
 
 ## Instructions
 
 When the user invokes `/release`:
 
-1. Read the current version from package.json:
+1. Get current version and last tag:
    ```bash
    node -p "require('./package.json').version"
+   git describe --tags --abbrev=0 2>/dev/null || echo "none"
    ```
 
-2. Ask the user which version bump they want using AskUserQuestion:
-   - patch (1.0.0 -> 1.0.1)
-   - minor (1.0.0 -> 1.1.0)
-   - major (1.0.0 -> 2.0.0)
+2. Get commit messages since last tag:
+   ```bash
+   git log $(git describe --tags --abbrev=0 2>/dev/null || echo "HEAD~10")..HEAD --oneline
+   ```
 
-3. Calculate the new version and update package.json using Edit tool
+3. Analyze the commits and determine version bump:
+   - If any commit contains "BREAKING" or major API changes → **major**
+   - If commits contain "feat:" or new tools/features → **minor**
+   - Otherwise → **patch**
 
-4. Commit the change:
+4. Calculate new version:
+   - Parse current version (e.g., "1.0.1")
+   - Apply bump type to get new version
+
+5. Update package.json using Edit tool
+
+6. Commit and tag:
    ```bash
    git add package.json
    git commit -m "chore: release v{NEW_VERSION}"
-   ```
-
-5. Create the tag:
-   ```bash
    git tag v{NEW_VERSION}
    ```
 
-6. Push with tags:
+7. Push:
    ```bash
    git push && git push --tags
    ```
 
-7. Inform the user that the release has been triggered and provide the GitHub Actions URL.
+8. Report results:
+   ```
+   Changes detected: {summary}
+   Version bump: {type} ({old} → {new})
 
-## Example Output
+   Committed: chore: release v{new}
+   Tagged: v{new}
+   Pushed to remote.
+
+   GitHub Actions: https://github.com/ShunL12324/xhs-mcp/actions
+   ```
+
+## Example
 
 ```
-Current version: 1.0.0
-New version: 1.0.1 (patch)
+Analyzing changes since v1.0.0...
 
-Committed: chore: release v1.0.1
-Tagged: v1.0.1
-Pushed to remote.
+Commits:
+- feat: add xhs_publish_video tool
+- fix: handle empty search results
+- chore: update dependencies
 
-GitHub Actions will now publish v1.0.1 to npm.
-Check progress: https://github.com/ShunL12324/xhs-mcp/actions
+Detected: New feature added (feat:)
+Version bump: minor (1.0.0 → 1.1.0)
+
+✓ Updated package.json
+✓ Committed: chore: release v1.1.0
+✓ Tagged: v1.1.0
+✓ Pushed to remote
+
+GitHub Actions will publish v1.1.0 to npm.
 ```
