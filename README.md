@@ -2,7 +2,7 @@
 
 # Xiaohongshu MCP Server
 
-[![npm version](https://img.shields.io/npm/v/xhs-mcp?style=flat-square&color=CB3837&logo=npm)](https://www.npmjs.com/package/xhs-mcp)
+[![npm version](https://img.shields.io/npm/v/@sillyl12324/xhs-mcp?style=flat-square&color=CB3837&logo=npm)](https://www.npmjs.com/package/@sillyl12324/xhs-mcp)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-18+-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![MCP](https://img.shields.io/badge/MCP-1.0-8B5CF6?style=flat-square)](https://modelcontextprotocol.io/)
@@ -35,13 +35,13 @@ A Model Context Protocol (MCP) server for [Xiaohongshu](https://www.xiaohongshu.
 No installation required - run directly:
 
 ```bash
-npx xhs-mcp
+npx @sillyl12324/xhs-mcp
 ```
 
 ### Global Installation
 
 ```bash
-npm install -g xhs-mcp
+npm install -g @sillyl12324/xhs-mcp
 
 # Then run
 xhs-mcp
@@ -69,7 +69,7 @@ Add to your MCP client configuration (`~/.claude/settings.json` or Claude Deskto
   "mcpServers": {
     "xhs": {
       "command": "npx",
-      "args": ["-y", "xhs-mcp"]
+      "args": ["-y", "@sillyl12324/xhs-mcp"]
     }
   }
 }
@@ -109,7 +109,7 @@ For web-based clients or custom integrations:
   "mcpServers": {
     "xhs": {
       "command": "npx",
-      "args": ["-y", "xhs-mcp", "--http", "--port", "18060"]
+      "args": ["-y", "@sillyl12324/xhs-mcp", "--http", "--port", "18060"]
     }
   }
 }
@@ -272,7 +272,7 @@ MIT
 
 # 中文文档
 
-[![npm version](https://img.shields.io/npm/v/xhs-mcp?style=flat-square&color=CB3837&logo=npm)](https://www.npmjs.com/package/xhs-mcp)
+[![npm version](https://img.shields.io/npm/v/@sillyl12324/xhs-mcp?style=flat-square&color=CB3837&logo=npm)](https://www.npmjs.com/package/@sillyl12324/xhs-mcp)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-18+-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![MCP](https://img.shields.io/badge/MCP-1.0-8B5CF6?style=flat-square)](https://modelcontextprotocol.io/)
@@ -305,13 +305,13 @@ MIT
 无需安装，直接运行：
 
 ```bash
-npx xhs-mcp
+npx @sillyl12324/xhs-mcp
 ```
 
 ### 全局安装
 
 ```bash
-npm install -g xhs-mcp
+npm install -g @sillyl12324/xhs-mcp
 
 # 然后运行
 xhs-mcp
@@ -339,7 +339,7 @@ npm run build
   "mcpServers": {
     "xhs": {
       "command": "npx",
-      "args": ["-y", "xhs-mcp"]
+      "args": ["-y", "@sillyl12324/xhs-mcp"]
     }
   }
 }
@@ -379,7 +379,7 @@ npm run build
   "mcpServers": {
     "xhs": {
       "command": "npx",
-      "args": ["-y", "xhs-mcp", "--http", "--port", "18060"]
+      "args": ["-y", "@sillyl12324/xhs-mcp", "--http", "--port", "18060"]
     }
   }
 }
