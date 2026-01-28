@@ -2,20 +2,52 @@
   "name": "xhs-mcp",
   "version": "1.0.0",
   "type": "module",
+  "description": "MCP server for Xiaohongshu (小红书/RedNote) - search, publish, and interact with content",
   "main": "dist/index.js",
+  "bin": {
+    "xhs-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "dev": "bun run --watch src/index.ts",
-    "build": "bun build src/index.ts --outdir dist --target bun",
-    "start": "bun dist/index.js",
-    "start:http": "bun dist/index.js --http",
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "start": "node dist/index.js",
+    "start:http": "node dist/index.js --http",
+    "start:bun": "bun dist/index.js",
+    "start:bun:http": "bun dist/index.js --http",
     "test:login": "bun scripts/test-xhs.ts login",
     "test:search": "bun scripts/test-xhs.ts search",
     "test:note": "bun scripts/test-xhs.ts note"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "MCP server for Xiaohongshu (RedNote) automation",
+  "keywords": [
+    "mcp",
+    "xiaohongshu",
+    "rednote",
+    "小红书",
+    "ai",
+    "claude",
+    "automation",
+    "playwright",
+    "model-context-protocol"
+  ],
+  "author": "ShunL12324",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ShunL12324/xhs-mcp.git"
+  },
+  "homepage": "https://github.com/ShunL12324/xhs-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/ShunL12324/xhs-mcp/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.23.0",
     "fs-extra": "^11.3.2",

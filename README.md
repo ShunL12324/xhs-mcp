@@ -2,8 +2,9 @@
 
 # Xiaohongshu MCP Server
 
+[![npm version](https://img.shields.io/npm/v/xhs-mcp?style=flat-square&color=CB3837&logo=npm)](https://www.npmjs.com/package/xhs-mcp)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Bun](https://img.shields.io/badge/Bun-1.0+-F9F1E1?style=flat-square&logo=bun&logoColor=black)](https://bun.sh/)
+[![Node.js](https://img.shields.io/badge/Node.js-18+-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![MCP](https://img.shields.io/badge/MCP-1.0-8B5CF6?style=flat-square)](https://modelcontextprotocol.io/)
 [![Playwright](https://img.shields.io/badge/Playwright-1.57+-2EAD33?style=flat-square&logo=playwright&logoColor=white)](https://playwright.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
@@ -27,31 +28,72 @@ A Model Context Protocol (MCP) server for [Xiaohongshu](https://www.xiaohongshu.
 | **Transport** | Stdio (default) and HTTP (StreamableHTTP) transport modes |
 | **Anti-Detection** | Stealth script injection, human-like scrolling, webId bypass |
 
-## Requirements
+## Quick Start
 
-- [Bun](https://bun.sh/) 1.0+ (recommended) or Node.js 18+
-- Playwright Chromium (auto-installed)
+### Using npx (Recommended)
 
-## Installation
+No installation required - run directly:
 
 ```bash
-git clone https://github.com/anthropics/xhs-mcp.git
+npx xhs-mcp
+```
+
+### Global Installation
+
+```bash
+npm install -g xhs-mcp
+
+# Then run
+xhs-mcp
+```
+
+### From Source
+
+```bash
+git clone https://github.com/ShunL12324/xhs-mcp.git
 cd xhs-mcp
-bun install
-bun run build
+npm install
+npm run build
 ```
 
 ## Configuration
 
 ### Claude Desktop / Claude Code
 
-Add to your MCP client configuration:
+Add to your MCP client configuration (`~/.claude/settings.json` or Claude Desktop config):
+
+**Using npx (no installation needed):**
 
 ```json
 {
   "mcpServers": {
     "xhs": {
-      "command": "bun",
+      "command": "npx",
+      "args": ["-y", "xhs-mcp"]
+    }
+  }
+}
+```
+
+**Using global installation:**
+
+```json
+{
+  "mcpServers": {
+    "xhs": {
+      "command": "xhs-mcp"
+    }
+  }
+}
+```
+
+**Using local installation:**
+
+```json
+{
+  "mcpServers": {
+    "xhs": {
+      "command": "node",
       "args": ["/path/to/xhs-mcp/dist/index.js"]
     }
   }
@@ -66,8 +108,8 @@ For web-based clients or custom integrations:
 {
   "mcpServers": {
     "xhs": {
-      "command": "bun",
-      "args": ["/path/to/xhs-mcp/dist/index.js", "--http", "--port", "18060"]
+      "command": "npx",
+      "args": ["-y", "xhs-mcp", "--http", "--port", "18060"]
     }
   }
 }
@@ -230,8 +272,9 @@ MIT
 
 # 中文文档
 
+[![npm version](https://img.shields.io/npm/v/xhs-mcp?style=flat-square&color=CB3837&logo=npm)](https://www.npmjs.com/package/xhs-mcp)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Bun](https://img.shields.io/badge/Bun-1.0+-F9F1E1?style=flat-square&logo=bun&logoColor=black)](https://bun.sh/)
+[![Node.js](https://img.shields.io/badge/Node.js-18+-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![MCP](https://img.shields.io/badge/MCP-1.0-8B5CF6?style=flat-square)](https://modelcontextprotocol.io/)
 [![Playwright](https://img.shields.io/badge/Playwright-1.57+-2EAD33?style=flat-square&logo=playwright&logoColor=white)](https://playwright.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
@@ -255,31 +298,72 @@ MIT
 | **传输模式** | 标准输入输出 (stdio) 和 HTTP (StreamableHTTP) 双模式 |
 | **反检测** | Stealth 脚本注入、人类模拟滚动、webId 绕过验证 |
 
-## 环境要求
+## 快速开始
 
-- [Bun](https://bun.sh/) 1.0+ (推荐) 或 Node.js 18+
-- Playwright Chromium (自动安装)
+### 使用 npx（推荐）
 
-## 安装
+无需安装，直接运行：
 
 ```bash
-git clone https://github.com/anthropics/xhs-mcp.git
+npx xhs-mcp
+```
+
+### 全局安装
+
+```bash
+npm install -g xhs-mcp
+
+# 然后运行
+xhs-mcp
+```
+
+### 从源码安装
+
+```bash
+git clone https://github.com/ShunL12324/xhs-mcp.git
 cd xhs-mcp
-bun install
-bun run build
+npm install
+npm run build
 ```
 
 ## 配置
 
 ### Claude Desktop / Claude Code
 
-在 MCP 客户端配置中添加：
+在 MCP 客户端配置中添加（`~/.claude/settings.json` 或 Claude Desktop 配置）：
+
+**使用 npx（无需安装）：**
 
 ```json
 {
   "mcpServers": {
     "xhs": {
-      "command": "bun",
+      "command": "npx",
+      "args": ["-y", "xhs-mcp"]
+    }
+  }
+}
+```
+
+**使用全局安装：**
+
+```json
+{
+  "mcpServers": {
+    "xhs": {
+      "command": "xhs-mcp"
+    }
+  }
+}
+```
+
+**使用本地安装：**
+
+```json
+{
+  "mcpServers": {
+    "xhs": {
+      "command": "node",
       "args": ["/path/to/xhs-mcp/dist/index.js"]
     }
   }
@@ -294,8 +378,8 @@ bun run build
 {
   "mcpServers": {
     "xhs": {
-      "command": "bun",
-      "args": ["/path/to/xhs-mcp/dist/index.js", "--http", "--port", "18060"]
+      "command": "npx",
+      "args": ["-y", "xhs-mcp", "--http", "--port", "18060"]
     }
   }
 }

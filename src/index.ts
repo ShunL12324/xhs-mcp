@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { createMcpServer } from './server.js';
 import { XhsClient } from './xhs/index.js';
