@@ -14,7 +14,8 @@
   ],
   "scripts": {
     "dev": "bun run --watch src/index.ts",
-    "build": "tsc",
+    "build": "tsc && npm run copy-assets",
+    "copy-assets": "node -e \"require('fs').cpSync('src/xhs/utils/stealth.js', 'dist/xhs/utils/stealth.js')\"",
     "prepublishOnly": "npm run build",
     "start": "node dist/index.js",
     "start:http": "node dist/index.js --http",
