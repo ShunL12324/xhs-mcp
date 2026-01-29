@@ -1,6 +1,6 @@
 # xhs_publish_content
 
-Publish image/text note.
+Publish image/text note or save as draft.
 
 ## Parameters
 
@@ -11,6 +11,7 @@ Publish image/text note.
 | `images` | string[] | Yes | Array of absolute image paths |
 | `tags` | string[] | No | Topic tags |
 | `scheduleTime` | string | No | Scheduled time (ISO 8601) |
+| `saveDraft` | boolean | No | Save as draft instead of publishing, default false |
 | `account` | string | No | Account to use |
 | `accounts` | string[] \| "all" | No | Multi-account publish |
 
@@ -32,6 +33,17 @@ xhs_publish_content({
   title: "Today's Share",
   content: "Content here...",
   images: ["/path/to/image1.jpg", "/path/to/image2.jpg"]
+})
+```
+
+### Save as draft
+
+```
+xhs_publish_content({
+  title: "Draft Title",
+  content: "Save now, publish later...",
+  images: ["/path/to/image.jpg"],
+  saveDraft: true
 })
 ```
 
@@ -73,3 +85,4 @@ xhs_publish_content({
 - Image paths must be absolute
 - Title max 20 characters
 - Requires visible browser window
+- Drafts are saved to Xiaohongshu Creator Center

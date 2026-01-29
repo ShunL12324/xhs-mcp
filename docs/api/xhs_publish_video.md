@@ -1,6 +1,6 @@
 # xhs_publish_video
 
-发布视频笔记。
+发布视频笔记或保存为草稿。
 
 ## 参数
 
@@ -12,6 +12,7 @@
 | `coverPath` | string | 否 | 封面图片路径 |
 | `tags` | string[] | 否 | 话题标签 |
 | `scheduleTime` | string | 否 | 定时发布时间（ISO 8601） |
+| `saveDraft` | boolean | 否 | 是否保存为草稿，默认 false |
 | `account` | string | 否 | 使用的账号 |
 | `accounts` | string[] \| "all" | 否 | 多账号发布 |
 
@@ -33,6 +34,17 @@ xhs_publish_video({
   title: "我的Vlog",
   content: "记录今天的日常...",
   videoPath: "/path/to/video.mp4"
+})
+```
+
+### 保存为草稿
+
+```
+xhs_publish_video({
+  title: "视频草稿",
+  content: "稍后编辑...",
+  videoPath: "/path/to/video.mp4",
+  saveDraft: true
 })
 ```
 
@@ -63,3 +75,4 @@ xhs_publish_video({
 - 视频路径必须是绝对路径
 - 发布操作需要显示浏览器窗口
 - 大视频上传需要较长时间
+- 草稿保存到小红书创作者中心

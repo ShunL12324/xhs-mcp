@@ -1,64 +1,72 @@
 /**
- * @fileoverview Account-level mutex lock for preventing concurrent operations.
- * Ensures that only one operation can run on an account at a time,
- * preventing race conditions and conflicting browser states.
+ * @fileoverview 账户级别互斥锁，用于防止并发操作。
+ * 确保同一账户同一时间只能执行一个操作，
+ * 避免竞态条件和浏览器状态冲突。
  * @module core/account-lock
  */
 
 /**
- * Information about an acquired lock.
+ * 锁超时时间常量
+ */
+const LOCK_DEFAULTS = {
+  /** 默认锁等待超时时间（毫秒） */
+  TIMEOUT: 30000,
+} as const;
+
+/**
+ * 已获取锁的信息
  */
 interface LockEntry {
-  /** Account ID that is locked */
+  /** 被锁定的账户 ID */
   accountId: string;
-  /** When the lock was acquired */
+  /** 锁获取时间 */
   acquiredAt: Date;
-  /** Description of the operation holding the lock */
+  /** 持有锁的操作描述 */
   operation: string;
-  /** Resolve function for waiting operations (internal) */
+  /** 等待操作的 resolve 函数（内部使用） */
   resolve?: () => void;
 }
 
 /**
- * Account-level lock manager for preventing concurrent access.
+ * 账户级别锁管理器，用于防止并发访问
  *
- * Uses a simple mutex pattern with a wait queue for fairness.
- * When a lock is held, subsequent lock requests are queued and
- * processed in FIFO order when the lock is released.
+ * 使用简单的互斥锁模式，带有等待队列以保证公平性。
+ * 当锁被持有时，后续的锁请求会被排队，
+ * 并在锁释放时按 FIFO 顺序处理。
  *
  * @example
  * ```typescript
  * const lock = getAccountLock();
  * const release = await lock.acquire('account-123', 'search');
  * try {
- *   // Do work with the account
+ *   // 在账户上执行操作
  * } finally {
  *   release();
  * }
  * ```
  */
 export class AccountLock {
-  /** Currently held locks by account ID */
+  /** 按账户 ID 索引的当前持有锁 */
   private locks: Map<string, LockEntry> = new Map();
-  /** Queue of waiting operations by account ID */
+  /** 按账户 ID 索引的等待队列 */
   private waitQueue: Map<string, Array<{ resolve: () => void; reject: (err: Error) => void }>> = new Map();
-  /** Default timeout for acquiring a lock */
+  /** 获取锁的默认超时时间 */
   private readonly defaultTimeout: number;
 
   /**
-   * Create a new AccountLock.
-   * @param defaultTimeout - Default timeout in milliseconds (default: 30000)
+   * 创建新的 AccountLock 实例
+   * @param defaultTimeout - 默认超时时间（毫秒，默认: 30000）
    */
-  constructor(defaultTimeout: number = 30000) {
+  constructor(defaultTimeout: number = LOCK_DEFAULTS.TIMEOUT) {
     this.defaultTimeout = defaultTimeout;
   }
 
   /**
-   * Acquire a lock for an account
-   * @param accountId The account to lock
-   * @param operation Description of the operation (for debugging)
-   * @param timeout Maximum time to wait for the lock (ms)
-   * @returns A release function to call when done
+   * 获取账户锁
+   * @param accountId - 要锁定的账户
+   * @param operation - 操作描述（用于调试）
+   * @param timeout - 最大等待时间（毫秒）
+   * @returns 完成后调用的释放函数
    */
   async acquire(accountId: string, operation: string, timeout?: number): Promise<() => void> {
     const effectiveTimeout = timeout ?? this.defaultTimeout;

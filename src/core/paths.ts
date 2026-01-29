@@ -26,6 +26,9 @@ export const VIDEOS_DIR = path.join(DOWNLOADS_DIR, 'videos');
 /** Directory for saved QR code images during login */
 export const QRCODE_DIR = path.join(XHS_MCP_DIR, 'qrcode');
 
+/** Directory for log files */
+export const LOGS_DIR = path.join(XHS_MCP_DIR, 'logs');
+
 /**
  * Ensure all required directories exist
  */
@@ -35,6 +38,7 @@ export async function ensureDirectories(): Promise<void> {
   await fs.ensureDir(IMAGES_DIR);
   await fs.ensureDir(VIDEOS_DIR);
   await fs.ensureDir(QRCODE_DIR);
+  await fs.ensureDir(LOGS_DIR);
 }
 
 /**

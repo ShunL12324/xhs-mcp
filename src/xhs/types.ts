@@ -158,6 +158,41 @@ export interface XhsUserInfo {
 }
 
 // ============================================================================
+// Login User Info Types
+// ============================================================================
+
+/**
+ * User info extracted from __INITIAL_STATE__.user.userInfo after login.
+ * This is the current logged-in user's basic information.
+ */
+export interface LoginUserInfo {
+  /** Xiaohongshu user ID */
+  userId: string;
+  /** Xiaohongshu Red ID (numeric string shown in profile) */
+  redId: string;
+  /** User's display name */
+  nickname: string;
+  /** User's bio/description */
+  desc: string;
+  /** Gender (0 = not specified, 1 = male, 2 = female) */
+  gender: number;
+  /** Small avatar URL */
+  avatar: string;
+  /** Large avatar URL */
+  avatarLarge?: string;
+}
+
+/**
+ * Result of a login operation.
+ */
+export interface LoginResult {
+  /** Path or URL to the QR code image */
+  qrCodePath: string;
+  /** Function to wait for login completion */
+  waitForLogin: () => Promise<{ state: any; userInfo: LoginUserInfo | null }>;
+}
+
+// ============================================================================
 // Search Filter Types
 // ============================================================================
 
@@ -205,6 +240,7 @@ export interface PublishContentParams {
   tags?: string[];
   /** Optional scheduled publish time (ISO 8601) */
   scheduleTime?: string;
+  /** If true, save as draft instead of publishing */
 }
 
 /**
@@ -223,6 +259,7 @@ export interface PublishVideoParams {
   tags?: string[];
   /** Optional scheduled publish time (ISO 8601) */
   scheduleTime?: string;
+  /** If true, save as draft instead of publishing */
 }
 
 /**

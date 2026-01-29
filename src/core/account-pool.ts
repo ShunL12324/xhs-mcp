@@ -1,7 +1,6 @@
 /**
- * @fileoverview Multi-account client pool for managing XhsClient instances.
- * Provides centralized management of browser clients, including creation,
- * caching, locking, and lifecycle management.
+ * @fileoverview 多账户客户端池，用于管理 XhsClient 实例。
+ * 提供浏览器客户端的集中管理，包括创建、缓存、锁定和生命周期管理。
  * @module core/account-pool
  */
 
@@ -10,13 +9,13 @@ import { XhsDatabase, Account, getDatabase } from '../db/index.js';
 import { AccountLock, getAccountLock } from './account-lock.js';
 
 /**
- * Pool of XhsClient instances for multi-account management.
+ * XhsClient 实例池，用于多账户管理
  *
- * Features:
- * - Lazy client creation: clients are only created when first requested
- * - Client caching: reuses existing clients to avoid repeated browser launches
- * - Account locking: prevents concurrent operations on the same account
- * - State persistence: automatically saves Playwright state to database on changes
+ * 功能特性：
+ * - 懒加载客户端：仅在首次请求时创建客户端
+ * - 客户端缓存：复用已有客户端，避免重复启动浏览器
+ * - 账户锁定：防止同一账户的并发操作
+ * - 状态持久化：状态变更时自动保存 Playwright 状态到数据库
  *
  * @example
  * ```typescript
@@ -28,16 +27,16 @@ import { AccountLock, getAccountLock } from './account-lock.js';
  * ```
  */
 export class AccountPool {
-  /** Map of account ID to XhsClient instance */
+  /** 账户 ID 到 XhsClient 实例的映射 */
   private clients: Map<string, XhsClient> = new Map();
-  /** Database instance for account data */
+  /** 数据库实例，用于账户数据存取 */
   private db: XhsDatabase;
-  /** Lock manager for preventing concurrent account access */
+  /** 锁管理器，用于防止并发账户访问 */
   private lock: AccountLock;
 
   /**
-   * Create a new AccountPool.
-   * @param db - Database instance (uses singleton if not provided)
+   * 创建新的 AccountPool 实例
+   * @param db - 数据库实例（不提供则使用单例）
    */
   constructor(db?: XhsDatabase) {
     this.db = db || getDatabase();
@@ -45,16 +44,16 @@ export class AccountPool {
   }
 
   /**
-   * Resolve account ID or name to Account object
-   * Tries ID first, then name
+   * 将账户 ID 或名称解析为 Account 对象
+   * 优先尝试 ID，然后尝试名称
    */
   private resolveAccount(accountIdOrName: string): Account | null {
     return this.db.getAccountById(accountIdOrName) || this.db.getAccountByName(accountIdOrName);
   }
 
   /**
-   * Get a client for the specified account
-   * Creates a new client if one doesn't exist
+   * 获取指定账户的客户端
+   * 如果不存在则创建新客户端
    */
   async getClient(accountIdOrName: string): Promise<XhsClient | null> {
     const account = this.resolveAccount(accountIdOrName);
@@ -117,12 +116,13 @@ export class AccountPool {
   }
 
   /**
-   * Add a new account or get existing account for re-login
+   * Add a new account or get existing account for re-login.
+   * If name is not provided, a temporary name will be used and should be updated after login.
    * Returns { account, client, isNew } where isNew indicates if account was created
    */
-  async addAccount(name: string, proxy?: string): Promise<{ account: Account; client: XhsClient; isNew: boolean }> {
-    // Check if account already exists
-    const existing = this.db.getAccountByName(name);
+  async addAccount(name?: string, proxy?: string): Promise<{ account: Account; client: XhsClient; isNew: boolean }> {
+    // Check if account already exists (only if name was provided)
+    const existing = name ? this.db.getAccountByName(name) : null;
 
     if (existing) {
       // Close existing client if any
@@ -151,21 +151,67 @@ export class AccountPool {
       return { account, client, isNew: false };
     }
 
-    // Create new account in database
-    const account = this.db.createAccount(name, proxy);
+    // For new login, don't create account yet - just return a temporary client
+    // The account will be created after successful login using createAccountAfterLogin
+    const tempClient = new XhsClient({
+      proxy,
+    });
 
-    // Create client with login callback
+    // Return a placeholder account - the real account will be created after login
+    return {
+      account: null as any, // Will be set after login
+      client: tempClient,
+      isNew: true,
+    };
+  }
+
+  /**
+   * Create account after successful login with user info.
+   * This should be called after login completes successfully.
+   */
+  async createAccountAfterLogin(
+    nickname: string,
+    state: any,
+    proxy?: string
+  ): Promise<Account> {
+    // Check if nickname is already used
+    let accountName = nickname;
+    const existing = this.db.getAccountByName(nickname);
+    if (existing) {
+      // Append timestamp to make it unique
+      accountName = `${nickname}_${Date.now()}`;
+    }
+
+    // Create new account in database
+    const account = this.db.createAccount(accountName, proxy);
+
+    // Save the login state
+    this.db.updateAccountState(account.id, state);
+
+    // Create client with the state
     const client = new XhsClient({
       accountId: account.id,
+      state,
       proxy: account.proxy,
-      onStateChange: async (state) => {
-        this.db.updateAccountState(account.id, state);
+      onStateChange: async (newState) => {
+        this.db.updateAccountState(account.id, newState);
       },
     });
 
     this.clients.set(account.id, client);
 
-    return { account, client, isNew: true };
+    return account;
+  }
+
+  /**
+   * Remove client without removing account (for re-login)
+   */
+  async removeClient(accountId: string): Promise<void> {
+    const client = this.clients.get(accountId);
+    if (client) {
+      await client.close();
+      this.clients.delete(accountId);
+    }
   }
 
   /**

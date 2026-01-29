@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "xhs": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["C:\\Users\\Shun\\projects\\xhs-mcp\\dist\\index.js"]
+    }
+  }
+}

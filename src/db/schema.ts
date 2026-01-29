@@ -26,9 +26,11 @@ CREATE TABLE IF NOT EXISTS accounts (
 CREATE TABLE IF NOT EXISTS account_profiles (
   account_id TEXT PRIMARY KEY,
   user_id TEXT,
+  red_id TEXT,
   nickname TEXT,
   avatar TEXT,
   description TEXT,
+  gender INTEGER,
   followers INTEGER,
   following INTEGER,
   notes_count INTEGER,
@@ -149,12 +151,16 @@ export interface AccountProfileRow {
   account_id: string;
   /** Xiaohongshu user ID */
   user_id: string | null;
+  /** Xiaohongshu Red ID (numeric string shown in profile) */
+  red_id: string | null;
   /** Display name */
   nickname: string | null;
   /** Avatar image URL */
   avatar: string | null;
   /** User bio/description */
   description: string | null;
+  /** Gender (0 = not specified, 1 = male, 2 = female) */
+  gender: number | null;
   /** Number of followers */
   followers: number | null;
   /** Number of users being followed */

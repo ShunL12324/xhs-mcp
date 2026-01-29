@@ -8,6 +8,7 @@ import { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { AccountPool } from '../core/account-pool.js';
 import { XhsDatabase } from '../db/index.js';
+import { getLoginSessionManager, LoginSession } from '../core/login-session.js';
 
 /**
  * Account management tool definitions for MCP.
@@ -23,20 +24,73 @@ export const accountTools: Tool[] = [
   },
   {
     name: 'xhs_add_account',
-    description: 'Add a new account or re-login an existing account. Runs in headless mode and returns a QR code URL for remote scanning.',
+    description: `Start login process for a new or existing account.
+Returns a QR code URL for scanning. After user scans the QR code,
+call xhs_check_login to check status and complete the login.
+
+Flow:
+1. Call xhs_add_account -> get sessionId and qrCodeUrl
+2. Show QR code URL to user for scanning
+3. Call xhs_check_login with sessionId to check status
+4. If verification needed, call xhs_submit_verification with code
+5. Login complete when status is 'success'`,
     inputSchema: {
       type: 'object',
       properties: {
         name: {
           type: 'string',
-          description: 'Account name. If account exists, triggers re-login. If new, creates the account.',
+          description: 'Optional account name. If provided and account exists, triggers re-login. If not provided, nickname from login will be used.',
         },
         proxy: {
           type: 'string',
           description: 'Optional proxy server URL (e.g., "http://proxy:8080")',
         },
       },
-      required: ['name'],
+      required: [],
+    },
+  },
+  {
+    name: 'xhs_check_login',
+    description: `Check login status and complete the login process.
+Call this after user scans the QR code from xhs_add_account.
+May return verification_required if SMS code is needed.
+
+Status values:
+- waiting_scan: QR code not scanned yet
+- scanned: QR code scanned, processing
+- verification_required: SMS code needed, call xhs_submit_verification
+- success: Login complete
+- expired: Session expired, start new login
+- failed: Login failed`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        sessionId: {
+          type: 'string',
+          description: 'Session ID from xhs_add_account',
+        },
+      },
+      required: ['sessionId'],
+    },
+  },
+  {
+    name: 'xhs_submit_verification',
+    description: `Submit SMS verification code to complete login.
+Only call this when xhs_check_login returns status: verification_required.
+Verification code expires in 1 minute.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        sessionId: {
+          type: 'string',
+          description: 'Session ID from xhs_add_account',
+        },
+        code: {
+          type: 'string',
+          description: '6-digit SMS verification code',
+        },
+      },
+      required: ['sessionId', 'code'],
     },
   },
   {
@@ -83,6 +137,59 @@ export const accountTools: Tool[] = [
 ];
 
 /**
+ * Format session status for response
+ */
+function formatSessionResponse(session: LoginSession, extra?: Record<string, any>) {
+  const now = new Date();
+  const remainingTime = session.status === 'waiting_scan'
+    ? Math.max(0, Math.floor((session.qrExpiresAt.getTime() - now.getTime()) / 1000))
+    : session.verificationExpiresAt
+      ? Math.max(0, Math.floor((session.verificationExpiresAt.getTime() - now.getTime()) / 1000))
+      : undefined;
+
+  const nextAction = getNextAction(session);
+
+  return {
+    success: session.status !== 'failed' && session.status !== 'expired',
+    sessionId: session.id,
+    status: session.status,
+    ...(session.qrCodeUrl && session.status === 'waiting_scan' && { qrCodeUrl: session.qrCodeUrl }),
+    ...(session.verificationPhone && { phone: session.verificationPhone }),
+    ...(remainingTime !== undefined && { remainingTime }),
+    ...(session.rateLimited && { rateLimited: true, rateLimitMessage: 'SMS rate limit reached for today. Try again tomorrow.' }),
+    ...(session.error && { error: session.error }),
+    ...(nextAction && { nextAction }),
+    ...extra,
+  };
+}
+
+/**
+ * Get next action hint based on session status
+ */
+function getNextAction(session: LoginSession): string | null {
+  switch (session.status) {
+    case 'waiting_scan':
+      return 'Show QR code URL to user. After scanning, call xhs_check_login with this sessionId.';
+    case 'scanned':
+      return 'QR code scanned. Call xhs_check_login again to check if login is complete.';
+    case 'verification_required':
+      return `SMS verification required. Ask user for the 6-digit code, then call xhs_submit_verification within ${
+        session.verificationExpiresAt
+          ? Math.ceil((session.verificationExpiresAt.getTime() - Date.now()) / 1000)
+          : 60
+      } seconds.`;
+    case 'success':
+      return null;
+    case 'expired':
+      return 'Session expired. Call xhs_add_account to start a new login.';
+    case 'failed':
+      return 'Login failed. Call xhs_add_account to start a new login.';
+    default:
+      return null;
+  }
+}
+
+/**
  * Handle account management tool calls.
  *
  * @param name - Tool name
@@ -97,6 +204,8 @@ export async function handleAccountTools(
   pool: AccountPool,
   db: XhsDatabase
 ) {
+  const sessionManager = getLoginSessionManager();
+
   switch (name) {
     case 'xhs_list_accounts': {
       const accounts = pool.listAccounts();
@@ -114,6 +223,7 @@ export async function handleAccountTools(
           profile: profile
             ? {
                 userId: profile.userId,
+                redId: profile.redId,
                 nickname: profile.nickname,
                 avatar: profile.avatar,
               }
@@ -150,54 +260,29 @@ export async function handleAccountTools(
     case 'xhs_add_account': {
       const params = z
         .object({
-          name: z.string().min(1).max(64),
+          name: z.string().min(1).max(64).optional(),
           proxy: z.string().optional(),
         })
         .parse(args);
 
       try {
-        const { account, client, isNew } = await pool.addAccount(params.name, params.proxy);
+        // Check if this is a re-login for existing account
+        if (params.name) {
+          const existing = pool.getAccount(params.name);
+          if (existing) {
+            // Close existing client if any
+            await pool.removeClient(existing.id);
+          }
+        }
 
-        // Start headless login process - get QR code URL
-        const loginResult = await client.login();
-
-        console.error(`[add_account] QR Code Path: ${loginResult.qrCodePath}`);
-        console.error('[add_account] Waiting for QR code scan...');
-
-        // Wait for login to complete
-        await loginResult.waitForLogin();
-
-        // Log the operation
-        db.logOperation({
-          accountId: account.id,
-          action: isNew ? 'login' : 're-login',
-          success: true,
-          result: { method: 'qr_code_headless' },
-        });
+        // Create login session
+        const session = await sessionManager.createSession(params.name, params.proxy);
 
         return {
           content: [
             {
               type: 'text',
-              text: JSON.stringify(
-                {
-                  success: true,
-                  isNew,
-                  account: {
-                    id: account.id,
-                    name: account.name,
-                    status: account.status,
-                    proxy: account.proxy || null,
-                  },
-                  qrCodePath: loginResult.qrCodePath,
-                  message: isNew
-                    ? 'Account added and logged in successfully.'
-                    : 'Account re-logged in successfully.',
-                  hint: 'The QR code has been saved and opened in your default image viewer. Scan it with Xiaohongshu app.',
-                },
-                null,
-                2
-              ),
+              text: JSON.stringify(formatSessionResponse(session), null, 2),
             },
           ],
         };
@@ -210,6 +295,208 @@ export async function handleAccountTools(
                 {
                   success: false,
                   error: error instanceof Error ? error.message : String(error),
+                  nextAction: 'Fix the issue and call xhs_add_account again.',
+                },
+                null,
+                2
+              ),
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+
+    case 'xhs_check_login': {
+      const params = z
+        .object({
+          sessionId: z.string(),
+        })
+        .parse(args);
+
+      try {
+        const session = await sessionManager.checkStatus(params.sessionId);
+
+        // If login successful, create account in database
+        if (session.status === 'success' && session.userInfo && session.state) {
+          const { state, userInfo } = await sessionManager.completeSession(params.sessionId);
+
+          // Create or update account
+          const accountName = session.accountName || userInfo.nickname;
+          const account = await pool.createAccountAfterLogin(
+            accountName,
+            state,
+            session.proxy
+          );
+
+          // Save user profile
+          db.upsertAccountProfile({
+            accountId: account.id,
+            userId: userInfo.userId,
+            redId: userInfo.redId,
+            nickname: userInfo.nickname,
+            avatar: userInfo.avatar,
+            description: userInfo.desc,
+            gender: userInfo.gender,
+          });
+
+          // Log operation
+          db.logOperation({
+            accountId: account.id,
+            action: 'login',
+            success: true,
+            result: { method: 'qr_code', userInfo },
+          });
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    success: true,
+                    status: 'success',
+                    account: {
+                      id: account.id,
+                      name: account.name,
+                      status: account.status,
+                    },
+                    userInfo: {
+                      userId: userInfo.userId,
+                      redId: userInfo.redId,
+                      nickname: userInfo.nickname,
+                    },
+                    message: 'Login successful. Account created.',
+                    nextAction: null,
+                  },
+                  null,
+                  2
+                ),
+              },
+            ],
+          };
+        }
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(formatSessionResponse(session), null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(
+                {
+                  success: false,
+                  error: error instanceof Error ? error.message : String(error),
+                  nextAction: 'Call xhs_add_account to start a new login session.',
+                },
+                null,
+                2
+              ),
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+
+    case 'xhs_submit_verification': {
+      const params = z
+        .object({
+          sessionId: z.string(),
+          code: z.string().min(4).max(8),
+        })
+        .parse(args);
+
+      try {
+        const session = await sessionManager.submitVerification(params.sessionId, params.code);
+
+        // If login successful, create account in database
+        if (session.status === 'success' && session.userInfo && session.state) {
+          const { state, userInfo } = await sessionManager.completeSession(params.sessionId);
+
+          // Create or update account
+          const accountName = session.accountName || userInfo.nickname;
+          const account = await pool.createAccountAfterLogin(
+            accountName,
+            state,
+            session.proxy
+          );
+
+          // Save user profile
+          db.upsertAccountProfile({
+            accountId: account.id,
+            userId: userInfo.userId,
+            redId: userInfo.redId,
+            nickname: userInfo.nickname,
+            avatar: userInfo.avatar,
+            description: userInfo.desc,
+            gender: userInfo.gender,
+          });
+
+          // Log operation
+          db.logOperation({
+            accountId: account.id,
+            action: 'login',
+            success: true,
+            result: { method: 'qr_code_with_verification', userInfo },
+          });
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    success: true,
+                    status: 'success',
+                    account: {
+                      id: account.id,
+                      name: account.name,
+                      status: account.status,
+                    },
+                    userInfo: {
+                      userId: userInfo.userId,
+                      redId: userInfo.redId,
+                      nickname: userInfo.nickname,
+                    },
+                    message: 'Verification successful. Account created.',
+                    nextAction: null,
+                  },
+                  null,
+                  2
+                ),
+              },
+            ],
+          };
+        }
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(formatSessionResponse(session), null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(
+                {
+                  success: false,
+                  error: error instanceof Error ? error.message : String(error),
+                  nextAction: error instanceof Error && error.message.includes('status')
+                    ? 'Check current status with xhs_check_login first.'
+                    : 'Try submitting the code again or start a new login.',
                 },
                 null,
                 2

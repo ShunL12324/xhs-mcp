@@ -96,22 +96,24 @@ Add the same configuration to MCP settings:
 ### Login
 
 ```
-1. Call xhs_add_account({ name: "my-account" })
-2. Scan the QR code (or visit the returned remote URL)
-3. Done! Session is saved automatically
+1. Call xhs_add_account() → Get sessionId and QR code URL
+2. Scan the QR code (or visit the returned qrCodeUrl)
+3. Call xhs_check_login({ sessionId }) to check status
+4. If SMS verification needed, call xhs_submit_verification({ sessionId, code })
+5. Done! Session is saved automatically
 ```
 
 ## Available Tools
 
 | Category | Tools |
 |----------|-------|
-| Account | `xhs_list_accounts`, `xhs_add_account`, `xhs_remove_account`, `xhs_set_account_config` |
+| Account | `xhs_list_accounts`, `xhs_add_account`, `xhs_check_login`, `xhs_submit_verification`, `xhs_remove_account`, `xhs_set_account_config` |
 | Content | `xhs_search`, `xhs_get_note`, `xhs_user_profile`, `xhs_list_feeds` |
 | Publish | `xhs_publish_content`, `xhs_publish_video` |
 | Interact | `xhs_like_feed`, `xhs_favorite_feed`, `xhs_post_comment`, `xhs_reply_comment` |
 | Stats | `xhs_get_account_stats`, `xhs_get_operation_logs` |
 | Download | `xhs_download_images`, `xhs_download_video` |
-| Auth | `xhs_check_login`, `xhs_delete_cookies` |
+| Other | `xhs_delete_cookies` |
 
 > Full API documentation at [Documentation](https://shunl12324.github.io/xhs-mcp/en/api/)
 
@@ -137,6 +139,8 @@ bun install
 bun run dev      # Development mode
 bun run build    # Build
 ```
+
+Log files are located at `~/.xhs-mcp/logs/xhs-mcp.log`
 
 ## Credits
 

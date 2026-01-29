@@ -16,12 +16,13 @@ XHS-MCP provides a comprehensive set of MCP tools for interacting with Xiaohongs
 
 ### Account Management
 - `xhs_list_accounts` - List all registered accounts
-- `xhs_add_account` - Add new account via QR login
+- `xhs_add_account` - Start login flow (returns QR code)
+- `xhs_check_login` - Check login status (call after QR scan)
+- `xhs_submit_verification` - Submit SMS verification code
 - `xhs_remove_account` - Remove an account
 - `xhs_set_account_config` - Update account name, proxy, or status
 
 ### Authentication
-- `xhs_check_login` - Check login status
 - `xhs_delete_cookies` - Clear session
 
 ### Content Query

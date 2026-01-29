@@ -19,6 +19,8 @@ A Model Context Protocol (MCP) server that provides tools for interacting with X
 ```
 ~/.xhs-mcp/                   # Data directory
 ├── data.db                   # SQLite database (accounts, logs, etc.)
+├── logs/                     # Log files
+│   └── xhs-mcp.log           # Application log
 └── downloads/
     ├── images/{noteId}/
     └── videos/{noteId}/
@@ -29,9 +31,11 @@ src/
 ├── http-server.ts            # HTTP transport server (StreamableHTTP)
 ├── core/
 │   ├── paths.ts              # Path constants (~/.xhs-mcp)
-│   ├── account-pool.ts       # Multi-account client pool
-│   ├── account-lock.ts       # Concurrent access prevention
-│   └── multi-account.ts      # Multi-account operation helpers
+│   ├── logger.ts             # Structured logging (console + file)
+│   ├── account-pool.ts       # Multi-account client pool (池化管理)
+│   ├── account-lock.ts       # Concurrent access prevention (互斥锁)
+│   ├── multi-account.ts      # Multi-account operation helpers (并行/串行执行)
+│   └── login-session.ts      # Multi-step login session manager
 ├── db/
 │   ├── index.ts              # Database class (better-sqlite3)
 │   └── schema.ts             # Table definitions
@@ -47,7 +51,7 @@ src/
     ├── index.ts              # XhsClient facade class (supports account options)
     ├── types.ts              # TypeScript interfaces
     ├── clients/
-    │   └── browser.ts        # BrowserClient - Playwright automation (supports state/proxy options)
+    │   └── browser.ts        # BrowserClient - Playwright automation (with constants config)
     └── utils/
         ├── index.ts          # Utilities (sleep, humanScroll, generateWebId)
         └── stealth.js        # Anti-detection script
@@ -59,29 +63,36 @@ src/
 | Tool | Description |
 |------|-------------|
 | `xhs_list_accounts` | List all registered accounts with status |
-| `xhs_add_account` | Add new account or re-login existing account via QR code URL |
+| `xhs_add_account` | Start login process, returns sessionId and QR code URL |
+| `xhs_check_login` | Check login status after QR scan (may need verification) |
+| `xhs_submit_verification` | Submit SMS verification code (if required) |
 | `xhs_remove_account` | Remove an account and its data |
 | `xhs_set_account_config` | Update proxy or status for an account |
 
-### Authentication
-| Tool | Description |
-|------|-------------|
-| `xhs_check_login` | Check login status (supports `account` param) |
-| `xhs_delete_cookies` | Delete session for an account |
+### Multi-Step Login Flow
 
-### Headless Login with QR Code URL
+Login is now a multi-step process for better control:
 
-Login operations now run in headless mode and return a temporary QR code URL:
+```
+1. xhs_add_account           → Returns { sessionId, qrCodeUrl, status: 'waiting_scan' }
+   ↓
+2. User scans QR code
+   ↓
+3. xhs_check_login(sessionId) → Returns status:
+   - 'waiting_scan': Not scanned yet, call again
+   - 'scanned': Processing, call again
+   - 'verification_required': Need SMS code → call xhs_submit_verification
+   - 'success': Login complete, account created
+   - 'expired': QR expired (2 min), start over
+   ↓
+4. xhs_submit_verification(sessionId, code) → If verification needed
+   - Code expires in 1 minute
+   - Returns 'success' or error
+```
 
-1. Call `xhs_add_account` with the account name
-2. The tool captures the QR code from the page (no local file saved)
-3. Uploads to a temporary image hosting service (litterbox.catbox.moe or 0x0.st)
-4. Returns the URL - scan from any device, including mobile
-5. Waits for login completion and saves session to database
+Each response includes `nextAction` field guiding the next step.
 
-If the account already exists, `xhs_add_account` will trigger a re-login process.
-
-This enables remote login without requiring visual access to the browser.
+QR code is generated via api.qrserver.com - works remotely without local file access.
 
 ### Content Query
 | Tool | Description |
@@ -178,6 +189,7 @@ Endpoints:
 ## Important Files
 
 - `~/.xhs-mcp/data.db` - SQLite database with accounts, sessions, operation logs
+- `~/.xhs-mcp/logs/xhs-mcp.log` - Application log file (structured logging)
 - `~/.xhs-mcp/downloads/` - Downloaded images and videos
 - `src/xhs/utils/stealth.js` - Anti-detection script, large file (~50k tokens)
 
@@ -196,16 +208,18 @@ Key tables:
 
 1. **Multi-Account**: AccountPool manages multiple XhsClient instances, each with its own session
 2. **Session Persistence**: Login state stored in SQLite database, loaded per-account
-3. **Account Locking**: Prevents concurrent operations on the same account
+3. **Account Locking**: Prevents concurrent operations on the same account (FIFO queue)
 4. **Operation Logging**: All operations are logged with timing and results
-5. **Anti-Detection**:
+5. **Structured Logging**: Uses `createLogger()` from `core/logger.ts`, outputs to stderr and file
+6. **Anti-Detection**:
    - Stealth script injection
-   - Human-like scrolling with easing functions
+   - Human-like scrolling with easing functions (configurable via `SCROLL_CONFIG`)
    - Custom User-Agent matching Playwright's Chrome version
    - webId cookie generation to bypass slider verification
-6. **Data Extraction**: Uses `window.__INITIAL_STATE__` from page (Vue state)
-7. **xsecToken**: Required for reliable note access - obtained from search results
-8. **Dual Transport**: Supports both stdio (default) and HTTP transport modes
+7. **Data Extraction**: Uses `window.__INITIAL_STATE__` from page (Vue state)
+8. **xsecToken**: Required for reliable note access - obtained from search results
+9. **Dual Transport**: Supports both stdio (default) and HTTP transport modes
+10. **Configurable Constants**: Timeouts, delays, and limits defined in constant objects (`TIMEOUTS`, `SEARCH_DEFAULTS`, `SCROLL_CONFIG`, `DELAYS`)
 
 ## Development Guidelines
 
@@ -216,3 +230,6 @@ Key tables:
 - Publishing operations require a visible browser window
 - All database operations are synchronous (better-sqlite3)
 - Login runs in headless mode with QR code uploaded to temp image hosting
+- Use `createLogger('module-name')` for logging instead of `console.error/log`
+- Extract magic numbers to constant objects with Chinese comments
+- All code comments should be in Chinese for consistency

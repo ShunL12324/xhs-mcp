@@ -98,3 +98,6 @@ xhs_search({
 
 - `xsecToken` is used for subsequent note details and interactions
 - Increase `timeout` when searching large results
+- Default count is 20, maximum is 500
+- Uses human-like scrolling with automatic deduplication
+- Automatically stops after 3 consecutive scrolls with no new data

@@ -96,22 +96,24 @@ claude mcp add xhs -- npx -y @sillyl12324/xhs-mcp
 ### 登录
 
 ```
-1. 调用 xhs_add_account({ name: "我的账号" })
-2. 扫描弹出的二维码（或访问返回的远程URL）
-3. 完成！会话自动保存
+1. 调用 xhs_add_account() → 获取 sessionId 和二维码 URL
+2. 扫描二维码（或访问返回的 qrCodeUrl）
+3. 调用 xhs_check_login({ sessionId }) 检查状态
+4. 如需短信验证，调用 xhs_submit_verification({ sessionId, code })
+5. 完成！会话自动保存
 ```
 
 ## 可用工具
 
 | 类别 | 工具 |
 |------|------|
-| 账号管理 | `xhs_list_accounts`, `xhs_add_account`, `xhs_remove_account`, `xhs_set_account_config` |
+| 账号管理 | `xhs_list_accounts`, `xhs_add_account`, `xhs_check_login`, `xhs_submit_verification`, `xhs_remove_account`, `xhs_set_account_config` |
 | 内容查询 | `xhs_search`, `xhs_get_note`, `xhs_user_profile`, `xhs_list_feeds` |
 | 内容发布 | `xhs_publish_content`, `xhs_publish_video` |
 | 互动功能 | `xhs_like_feed`, `xhs_favorite_feed`, `xhs_post_comment`, `xhs_reply_comment` |
 | 数据统计 | `xhs_get_account_stats`, `xhs_get_operation_logs` |
 | 下载 | `xhs_download_images`, `xhs_download_video` |
-| 认证 | `xhs_check_login`, `xhs_delete_cookies` |
+| 其他 | `xhs_delete_cookies` |
 
 > 详细 API 文档请访问 [完整文档](https://shunl12324.github.io/xhs-mcp/api/)
 
@@ -137,6 +139,8 @@ bun install
 bun run dev      # 开发模式
 bun run build    # 构建
 ```
+
+日志文件位于 `~/.xhs-mcp/logs/xhs-mcp.log`
 
 ## 致谢
 
