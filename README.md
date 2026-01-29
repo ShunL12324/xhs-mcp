@@ -44,7 +44,7 @@
   "mcpServers": {
     "xhs": {
       "command": "npx",
-      "args": ["-y", "@sillyl12324/xhs-mcp"]
+      "args": ["-y", "@sillyl12324/xhs-mcp@latest"]
     }
   }
 }
@@ -57,7 +57,7 @@
 使用命令行安装（推荐）：
 
 ```bash
-claude mcp add xhs -- npx -y @sillyl12324/xhs-mcp
+claude mcp add xhs -- npx -y @sillyl12324/xhs-mcp@latest
 ```
 
 或手动创建 `.mcp.json`：
@@ -67,7 +67,7 @@ claude mcp add xhs -- npx -y @sillyl12324/xhs-mcp
   "mcpServers": {
     "xhs": {
       "command": "npx",
-      "args": ["-y", "@sillyl12324/xhs-mcp"]
+      "args": ["-y", "@sillyl12324/xhs-mcp@latest"]
     }
   }
 }
@@ -84,7 +84,7 @@ claude mcp add xhs -- npx -y @sillyl12324/xhs-mcp
   "mcpServers": {
     "xhs": {
       "command": "npx",
-      "args": ["-y", "@sillyl12324/xhs-mcp"]
+      "args": ["-y", "@sillyl12324/xhs-mcp@latest"]
     }
   }
 }

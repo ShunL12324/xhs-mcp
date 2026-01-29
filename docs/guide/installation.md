@@ -18,7 +18,7 @@
   "mcpServers": {
     "xhs": {
       "command": "npx",
-      "args": ["-y", "@sillyl12324/xhs-mcp"]
+      "args": ["-y", "@sillyl12324/xhs-mcp@latest"]
     }
   }
 }
@@ -31,17 +31,17 @@
 ### 命令行安装（推荐）
 
 ```bash
-claude mcp add xhs -- npx -y @sillyl12324/xhs-mcp
+claude mcp add xhs -- npx -y @sillyl12324/xhs-mcp@latest
 ```
 
 使用 `--scope` 指定作用域：
 
 ```bash
 # 用户级别（所有项目可用）
-claude mcp add xhs --scope user -- npx -y @sillyl12324/xhs-mcp
+claude mcp add xhs --scope user -- npx -y @sillyl12324/xhs-mcp@latest
 
 # 项目级别（当前项目）
-claude mcp add xhs --scope project -- npx -y @sillyl12324/xhs-mcp
+claude mcp add xhs --scope project -- npx -y @sillyl12324/xhs-mcp@latest
 ```
 
 ### 手动配置
@@ -53,7 +53,7 @@ claude mcp add xhs --scope project -- npx -y @sillyl12324/xhs-mcp
   "mcpServers": {
     "xhs": {
       "command": "npx",
-      "args": ["-y", "@sillyl12324/xhs-mcp"]
+      "args": ["-y", "@sillyl12324/xhs-mcp@latest"]
     }
   }
 }
@@ -66,7 +66,7 @@ claude mcp add xhs --scope project -- npx -y @sillyl12324/xhs-mcp
   "mcpServers": {
     "xhs": {
       "command": "npx",
-      "args": ["-y", "@sillyl12324/xhs-mcp"]
+      "args": ["-y", "@sillyl12324/xhs-mcp@latest"]
     }
   }
 }
@@ -89,7 +89,7 @@ claude mcp get xhs       # 查看服务器详情
   "mcpServers": {
     "xhs": {
       "command": "npx",
-      "args": ["-y", "@sillyl12324/xhs-mcp"]
+      "args": ["-y", "@sillyl12324/xhs-mcp@latest"]
     }
   }
 }
@@ -104,7 +104,7 @@ claude mcp get xhs       # 查看服务器详情
   "mcpServers": {
     "xhs": {
       "command": "npx",
-      "args": ["-y", "@sillyl12324/xhs-mcp"]
+      "args": ["-y", "@sillyl12324/xhs-mcp@latest"]
     }
   }
 }
@@ -115,15 +115,15 @@ claude mcp get xhs       # 查看服务器详情
 任何支持 MCP 协议的客户端都可以使用。配置方式：
 
 - **命令**: `npx`
-- **参数**: `["-y", "@sillyl12324/xhs-mcp"]`
+- **参数**: `["-y", "@sillyl12324/xhs-mcp@latest"]`
 
 ## HTTP 模式
 
 对于需要 HTTP 传输的客户端：
 
 ```bash
-npx @sillyl12324/xhs-mcp --http
-npx @sillyl12324/xhs-mcp --http --port 8080  # 自定义端口
+npx @sillyl12324/xhs-mcp@latest --http
+npx @sillyl12324/xhs-mcp@latest --http --port 8080  # 自定义端口
 ```
 
 端点：

@@ -18,7 +18,7 @@ Add the following configuration:
   "mcpServers": {
     "xhs": {
       "command": "npx",
-      "args": ["-y", "@sillyl12324/xhs-mcp"]
+      "args": ["-y", "@sillyl12324/xhs-mcp@latest"]
     }
   }
 }
@@ -31,17 +31,17 @@ Restart Claude Desktop to use.
 ### CLI Installation (Recommended)
 
 ```bash
-claude mcp add xhs -- npx -y @sillyl12324/xhs-mcp
+claude mcp add xhs -- npx -y @sillyl12324/xhs-mcp@latest
 ```
 
 Use `--scope` to specify the scope:
 
 ```bash
 # User level (available in all projects)
-claude mcp add xhs --scope user -- npx -y @sillyl12324/xhs-mcp
+claude mcp add xhs --scope user -- npx -y @sillyl12324/xhs-mcp@latest
 
 # Project level (current project only)
-claude mcp add xhs --scope project -- npx -y @sillyl12324/xhs-mcp
+claude mcp add xhs --scope project -- npx -y @sillyl12324/xhs-mcp@latest
 ```
 
 ### Manual Configuration
@@ -53,7 +53,7 @@ Create a `.mcp.json` file in your project root:
   "mcpServers": {
     "xhs": {
       "command": "npx",
-      "args": ["-y", "@sillyl12324/xhs-mcp"]
+      "args": ["-y", "@sillyl12324/xhs-mcp@latest"]
     }
   }
 }
@@ -66,7 +66,7 @@ Or add to global settings `~/.claude/settings.json`:
   "mcpServers": {
     "xhs": {
       "command": "npx",
-      "args": ["-y", "@sillyl12324/xhs-mcp"]
+      "args": ["-y", "@sillyl12324/xhs-mcp@latest"]
     }
   }
 }
@@ -89,7 +89,7 @@ Open Cursor settings, find the MCP configuration section, and add:
   "mcpServers": {
     "xhs": {
       "command": "npx",
-      "args": ["-y", "@sillyl12324/xhs-mcp"]
+      "args": ["-y", "@sillyl12324/xhs-mcp@latest"]
     }
   }
 }
@@ -104,7 +104,7 @@ Configure MCP server in Cline extension settings:
   "mcpServers": {
     "xhs": {
       "command": "npx",
-      "args": ["-y", "@sillyl12324/xhs-mcp"]
+      "args": ["-y", "@sillyl12324/xhs-mcp@latest"]
     }
   }
 }
@@ -115,15 +115,15 @@ Configure MCP server in Cline extension settings:
 Any MCP-compatible client can use this server. Configuration:
 
 - **Command**: `npx`
-- **Arguments**: `["-y", "@sillyl12324/xhs-mcp"]`
+- **Arguments**: `["-y", "@sillyl12324/xhs-mcp@latest"]`
 
 ## HTTP Mode
 
 For clients that require HTTP transport:
 
 ```bash
-npx @sillyl12324/xhs-mcp --http
-npx @sillyl12324/xhs-mcp --http --port 8080  # Custom port
+npx @sillyl12324/xhs-mcp@latest --http
+npx @sillyl12324/xhs-mcp@latest --http --port 8080  # Custom port
 ```
 
 Endpoints:

@@ -44,7 +44,7 @@ Edit configuration file:
   "mcpServers": {
     "xhs": {
       "command": "npx",
-      "args": ["-y", "@sillyl12324/xhs-mcp"]
+      "args": ["-y", "@sillyl12324/xhs-mcp@latest"]
     }
   }
 }
@@ -57,7 +57,7 @@ Edit configuration file:
 Install via CLI (recommended):
 
 ```bash
-claude mcp add xhs -- npx -y @sillyl12324/xhs-mcp
+claude mcp add xhs -- npx -y @sillyl12324/xhs-mcp@latest
 ```
 
 Or manually create `.mcp.json`:
@@ -67,7 +67,7 @@ Or manually create `.mcp.json`:
   "mcpServers": {
     "xhs": {
       "command": "npx",
-      "args": ["-y", "@sillyl12324/xhs-mcp"]
+      "args": ["-y", "@sillyl12324/xhs-mcp@latest"]
     }
   }
 }
@@ -84,7 +84,7 @@ Add the same configuration to MCP settings:
   "mcpServers": {
     "xhs": {
       "command": "npx",
-      "args": ["-y", "@sillyl12324/xhs-mcp"]
+      "args": ["-y", "@sillyl12324/xhs-mcp@latest"]
     }
   }
 }
