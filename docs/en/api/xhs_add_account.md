@@ -18,7 +18,7 @@ Start login process, returns QR code URL and session ID.
   "status": "waiting_scan",
   "qrCodeUrl": "https://api.qrserver.com/v1/create-qr-code/...",
   "remainingTime": 120,
-  "nextAction": "Show QR code URL to user. After scanning, call xhs_check_login with this sessionId."
+  "nextAction": "Show QR code URL to user. After scanning, call xhs_check_login_session with this sessionId."
 }
 ```
 
@@ -26,7 +26,7 @@ Start login process, returns QR code URL and session ID.
 
 | Field | Description |
 |-------|-------------|
-| `sessionId` | Session ID for subsequent `xhs_check_login` and `xhs_submit_verification` calls |
+| `sessionId` | Session ID for subsequent `xhs_check_login_session` and `xhs_submit_verification` calls |
 | `status` | Current status, initially `waiting_scan` |
 | `qrCodeUrl` | QR code image URL, can be opened in browser or sent to user |
 | `remainingTime` | Remaining QR code validity (seconds), typically 120 seconds |
@@ -39,7 +39,7 @@ Start login process, returns QR code URL and session ID.
    ↓
 2. User scans QR code
    ↓
-3. xhs_check_login(sessionId) → Check status:
+3. xhs_check_login_session(sessionId) → Check status:
    - waiting_scan: Not scanned, keep waiting
    - scanned: Scanned, processing
    - verification_required: SMS code needed → call xhs_submit_verification
@@ -59,7 +59,7 @@ Start login process, returns QR code URL and session ID.
 xhs_add_account({})
 ```
 
-After getting QR code URL, show it to user, then call `xhs_check_login` to check status.
+After getting QR code URL, show it to user, then call `xhs_check_login_session` to check status.
 
 ### With account name
 
@@ -88,5 +88,5 @@ If account exists, clears old session and starts new login flow.
 
 - QR code valid for **2 minutes**
 - QR code URL generated via api.qrserver.com, accessible remotely
-- Must call `xhs_check_login` after scanning to complete login
+- Must call `xhs_check_login_session` after scanning to complete login
 - Session automatically persisted to database on success

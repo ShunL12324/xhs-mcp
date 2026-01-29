@@ -1,4 +1,4 @@
-# xhs_check_login
+# xhs_check_login_session
 
 Check login status and complete the login process. Call after user scans QR code.
 
@@ -19,7 +19,7 @@ Check login status and complete the login process. Call after user scans QR code
   "status": "waiting_scan",
   "qrCodeUrl": "https://...",
   "remainingTime": 90,
-  "nextAction": "Show QR code URL to user. After scanning, call xhs_check_login with this sessionId."
+  "nextAction": "Show QR code URL to user. After scanning, call xhs_check_login_session with this sessionId."
 }
 ```
 
@@ -30,7 +30,7 @@ Check login status and complete the login process. Call after user scans QR code
   "success": true,
   "sessionId": "sess_xxxxxxxx",
   "status": "scanned",
-  "nextAction": "QR code scanned. Call xhs_check_login again to check if login is complete."
+  "nextAction": "QR code scanned. Call xhs_check_login_session again to check if login is complete."
 }
 ```
 
@@ -96,7 +96,7 @@ Check login status and complete the login process. Call after user scans QR code
 ### Check login status
 
 ```
-xhs_check_login({ sessionId: "sess_abc12345" })
+xhs_check_login_session({ sessionId: "sess_abc12345" })
 ```
 
 ### Polling
@@ -105,7 +105,7 @@ xhs_check_login({ sessionId: "sess_abc12345" })
 // Pseudocode
 while (status === 'waiting_scan' || status === 'scanned') {
   await sleep(2000);  // Check every 2 seconds
-  result = xhs_check_login({ sessionId });
+  result = xhs_check_login_session({ sessionId });
   status = result.status;
 }
 ```

@@ -1,6 +1,6 @@
 # xhs_submit_verification
 
-Submit SMS verification code to complete login. Only call when `xhs_check_login` returns `verification_required` status.
+Submit SMS verification code to complete login. Only call when `xhs_check_login_session` returns `verification_required` status.
 
 ## Parameters
 

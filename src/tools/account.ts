@@ -26,12 +26,12 @@ export const accountTools: Tool[] = [
     name: 'xhs_add_account',
     description: `Start login process for a new or existing account.
 Returns a QR code URL for scanning. After user scans the QR code,
-call xhs_check_login to check status and complete the login.
+call xhs_check_login_session to check status and complete the login.
 
 Flow:
 1. Call xhs_add_account -> get sessionId and qrCodeUrl
 2. Show QR code URL to user for scanning
-3. Call xhs_check_login with sessionId to check status
+3. Call xhs_check_login_session with sessionId to check status
 4. If verification needed, call xhs_submit_verification with code
 5. Login complete when status is 'success'`,
     inputSchema: {
@@ -50,7 +50,7 @@ Flow:
     },
   },
   {
-    name: 'xhs_check_login',
+    name: 'xhs_check_login_session',
     description: `Check login status and complete the login process.
 Call this after user scans the QR code from xhs_add_account.
 May return verification_required if SMS code is needed.
@@ -76,7 +76,7 @@ Status values:
   {
     name: 'xhs_submit_verification',
     description: `Submit SMS verification code to complete login.
-Only call this when xhs_check_login returns status: verification_required.
+Only call this when xhs_check_login_session returns status: verification_required.
 Verification code expires in 1 minute.`,
     inputSchema: {
       type: 'object',
@@ -169,9 +169,9 @@ function formatSessionResponse(session: LoginSession, extra?: Record<string, any
 function getNextAction(session: LoginSession): string | null {
   switch (session.status) {
     case 'waiting_scan':
-      return 'Show QR code URL to user. After scanning, call xhs_check_login with this sessionId.';
+      return 'Show QR code URL to user. After scanning, call xhs_check_login_session with this sessionId.';
     case 'scanned':
-      return 'QR code scanned. Call xhs_check_login again to check if login is complete.';
+      return 'QR code scanned. Call xhs_check_login_session again to check if login is complete.';
     case 'verification_required':
       return `SMS verification required. Ask user for the 6-digit code, then call xhs_submit_verification within ${
         session.verificationExpiresAt
@@ -211,8 +211,8 @@ export async function handleAccountTools(
       const accounts = pool.listAccounts();
 
       const accountList = accounts.map((acc) => {
-        const profile = db.getAccountProfile(acc.id);
-        const stats = db.getAccountStats(acc.id);
+        const profile = db.profiles.findByAccountId(acc.id);
+        const stats = db.operations.getStats(acc.id);
 
         return {
           id: acc.id,
@@ -307,7 +307,7 @@ export async function handleAccountTools(
       }
     }
 
-    case 'xhs_check_login': {
+    case 'xhs_check_login_session': {
       const params = z
         .object({
           sessionId: z.string(),
@@ -330,7 +330,7 @@ export async function handleAccountTools(
           );
 
           // Save user profile
-          db.upsertAccountProfile({
+          db.profiles.upsert({
             accountId: account.id,
             userId: userInfo.userId,
             redId: userInfo.redId,
@@ -341,7 +341,7 @@ export async function handleAccountTools(
           });
 
           // Log operation
-          db.logOperation({
+          db.operations.log({
             accountId: account.id,
             action: 'login',
             success: true,
@@ -430,7 +430,7 @@ export async function handleAccountTools(
           );
 
           // Save user profile
-          db.upsertAccountProfile({
+          db.profiles.upsert({
             accountId: account.id,
             userId: userInfo.userId,
             redId: userInfo.redId,
@@ -441,7 +441,7 @@ export async function handleAccountTools(
           });
 
           // Log operation
-          db.logOperation({
+          db.operations.log({
             accountId: account.id,
             action: 'login',
             success: true,
@@ -495,7 +495,7 @@ export async function handleAccountTools(
                   success: false,
                   error: error instanceof Error ? error.message : String(error),
                   nextAction: error instanceof Error && error.message.includes('status')
-                    ? 'Check current status with xhs_check_login first.'
+                    ? 'Check current status with xhs_check_login_session first.'
                     : 'Try submitting the code again or start a new login.',
                 },
                 null,

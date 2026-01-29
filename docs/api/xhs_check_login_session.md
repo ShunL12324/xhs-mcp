@@ -1,4 +1,4 @@
-# xhs_check_login
+# xhs_check_login_session
 
 检查登录状态并完成登录流程。在用户扫描二维码后调用。
 
@@ -19,7 +19,7 @@
   "status": "waiting_scan",
   "qrCodeUrl": "https://...",
   "remainingTime": 90,
-  "nextAction": "Show QR code URL to user. After scanning, call xhs_check_login with this sessionId."
+  "nextAction": "Show QR code URL to user. After scanning, call xhs_check_login_session with this sessionId."
 }
 ```
 
@@ -30,7 +30,7 @@
   "success": true,
   "sessionId": "sess_xxxxxxxx",
   "status": "scanned",
-  "nextAction": "QR code scanned. Call xhs_check_login again to check if login is complete."
+  "nextAction": "QR code scanned. Call xhs_check_login_session again to check if login is complete."
 }
 ```
 
@@ -96,7 +96,7 @@
 ### 检查登录状态
 
 ```
-xhs_check_login({ sessionId: "sess_abc12345" })
+xhs_check_login_session({ sessionId: "sess_abc12345" })
 ```
 
 ### 轮询检查
@@ -105,7 +105,7 @@ xhs_check_login({ sessionId: "sess_abc12345" })
 // 伪代码示例
 while (status === 'waiting_scan' || status === 'scanned') {
   await sleep(2000);  // 每 2 秒检查一次
-  result = xhs_check_login({ sessionId });
+  result = xhs_check_login_session({ sessionId });
   status = result.status;
 }
 ```

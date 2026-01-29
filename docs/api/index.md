@@ -8,7 +8,8 @@
 |------|------|
 | [xhs_list_accounts](/api/xhs_list_accounts) | 列出所有账号 |
 | [xhs_add_account](/api/xhs_add_account) | 开始登录流程（返回二维码） |
-| [xhs_check_login](/api/xhs_check_login) | 检查登录状态（扫码后调用） |
+| [xhs_check_login_session](/api/xhs_check_login_session) | 检查登录状态（扫码后调用） |
+| [xhs_check_auth_status](/api/xhs_check_auth_status) | 检查账号是否已登录（同步用户资料） |
 | [xhs_submit_verification](/api/xhs_submit_verification) | 提交短信验证码 |
 | [xhs_remove_account](/api/xhs_remove_account) | 删除账号 |
 | [xhs_set_account_config](/api/xhs_set_account_config) | 修改账号配置 |
@@ -52,3 +53,15 @@
 |------|------|
 | [xhs_download_images](/api/xhs_download_images) | 下载笔记图片 |
 | [xhs_download_video](/api/xhs_download_video) | 下载笔记视频 |
+
+## AI 创作与草稿
+
+| 工具 | 说明 |
+|------|------|
+| [xhs_generate_image](/api/xhs_generate_image) | 使用 Gemini AI 生成图片 |
+| [xhs_create_draft](/api/xhs_create_draft) | 创建笔记草稿 |
+| [xhs_list_drafts](/api/xhs_list_drafts) | 列出所有草稿 |
+| [xhs_get_draft](/api/xhs_get_draft) | 获取草稿详情 |
+| [xhs_update_draft](/api/xhs_update_draft) | 更新草稿 |
+| [xhs_delete_draft](/api/xhs_delete_draft) | 删除草稿 |
+| [xhs_publish_draft](/api/xhs_publish_draft) | 发布草稿 |

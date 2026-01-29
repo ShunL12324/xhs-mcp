@@ -32,7 +32,4 @@ features:
   - icon: 📊
     title: Statistics
     details: Operation logs, success rate tracking
-  - icon: 🛡️
-    title: Anti-Detection
-    details: Stealth scripts, human-like scrolling, webId bypass
 ---

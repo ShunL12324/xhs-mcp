@@ -199,7 +199,7 @@ export async function handleInteractionTools(
           const result = await ctx.client.likeFeed(params.noteId, params.xsecToken, params.unlike);
 
           // Record interaction
-          db.recordInteraction({
+          db.interactions.record({
             accountId: ctx.accountId,
             targetNoteId: params.noteId,
             action: params.unlike ? 'unlike' : 'like',
@@ -247,7 +247,7 @@ export async function handleInteractionTools(
         async (ctx) => {
           const result = await ctx.client.favoriteFeed(params.noteId, params.xsecToken, params.unfavorite);
 
-          db.recordInteraction({
+          db.interactions.record({
             accountId: ctx.accountId,
             targetNoteId: params.noteId,
             action: params.unfavorite ? 'unfavorite' : 'favorite',
@@ -295,7 +295,7 @@ export async function handleInteractionTools(
         async (ctx) => {
           const result = await ctx.client.postComment(params.noteId, params.xsecToken, params.content);
 
-          db.recordInteraction({
+          db.interactions.record({
             accountId: ctx.accountId,
             targetNoteId: params.noteId,
             action: 'comment',
@@ -347,7 +347,7 @@ export async function handleInteractionTools(
             params.content
           );
 
-          db.recordInteraction({
+          db.interactions.record({
             accountId: ctx.accountId,
             targetNoteId: params.noteId,
             action: 'reply',
@@ -391,7 +391,7 @@ export async function handleInteractionTools(
       }
 
       // Clear state in database
-      db.updateAccountState(account.id, null);
+      db.accounts.updateState(account.id, null);
 
       // Close the client to clear browser state
       const client = await pool.getClient(account.id);

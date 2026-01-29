@@ -1,6 +1,6 @@
 # xhs_submit_verification
 
-提交短信验证码完成登录。仅在 `xhs_check_login` 返回 `verification_required` 状态时调用。
+提交短信验证码完成登录。仅在 `xhs_check_login_session` 返回 `verification_required` 状态时调用。
 
 ## 参数
 

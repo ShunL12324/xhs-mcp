@@ -86,8 +86,8 @@ export async function handleStatsTools(
         };
       }
 
-      const stats = db.getAccountStats(account.id);
-      const profile = db.getAccountProfile(account.id);
+      const stats = db.operations.getStats(account.id);
+      const profile = db.profiles.findByAccountId(account.id);
 
       return {
         content: [
@@ -149,7 +149,7 @@ export async function handleStatsTools(
         };
       }
 
-      const logs = db.getOperationLogs(account.id, {
+      const logs = db.operations.findByAccountId(account.id, {
         action: params.action,
         limit: params.limit,
         offset: params.offset,

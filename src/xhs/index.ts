@@ -15,6 +15,7 @@ import {
   PublishResult,
   InteractionResult,
   CommentResult,
+  LoginUserInfo,
 } from './types.js';
 
 /**
@@ -75,7 +76,11 @@ export class XhsClient {
     return await this.browserClient.login();
   }
 
-  async checkLoginStatus(): Promise<{ loggedIn: boolean; message: string }> {
+  async checkLoginStatus(): Promise<{
+    loggedIn: boolean;
+    message: string;
+    userInfo?: LoginUserInfo;
+  }> {
     return await this.browserClient.checkLoginStatus();
   }
 

@@ -9,20 +9,25 @@ import { z } from 'zod';
 import { AccountPool } from '../core/account-pool.js';
 import { XhsDatabase } from '../db/index.js';
 import { resolveAccount, executeWithAccount } from '../core/multi-account.js';
+import { createLogger } from '../core/logger.js';
+
+const log = createLogger('tools:auth');
 
 /**
  * Authentication tool definitions for MCP.
  */
 export const authTools: Tool[] = [
   {
-    name: 'xhs_check_login',
-    description: 'Check if an account is currently logged in to Xiaohongshu. Returns login status.',
+    name: 'xhs_check_auth_status',
+    description:
+      'Check if an account is currently logged in to Xiaohongshu. If logged in, syncs user profile (nickname, userId, etc.) to database.',
     inputSchema: {
       type: 'object',
       properties: {
         account: {
           type: 'string',
-          description: 'Account name or ID to check. If not specified and only one account exists, uses that.',
+          description:
+            'Account name or ID to check. If not specified and only one account exists, uses that.',
         },
       },
     },
@@ -45,7 +50,7 @@ export async function handleAuthTools(
   db: XhsDatabase
 ) {
   switch (name) {
-    case 'xhs_check_login': {
+    case 'xhs_check_auth_status': {
       const params = z
         .object({
           account: z.string().optional(),
@@ -62,6 +67,27 @@ export async function handleAuthTools(
                 {
                   loggedIn: false,
                   error: resolved.error,
+                },
+                null,
+                2
+              ),
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      // 获取完整的账户对象，用于后续更新操作
+      const accountObj = pool.getAccount(resolved.account);
+      if (!accountObj) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(
+                {
+                  loggedIn: false,
+                  error: `Account not found: ${resolved.account}`,
                 },
                 null,
                 2
@@ -101,16 +127,76 @@ export async function handleAuthTools(
         };
       }
 
+      const loginResult = result.result!;
+      let profileSynced = false;
+      let accountNameUpdated = false;
+      let newAccountName: string | undefined;
+
+      // 如果已登录且获取到了用户信息，同步到数据库
+      if (loginResult.loggedIn && loginResult.userInfo) {
+        const userInfo = loginResult.userInfo;
+        log.info('Syncing user profile', {
+          accountId: accountObj.id,
+          userId: userInfo.userId,
+          nickname: userInfo.nickname,
+        });
+
+        // 更新 account_profiles 表
+        db.profiles.upsert({
+          accountId: accountObj.id,
+          userId: userInfo.userId,
+          redId: userInfo.redId,
+          nickname: userInfo.nickname,
+          avatar: userInfo.avatar,
+          description: userInfo.desc,
+          gender: userInfo.gender,
+        });
+        profileSynced = true;
+
+        // 如果账户名是默认名称（如 manual-import），更新为 nickname
+        const currentName = accountObj.name;
+        const isDefaultName =
+          currentName.startsWith('manual') ||
+          currentName.startsWith('acc_') ||
+          currentName.includes('import');
+
+        if (isDefaultName && userInfo.nickname) {
+          try {
+            await pool.updateAccountConfig(accountObj.id, {
+              name: userInfo.nickname,
+            });
+            accountNameUpdated = true;
+            newAccountName = userInfo.nickname;
+            log.info('Updated account name', {
+              from: currentName,
+              to: userInfo.nickname,
+            });
+          } catch (e) {
+            // 名称可能已存在，忽略错误
+            log.debug('Could not update account name', { error: e });
+          }
+        }
+      }
+
       return {
         content: [
           {
             type: 'text',
             text: JSON.stringify(
               {
-                account: result.account,
-                loggedIn: result.result!.loggedIn,
-                message: result.result!.message,
-                hint: result.result!.loggedIn
+                account: accountNameUpdated ? newAccountName : result.account,
+                loggedIn: loginResult.loggedIn,
+                message: loginResult.message,
+                userInfo: loginResult.userInfo
+                  ? {
+                      userId: loginResult.userInfo.userId,
+                      redId: loginResult.userInfo.redId,
+                      nickname: loginResult.userInfo.nickname,
+                    }
+                  : undefined,
+                profileSynced,
+                accountNameUpdated,
+                hint: loginResult.loggedIn
                   ? 'You can now use other xhs tools.'
                   : 'Please use xhs_add_account to login.',
               },

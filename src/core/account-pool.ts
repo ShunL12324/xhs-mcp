@@ -48,7 +48,7 @@ export class AccountPool {
    * 优先尝试 ID，然后尝试名称
    */
   private resolveAccount(accountIdOrName: string): Account | null {
-    return this.db.getAccountById(accountIdOrName) || this.db.getAccountByName(accountIdOrName);
+    return this.db.accounts.findById(accountIdOrName) || this.db.accounts.findByName(accountIdOrName);
   }
 
   /**
@@ -74,7 +74,7 @@ export class AccountPool {
       proxy: account.proxy,
       onStateChange: async (state) => {
         // Save state to database when it changes
-        this.db.updateAccountState(account!.id, state);
+        this.db.accounts.updateState(account!.id, state);
       },
     });
 
@@ -102,7 +102,7 @@ export class AccountPool {
    * Get clients for all active accounts
    */
   async getAllClients(): Promise<Map<string, XhsClient>> {
-    const accounts = this.db.getActiveAccounts();
+    const accounts = this.db.accounts.findActive();
     const result = new Map<string, XhsClient>();
 
     for (const account of accounts) {
@@ -122,7 +122,7 @@ export class AccountPool {
    */
   async addAccount(name?: string, proxy?: string): Promise<{ account: Account; client: XhsClient; isNew: boolean }> {
     // Check if account already exists (only if name was provided)
-    const existing = name ? this.db.getAccountByName(name) : null;
+    const existing = name ? this.db.accounts.findByName(name) : null;
 
     if (existing) {
       // Close existing client if any
@@ -134,16 +134,16 @@ export class AccountPool {
 
       // Update proxy if provided
       if (proxy !== undefined) {
-        this.db.updateAccountConfig(existing.id, { proxy });
+        this.db.accounts.updateConfig(existing.id, { proxy });
       }
 
       // Create new client for re-login
-      const account = this.db.getAccountById(existing.id)!;
+      const account = this.db.accounts.findById(existing.id)!;
       const client = new XhsClient({
         accountId: account.id,
         proxy: proxy || account.proxy,
         onStateChange: async (state) => {
-          this.db.updateAccountState(account.id, state);
+          this.db.accounts.updateState(account.id, state);
         },
       });
 
@@ -176,17 +176,17 @@ export class AccountPool {
   ): Promise<Account> {
     // Check if nickname is already used
     let accountName = nickname;
-    const existing = this.db.getAccountByName(nickname);
+    const existing = this.db.accounts.findByName(nickname);
     if (existing) {
       // Append timestamp to make it unique
       accountName = `${nickname}_${Date.now()}`;
     }
 
     // Create new account in database
-    const account = this.db.createAccount(accountName, proxy);
+    const account = this.db.accounts.create(accountName, proxy);
 
     // Save the login state
-    this.db.updateAccountState(account.id, state);
+    this.db.accounts.updateState(account.id, state);
 
     // Create client with the state
     const client = new XhsClient({
@@ -194,7 +194,7 @@ export class AccountPool {
       state,
       proxy: account.proxy,
       onStateChange: async (newState) => {
-        this.db.updateAccountState(account.id, newState);
+        this.db.accounts.updateState(account.id, newState);
       },
     });
 
@@ -232,7 +232,7 @@ export class AccountPool {
     }
 
     // Delete from database
-    return this.db.deleteAccount(account.id);
+    return this.db.accounts.delete(account.id);
   }
 
   /**
@@ -246,7 +246,7 @@ export class AccountPool {
    * List all accounts
    */
   listAccounts(): Account[] {
-    return this.db.getAllAccounts();
+    return this.db.accounts.findAll();
   }
 
   /**
@@ -262,7 +262,7 @@ export class AccountPool {
       return false;
     }
 
-    this.db.updateAccountConfig(account.id, updates);
+    this.db.accounts.updateConfig(account.id, updates);
 
     // If proxy changed, recreate the client
     if (updates.proxy !== undefined && this.clients.has(account.id)) {
@@ -320,7 +320,7 @@ export class AccountPool {
     const account = this.resolveAccount(accountIdOrName);
 
     if (account) {
-      this.db.touchAccount(account.id);
+      this.db.accounts.touch(account.id);
     }
   }
 

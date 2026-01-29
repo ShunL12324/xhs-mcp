@@ -26,7 +26,7 @@ The QR code is also uploaded to a temporary image hosting service, allowing you 
 Check that you're logged in:
 
 ```
-xhs_check_login({ account: "my-account" })
+xhs_check_auth_status({ account: "my-account" })
 ```
 
 ## Step 3: Search for Content

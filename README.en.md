@@ -25,8 +25,8 @@
 - **Content Query** - Search notes, get details, user profiles, homepage feeds
 - **Publishing** - Image/video notes, scheduled posting
 - **Interactions** - Like, favorite, comment, reply
+- **AI Creation** - Gemini AI image generation, draft management
 - **Statistics** - Operation logs, success rate tracking
-- **Anti-Detection** - Stealth scripts, human-like scrolling, webId bypass
 
 ## Quick Start
 
@@ -98,7 +98,7 @@ Add the same configuration to MCP settings:
 ```
 1. Call xhs_add_account() → Get sessionId and QR code URL
 2. Scan the QR code (or visit the returned qrCodeUrl)
-3. Call xhs_check_login({ sessionId }) to check status
+3. Call xhs_check_login_session({ sessionId }) to check status
 4. If SMS verification needed, call xhs_submit_verification({ sessionId, code })
 5. Done! Session is saved automatically
 ```
@@ -107,13 +107,14 @@ Add the same configuration to MCP settings:
 
 | Category | Tools |
 |----------|-------|
-| Account | `xhs_list_accounts`, `xhs_add_account`, `xhs_check_login`, `xhs_submit_verification`, `xhs_remove_account`, `xhs_set_account_config` |
+| Account | `xhs_list_accounts`, `xhs_add_account`, `xhs_check_login_session`, `xhs_submit_verification`, `xhs_remove_account`, `xhs_set_account_config` |
+| Auth | `xhs_check_auth_status` |
 | Content | `xhs_search`, `xhs_get_note`, `xhs_user_profile`, `xhs_list_feeds` |
 | Publish | `xhs_publish_content`, `xhs_publish_video` |
-| Interact | `xhs_like_feed`, `xhs_favorite_feed`, `xhs_post_comment`, `xhs_reply_comment` |
+| Interact | `xhs_like_feed`, `xhs_favorite_feed`, `xhs_post_comment`, `xhs_reply_comment`, `xhs_delete_cookies` |
 | Stats | `xhs_get_account_stats`, `xhs_get_operation_logs` |
 | Download | `xhs_download_images`, `xhs_download_video` |
-| Other | `xhs_delete_cookies` |
+| AI Creation | `xhs_generate_image`, `xhs_create_draft`, `xhs_list_drafts`, `xhs_get_draft`, `xhs_update_draft`, `xhs_delete_draft`, `xhs_publish_draft` |
 
 > Full API documentation at [Documentation](https://shunl12324.github.io/xhs-mcp/en/api/)
 

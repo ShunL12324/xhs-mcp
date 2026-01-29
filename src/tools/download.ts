@@ -198,7 +198,7 @@ export async function handleDownloadTools(
           const result = await downloadFile(img.url, destPath);
 
           // Record in database
-          db.recordDownload({
+          db.downloads.record({
             noteId: params.noteId,
             fileType: 'image',
             filePath: destPath,
@@ -290,7 +290,7 @@ export async function handleDownloadTools(
         const result = await downloadFile(note.video.url, destPath);
 
         // Record in database
-        db.recordDownload({
+        db.downloads.record({
           noteId: params.noteId,
           fileType: 'video',
           filePath: destPath,

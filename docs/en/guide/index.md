@@ -1,6 +1,6 @@
 # Introduction
 
-XHS-MCP is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that provides tools for interacting with Xiaohongshu (小红书/RedNote). It uses Playwright for browser automation with anti-detection measures.
+XHS-MCP is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that provides tools for interacting with Xiaohongshu (小红书/RedNote). It uses Playwright for browser automation.
 
 ## Key Features
 

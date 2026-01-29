@@ -14,7 +14,6 @@
 
 - 基于 Playwright 的浏览器自动化
 - SQLite 数据库存储会话和日志
-- 反检测措施（Stealth 脚本、人类模拟行为）
 - 支持 stdio 和 HTTP 两种传输模式
 
 ## 下一步

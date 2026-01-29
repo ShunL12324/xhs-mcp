@@ -25,8 +25,8 @@
 - **内容查询** - 搜索笔记、获取详情、用户资料、首页推荐
 - **内容发布** - 图文/视频笔记、定时发布
 - **互动功能** - 点赞、收藏、评论、回复
+- **AI 创作** - Gemini AI 图片生成、草稿管理
 - **数据统计** - 操作日志、成功率追踪
-- **反检测** - Stealth 脚本、人类模拟滚动、webId 绕过
 
 ## 快速开始
 
@@ -98,7 +98,7 @@ claude mcp add xhs -- npx -y @sillyl12324/xhs-mcp@latest
 ```
 1. 调用 xhs_add_account() → 获取 sessionId 和二维码 URL
 2. 扫描二维码（或访问返回的 qrCodeUrl）
-3. 调用 xhs_check_login({ sessionId }) 检查状态
+3. 调用 xhs_check_login_session({ sessionId }) 检查状态
 4. 如需短信验证，调用 xhs_submit_verification({ sessionId, code })
 5. 完成！会话自动保存
 ```
@@ -107,13 +107,14 @@ claude mcp add xhs -- npx -y @sillyl12324/xhs-mcp@latest
 
 | 类别 | 工具 |
 |------|------|
-| 账号管理 | `xhs_list_accounts`, `xhs_add_account`, `xhs_check_login`, `xhs_submit_verification`, `xhs_remove_account`, `xhs_set_account_config` |
+| 账号管理 | `xhs_list_accounts`, `xhs_add_account`, `xhs_check_login_session`, `xhs_submit_verification`, `xhs_remove_account`, `xhs_set_account_config` |
+| 认证 | `xhs_check_auth_status` |
 | 内容查询 | `xhs_search`, `xhs_get_note`, `xhs_user_profile`, `xhs_list_feeds` |
 | 内容发布 | `xhs_publish_content`, `xhs_publish_video` |
-| 互动功能 | `xhs_like_feed`, `xhs_favorite_feed`, `xhs_post_comment`, `xhs_reply_comment` |
+| 互动功能 | `xhs_like_feed`, `xhs_favorite_feed`, `xhs_post_comment`, `xhs_reply_comment`, `xhs_delete_cookies` |
 | 数据统计 | `xhs_get_account_stats`, `xhs_get_operation_logs` |
 | 下载 | `xhs_download_images`, `xhs_download_video` |
-| 其他 | `xhs_delete_cookies` |
+| AI 创作 | `xhs_generate_image`, `xhs_create_draft`, `xhs_list_drafts`, `xhs_get_draft`, `xhs_update_draft`, `xhs_delete_draft`, `xhs_publish_draft` |
 
 > 详细 API 文档请访问 [完整文档](https://shunl12324.github.io/xhs-mcp/api/)
 

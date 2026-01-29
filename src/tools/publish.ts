@@ -155,7 +155,7 @@ export async function handlePublishTools(
 
           // Record in database if successful
           if (result.success) {
-            db.recordPublishedNote({
+            db.published.record({
               accountId: ctx.accountId,
               noteId: result.noteId,
               title: params.title,
@@ -222,7 +222,7 @@ export async function handlePublishTools(
 
           // Record in database if successful
           if (result.success) {
-            db.recordPublishedNote({
+            db.published.record({
               accountId: ctx.accountId,
               noteId: result.noteId,
               title: params.title,

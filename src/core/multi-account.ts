@@ -106,7 +106,7 @@ export async function executeWithAccount<T>(
     const durationMs = Date.now() - startTime;
 
     // Log success
-    db.logOperation({
+    db.operations.log({
       accountId: account.id,
       action,
       params: options?.logParams,
@@ -129,7 +129,7 @@ export async function executeWithAccount<T>(
     const errorMessage = error instanceof Error ? error.message : String(error);
 
     // Log failure
-    db.logOperation({
+    db.operations.log({
       accountId: account.id,
       action,
       params: options?.logParams,

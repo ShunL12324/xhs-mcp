@@ -17,7 +17,8 @@ XHS-MCP provides a comprehensive set of MCP tools for interacting with Xiaohongs
 ### Account Management
 - `xhs_list_accounts` - List all registered accounts
 - `xhs_add_account` - Start login flow (returns QR code)
-- `xhs_check_login` - Check login status (call after QR scan)
+- `xhs_check_login_session` - Check login status (call after QR scan)
+- `xhs_check_auth_status` - Check if account is logged in (syncs profile)
 - `xhs_submit_verification` - Submit SMS verification code
 - `xhs_remove_account` - Remove an account
 - `xhs_set_account_config` - Update account name, proxy, or status
@@ -44,6 +45,15 @@ XHS-MCP provides a comprehensive set of MCP tools for interacting with Xiaohongs
 ### Downloads
 - `xhs_download_images` - Download note images
 - `xhs_download_video` - Download note video
+
+### AI Creation & Drafts
+- `xhs_generate_image` - Generate image using Gemini AI
+- `xhs_create_draft` - Create a note draft
+- `xhs_list_drafts` - List all drafts
+- `xhs_get_draft` - Get draft details
+- `xhs_update_draft` - Update a draft
+- `xhs_delete_draft` - Delete a draft
+- `xhs_publish_draft` - Publish a draft
 
 ### Statistics
 - `xhs_get_account_stats` - Get account statistics
