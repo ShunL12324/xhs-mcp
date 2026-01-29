@@ -132,14 +132,54 @@ export default defineConfig({
           ],
           '/en/api/': [
             {
-              text: 'MCP Tools',
+              text: 'Account',
               items: [
                 { text: 'Overview', link: '/en/api/' },
-                { text: 'Account Management', link: '/en/api/account' },
-                { text: 'Content Query', link: '/en/api/content' },
-                { text: 'Publishing', link: '/en/api/publish' },
-                { text: 'Interactions', link: '/en/api/interaction' },
-                { text: 'Statistics', link: '/en/api/stats' },
+                { text: 'xhs_list_accounts', link: '/en/api/xhs_list_accounts' },
+                { text: 'xhs_add_account', link: '/en/api/xhs_add_account' },
+                { text: 'xhs_remove_account', link: '/en/api/xhs_remove_account' },
+                { text: 'xhs_set_account_config', link: '/en/api/xhs_set_account_config' },
+                { text: 'xhs_check_login', link: '/en/api/xhs_check_login' },
+                { text: 'xhs_delete_cookies', link: '/en/api/xhs_delete_cookies' },
+              ]
+            },
+            {
+              text: 'Content',
+              items: [
+                { text: 'xhs_search', link: '/en/api/xhs_search' },
+                { text: 'xhs_get_note', link: '/en/api/xhs_get_note' },
+                { text: 'xhs_user_profile', link: '/en/api/xhs_user_profile' },
+                { text: 'xhs_list_feeds', link: '/en/api/xhs_list_feeds' },
+              ]
+            },
+            {
+              text: 'Publish',
+              items: [
+                { text: 'xhs_publish_content', link: '/en/api/xhs_publish_content' },
+                { text: 'xhs_publish_video', link: '/en/api/xhs_publish_video' },
+              ]
+            },
+            {
+              text: 'Interact',
+              items: [
+                { text: 'xhs_like_feed', link: '/en/api/xhs_like_feed' },
+                { text: 'xhs_favorite_feed', link: '/en/api/xhs_favorite_feed' },
+                { text: 'xhs_post_comment', link: '/en/api/xhs_post_comment' },
+                { text: 'xhs_reply_comment', link: '/en/api/xhs_reply_comment' },
+              ]
+            },
+            {
+              text: 'Stats',
+              items: [
+                { text: 'xhs_get_account_stats', link: '/en/api/xhs_get_account_stats' },
+                { text: 'xhs_get_operation_logs', link: '/en/api/xhs_get_operation_logs' },
+              ]
+            },
+            {
+              text: 'Download',
+              items: [
+                { text: 'xhs_download_images', link: '/en/api/xhs_download_images' },
+                { text: 'xhs_download_video', link: '/en/api/xhs_download_video' },
               ]
             }
           ]
