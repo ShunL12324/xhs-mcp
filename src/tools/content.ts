@@ -79,7 +79,7 @@ export const contentTools: Tool[] = [
         },
         describeImages: {
           type: 'boolean',
-          description: 'If true, use Gemini LLM to analyze and describe all images in the note. WARNING: This consumes significant tokens and requires GEMINI_API_KEY to be configured.',
+          description: 'If true, use LLM to analyze and describe all images in the note. Note: This consumes significant tokens.',
         },
         account: {
           type: 'string',
