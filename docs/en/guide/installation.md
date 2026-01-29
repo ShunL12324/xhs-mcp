@@ -158,6 +158,8 @@ Customize server behavior via environment variables:
 | `XHS_MCP_REQUEST_INTERVAL` | `2000` | Request interval in ms (rate limiting) |
 | `XHS_MCP_TIMEOUT_PAGE_LOAD` | `30000` | Page load timeout in ms |
 | `XHS_MCP_TIMEOUT_VIDEO_UPLOAD` | `300000` | Video upload timeout in ms |
+| `GEMINI_BASE_URL` | `https://generativelanguage.googleapis.com` | Gemini API base URL |
+| `GEMINI_API_KEY` | - | Gemini API key |
 
 Set environment variables in MCP configuration:
 
