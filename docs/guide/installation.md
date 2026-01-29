@@ -133,14 +133,47 @@ npx @sillyl12324/xhs-mcp@latest --http --port 8080  # 自定义端口
 
 ## 数据目录
 
-所有数据存储在 `~/.xhs-mcp/` 目录：
+所有数据存储在 `~/.xhs-mcp/` 目录（可通过 `XHS_MCP_DATA_DIR` 环境变量自定义）：
 
 ```
 ~/.xhs-mcp/
 ├── data.db          # SQLite 数据库
+├── logs/            # 日志文件
+│   └── xhs-mcp.log
 └── downloads/       # 下载的图片和视频
     ├── images/
     └── videos/
+```
+
+## 环境变量
+
+可通过环境变量自定义服务器行为：
+
+| 变量 | 默认值 | 说明 |
+|-----|-------|------|
+| `XHS_MCP_PORT` | `18060` | HTTP 服务端口 |
+| `XHS_MCP_DATA_DIR` | `~/.xhs-mcp` | 数据目录路径 |
+| `XHS_MCP_LOG_LEVEL` | `debug` | 日志级别 (debug/info/warn/error) |
+| `XHS_MCP_HEADLESS` | `true` | 浏览器无头模式，调试时设为 `false` |
+| `XHS_MCP_REQUEST_INTERVAL` | `2000` | 请求间隔(毫秒)，用于速率限制 |
+| `XHS_MCP_TIMEOUT_PAGE_LOAD` | `30000` | 页面加载超时(毫秒) |
+| `XHS_MCP_TIMEOUT_VIDEO_UPLOAD` | `300000` | 视频上传超时(毫秒) |
+
+在 MCP 配置中设置环境变量：
+
+```json
+{
+  "mcpServers": {
+    "xhs": {
+      "command": "npx",
+      "args": ["-y", "@sillyl12324/xhs-mcp@latest"],
+      "env": {
+        "XHS_MCP_LOG_LEVEL": "info",
+        "XHS_MCP_HEADLESS": "false"
+      }
+    }
+  }
+}
 ```
 
 ## 验证安装

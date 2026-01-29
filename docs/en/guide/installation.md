@@ -133,14 +133,47 @@ Endpoints:
 
 ## Data Directory
 
-All data is stored in `~/.xhs-mcp/`:
+All data is stored in `~/.xhs-mcp/` (customizable via `XHS_MCP_DATA_DIR` environment variable):
 
 ```
 ~/.xhs-mcp/
 ├── data.db          # SQLite database
+├── logs/            # Log files
+│   └── xhs-mcp.log
 └── downloads/       # Downloaded images and videos
     ├── images/
     └── videos/
+```
+
+## Environment Variables
+
+Customize server behavior via environment variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `XHS_MCP_PORT` | `18060` | HTTP server port |
+| `XHS_MCP_DATA_DIR` | `~/.xhs-mcp` | Data directory path |
+| `XHS_MCP_LOG_LEVEL` | `debug` | Log level (debug/info/warn/error) |
+| `XHS_MCP_HEADLESS` | `true` | Browser headless mode, set `false` for debugging |
+| `XHS_MCP_REQUEST_INTERVAL` | `2000` | Request interval in ms (rate limiting) |
+| `XHS_MCP_TIMEOUT_PAGE_LOAD` | `30000` | Page load timeout in ms |
+| `XHS_MCP_TIMEOUT_VIDEO_UPLOAD` | `300000` | Video upload timeout in ms |
+
+Set environment variables in MCP configuration:
+
+```json
+{
+  "mcpServers": {
+    "xhs": {
+      "command": "npx",
+      "args": ["-y", "@sillyl12324/xhs-mcp@latest"],
+      "env": {
+        "XHS_MCP_LOG_LEVEL": "info",
+        "XHS_MCP_HEADLESS": "false"
+      }
+    }
+  }
+}
 ```
 
 ## Verify Installation
