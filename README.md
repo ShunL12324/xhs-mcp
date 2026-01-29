@@ -30,19 +30,14 @@
 
 ## 快速开始
 
-### 安装
+### 安装到 MCP 客户端
 
-```bash
-# 使用 npx（推荐，无需安装）
-npx @sillyl12324/xhs-mcp
+<details>
+<summary><b>Claude Desktop</b></summary>
 
-# 或全局安装
-npm install -g @sillyl12324/xhs-mcp
-```
-
-### 配置 MCP 客户端
-
-在 Claude Desktop 或 Claude Code 配置中添加：
+编辑配置文件：
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 
 ```json
 {
@@ -54,6 +49,43 @@ npm install -g @sillyl12324/xhs-mcp
   }
 }
 ```
+</details>
+
+<details>
+<summary><b>Claude Code</b></summary>
+
+在项目根目录创建 `.mcp.json`：
+
+```json
+{
+  "mcpServers": {
+    "xhs": {
+      "command": "npx",
+      "args": ["-y", "@sillyl12324/xhs-mcp"]
+    }
+  }
+}
+```
+</details>
+
+<details>
+<summary><b>Cursor / Cline / 其他</b></summary>
+
+在 MCP 设置中添加相同配置：
+
+```json
+{
+  "mcpServers": {
+    "xhs": {
+      "command": "npx",
+      "args": ["-y", "@sillyl12324/xhs-mcp"]
+    }
+  }
+}
+```
+</details>
+
+> 详细配置说明请查看 [安装文档](https://shunl12324.github.io/xhs-mcp/guide/installation)
 
 ### 登录
 

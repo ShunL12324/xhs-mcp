@@ -1,34 +1,34 @@
-# 安装
+# 安装配置
 
-## 使用 npx（推荐）
+## 前置要求
 
-无需安装，直接运行：
+- [Node.js](https://nodejs.org/) 18+ 或 [Bun](https://bun.sh/)
+- 小红书账号
 
-```bash
-npx @sillyl12324/xhs-mcp
-```
-
-## 全局安装
-
-```bash
-npm install -g @sillyl12324/xhs-mcp
-```
-
-安装后运行：
-
-```bash
-xhs-mcp
-```
-
-## 配置 MCP 客户端
-
-### Claude Desktop
+## Claude Desktop
 
 编辑配置文件：
-- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 
-添加以下内容：
+添加以下配置：
+
+```json
+{
+  "mcpServers": {
+    "xhs": {
+      "command": "npx",
+      "args": ["-y", "@sillyl12324/xhs-mcp"]
+    }
+  }
+}
+```
+
+重启 Claude Desktop 即可使用。
+
+## Claude Code
+
+在项目根目录创建 `.mcp.json` 文件：
 
 ```json
 {
@@ -41,9 +41,7 @@ xhs-mcp
 }
 ```
 
-### Claude Code
-
-在项目根目录创建 `.mcp.json`：
+或者添加到全局配置 `~/.claude/settings.json`：
 
 ```json
 {
@@ -55,15 +53,57 @@ xhs-mcp
   }
 }
 ```
+
+## Cursor
+
+打开 Cursor 设置，找到 MCP 配置部分，添加：
+
+```json
+{
+  "mcpServers": {
+    "xhs": {
+      "command": "npx",
+      "args": ["-y", "@sillyl12324/xhs-mcp"]
+    }
+  }
+}
+```
+
+## Cline (VS Code)
+
+在 Cline 扩展设置中配置 MCP 服务器：
+
+```json
+{
+  "mcpServers": {
+    "xhs": {
+      "command": "npx",
+      "args": ["-y", "@sillyl12324/xhs-mcp"]
+    }
+  }
+}
+```
+
+## 其他 MCP 客户端
+
+任何支持 MCP 协议的客户端都可以使用。配置方式：
+
+- **命令**: `npx`
+- **参数**: `["-y", "@sillyl12324/xhs-mcp"]`
 
 ## HTTP 模式
 
-如需 HTTP 传输模式：
+对于需要 HTTP 传输的客户端：
 
 ```bash
 npx @sillyl12324/xhs-mcp --http
 npx @sillyl12324/xhs-mcp --http --port 8080  # 自定义端口
 ```
+
+端点：
+- `POST /mcp` - MCP 协议端点
+- `GET /health` - 健康检查
+- `GET /` - 服务器信息
 
 ## 数据目录
 
@@ -76,3 +116,13 @@ npx @sillyl12324/xhs-mcp --http --port 8080  # 自定义端口
     ├── images/
     └── videos/
 ```
+
+## 验证安装
+
+配置完成后，在 MCP 客户端中调用：
+
+```
+xhs_list_accounts
+```
+
+如果返回空列表，说明安装成功。接下来请查看[快速开始](./quick-start)添加你的第一个账号。

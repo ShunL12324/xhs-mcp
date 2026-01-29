@@ -30,19 +30,14 @@
 
 ## Quick Start
 
-### Installation
+### Install to MCP Client
 
-```bash
-# Using npx (recommended, no installation needed)
-npx @sillyl12324/xhs-mcp
+<details>
+<summary><b>Claude Desktop</b></summary>
 
-# Or install globally
-npm install -g @sillyl12324/xhs-mcp
-```
-
-### Configure MCP Client
-
-Add to your Claude Desktop or Claude Code configuration:
+Edit configuration file:
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 
 ```json
 {
@@ -54,6 +49,43 @@ Add to your Claude Desktop or Claude Code configuration:
   }
 }
 ```
+</details>
+
+<details>
+<summary><b>Claude Code</b></summary>
+
+Create `.mcp.json` in your project root:
+
+```json
+{
+  "mcpServers": {
+    "xhs": {
+      "command": "npx",
+      "args": ["-y", "@sillyl12324/xhs-mcp"]
+    }
+  }
+}
+```
+</details>
+
+<details>
+<summary><b>Cursor / Cline / Others</b></summary>
+
+Add the same configuration to MCP settings:
+
+```json
+{
+  "mcpServers": {
+    "xhs": {
+      "command": "npx",
+      "args": ["-y", "@sillyl12324/xhs-mcp"]
+    }
+  }
+}
+```
+</details>
+
+> For detailed setup instructions, see [Installation Guide](https://shunl12324.github.io/xhs-mcp/en/guide/installation)
 
 ### Login
 

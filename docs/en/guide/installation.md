@@ -2,87 +2,102 @@
 
 ## Prerequisites
 
-- [Node.js](https://nodejs.org/) 18+ or [Bun](https://bun.sh/) runtime
+- [Node.js](https://nodejs.org/) 18+ or [Bun](https://bun.sh/)
 - A Xiaohongshu account
 
-## Install from npm
+## Claude Desktop
 
-```bash
-npm install -g @anthropic/claude-code
-npx @anthropic/mcp add @anthropic/xhs-mcp
-```
+Edit the configuration file:
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 
-Or with Bun:
-
-```bash
-bunx @anthropic/mcp add @anthropic/xhs-mcp
-```
-
-## Manual Installation
-
-### Clone the Repository
-
-```bash
-git clone https://github.com/ShunL12324/xhs-mcp.git
-cd xhs-mcp
-```
-
-### Install Dependencies
-
-```bash
-bun install
-# or
-npm install
-```
-
-### Build
-
-```bash
-bun run build
-# or
-npm run build
-```
-
-## Configure MCP Client
-
-### Claude Desktop
-
-Add to your `claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "xhs-mcp": {
-      "command": "node",
-      "args": ["/path/to/xhs-mcp/dist/index.js"]
-    }
-  }
-}
-```
-
-### Claude Code
-
-Add to your `.mcp.json`:
+Add the following configuration:
 
 ```json
 {
   "mcpServers": {
     "xhs": {
-      "command": "node",
-      "args": ["/path/to/xhs-mcp/dist/index.js"]
+      "command": "npx",
+      "args": ["-y", "@sillyl12324/xhs-mcp"]
     }
   }
 }
 ```
 
-## HTTP Transport Mode
+Restart Claude Desktop to use.
 
-For web-based clients, you can run the server in HTTP mode:
+## Claude Code
+
+Create a `.mcp.json` file in your project root:
+
+```json
+{
+  "mcpServers": {
+    "xhs": {
+      "command": "npx",
+      "args": ["-y", "@sillyl12324/xhs-mcp"]
+    }
+  }
+}
+```
+
+Or add to global settings `~/.claude/settings.json`:
+
+```json
+{
+  "mcpServers": {
+    "xhs": {
+      "command": "npx",
+      "args": ["-y", "@sillyl12324/xhs-mcp"]
+    }
+  }
+}
+```
+
+## Cursor
+
+Open Cursor settings, find the MCP configuration section, and add:
+
+```json
+{
+  "mcpServers": {
+    "xhs": {
+      "command": "npx",
+      "args": ["-y", "@sillyl12324/xhs-mcp"]
+    }
+  }
+}
+```
+
+## Cline (VS Code)
+
+Configure MCP server in Cline extension settings:
+
+```json
+{
+  "mcpServers": {
+    "xhs": {
+      "command": "npx",
+      "args": ["-y", "@sillyl12324/xhs-mcp"]
+    }
+  }
+}
+```
+
+## Other MCP Clients
+
+Any MCP-compatible client can use this server. Configuration:
+
+- **Command**: `npx`
+- **Arguments**: `["-y", "@sillyl12324/xhs-mcp"]`
+
+## HTTP Mode
+
+For clients that require HTTP transport:
 
 ```bash
-bun run start:http
-# or
-node dist/index.js --http --port 18060
+npx @sillyl12324/xhs-mcp --http
+npx @sillyl12324/xhs-mcp --http --port 8080  # Custom port
 ```
 
 Endpoints:
@@ -90,12 +105,24 @@ Endpoints:
 - `GET /health` - Health check
 - `GET /` - Server info
 
+## Data Directory
+
+All data is stored in `~/.xhs-mcp/`:
+
+```
+~/.xhs-mcp/
+├── data.db          # SQLite database
+└── downloads/       # Downloaded images and videos
+    ├── images/
+    └── videos/
+```
+
 ## Verify Installation
 
-After configuration, you should see XHS-MCP tools available in your MCP client. Try listing accounts:
+After configuration, call in your MCP client:
 
 ```
 xhs_list_accounts
 ```
 
-If no accounts exist, proceed to [Quick Start](/guide/quick-start) to add your first account.
+If it returns an empty list, the installation is successful. Proceed to [Quick Start](./quick-start) to add your first account.
