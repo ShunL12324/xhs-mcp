@@ -13,7 +13,7 @@
 
 **v2.0: Multi-account support + SQLite database storage**
 
-[Documentation](https://shunl12324.github.io/xhs-mcp/) · [Issues](https://github.com/ShunL12324/xhs-mcp/issues)
+[Documentation](https://shunl12324.github.io/xhs-mcp/en/) · [Issues](https://github.com/ShunL12324/xhs-mcp/issues)
 
 </div>
 
@@ -75,7 +75,7 @@ Add to your Claude Desktop or Claude Code configuration:
 | Download | `xhs_download_images`, `xhs_download_video` |
 | Auth | `xhs_check_login`, `xhs_delete_cookies` |
 
-> Full API documentation at [Documentation](https://shunl12324.github.io/xhs-mcp/api/)
+> Full API documentation at [Documentation](https://shunl12324.github.io/xhs-mcp/en/api/)
 
 ## Multi-Account Operations
 
