@@ -1,166 +1,99 @@
-# Search & Content
+# 内容查询
 
-XHS-MCP provides tools for searching and retrieving content from Xiaohongshu.
+## 搜索笔记
 
-## Searching Notes
-
-### Basic Search
+### 基本搜索
 
 ```
-xhs_search({ keyword: "美食" })
+xhs_search({ keyword: "美食推荐" })
 ```
 
-### With Filters
+### 搜索参数
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `keyword` | string | 搜索关键词（必填） |
+| `count` | number | 返回数量（默认 20，最大 500） |
+| `sortBy` | string | 排序方式 |
+| `noteType` | string | 笔记类型 |
+| `publishTime` | string | 发布时间 |
+| `account` | string | 使用的账号 |
+
+### 排序方式 (sortBy)
+
+| 值 | 说明 |
+|----|------|
+| `general` | 综合排序（默认） |
+| `latest` | 最新发布 |
+| `most_liked` | 最多点赞 |
+| `most_commented` | 最多评论 |
+| `most_collected` | 最多收藏 |
+
+### 笔记类型 (noteType)
+
+| 值 | 说明 |
+|----|------|
+| `all` | 全部（默认） |
+| `video` | 仅视频 |
+| `image` | 仅图文 |
+
+### 发布时间 (publishTime)
+
+| 值 | 说明 |
+|----|------|
+| `all` | 全部时间（默认） |
+| `day` | 最近一天 |
+| `week` | 最近一周 |
+| `half_year` | 最近半年 |
+
+### 完整示例
 
 ```
 xhs_search({
-  keyword: "旅行",
+  keyword: "护肤",
   count: 50,
-  sortBy: "latest",
-  noteType: "video",
+  sortBy: "most_liked",
+  noteType: "image",
   publishTime: "week"
 })
 ```
 
-### Filter Options
-
-| Parameter | Values | Description |
-|-----------|--------|-------------|
-| `sortBy` | `general`, `latest`, `most_liked`, `most_commented`, `most_collected` | Sort order |
-| `noteType` | `all`, `video`, `image` | Filter by content type |
-| `publishTime` | `all`, `day`, `week`, `half_year` | Filter by publish date |
-| `searchScope` | `all`, `viewed`, `not_viewed`, `following` | Filter by view status |
-
-### Search Response
-
-```json
-{
-  "count": 20,
-  "items": [
-    {
-      "id": "note-id",
-      "xsecToken": "security-token",
-      "title": "Note title",
-      "cover": "https://...",
-      "type": "normal",
-      "user": {
-        "nickname": "Author",
-        "avatar": "https://...",
-        "userid": "user-id"
-      },
-      "likes": "1234"
-    }
-  ]
-}
-```
-
-::: warning Important
-Always save the `xsecToken` from search results - it's required for fetching note details reliably.
-:::
-
-## Getting Note Details
+## 获取笔记详情
 
 ```
 xhs_get_note({
-  noteId: "note-id",
-  xsecToken: "token-from-search"
+  noteId: "xxx",
+  xsecToken: "yyy"
 })
 ```
 
-### Response Structure
+::: tip xsecToken
+`xsecToken` 从搜索结果中获取，用于验证访问权限。每个笔记都有对应的 token。
+:::
 
-```json
-{
-  "id": "note-id",
-  "title": "Note title",
-  "desc": "Full description...",
-  "type": "normal",
-  "time": 1704067200000,
-  "user": {
-    "nickname": "Author",
-    "avatar": "https://...",
-    "userid": "user-id"
-  },
-  "imageList": [
-    { "url": "https://...", "width": 1080, "height": 1920 }
-  ],
-  "video": {
-    "url": "https://...",
-    "duration": 60
-  },
-  "tags": ["tag1", "tag2"],
-  "stats": {
-    "likedCount": "1234",
-    "collectedCount": "567",
-    "commentCount": "89",
-    "shareCount": "12"
-  },
-  "comments": {
-    "list": [...],
-    "cursor": "...",
-    "hasMore": true
-  }
-}
-```
+### 返回内容
 
-## User Profiles
+- 标题、正文、标签
+- 图片/视频列表
+- 点赞、收藏、评论数
+- 作者信息
+- 评论列表
+
+## 获取用户资料
 
 ```
-xhs_user_profile({
-  userId: "user-id",
-  xsecToken: "optional-token"
-})
+xhs_user_profile({ userId: "xxx" })
 ```
 
-### Response
+返回：
+- 用户基本信息
+- 粉丝数、关注数
+- 发布的笔记列表
 
-```json
-{
-  "basic": {
-    "nickname": "Username",
-    "avatar": "https://...",
-    "desc": "Bio text",
-    "gender": 1,
-    "ipLocation": "Beijing",
-    "redId": "red-id"
-  },
-  "stats": {
-    "follows": "123",
-    "fans": "45678",
-    "interaction": "1.2M"
-  },
-  "notes": [...]
-}
-```
-
-## Homepage Feeds
-
-Get recommended content from the homepage:
+## 获取首页推荐
 
 ```
 xhs_list_feeds()
 ```
 
-## Downloading Media
-
-### Download Images
-
-```
-xhs_download_images({
-  noteId: "note-id",
-  xsecToken: "token"
-})
-```
-
-Images are saved to `~/.xhs-mcp/downloads/images/{noteId}/`
-
-### Download Videos
-
-```
-xhs_download_video({
-  noteId: "note-id",
-  xsecToken: "token"
-})
-```
-
-Videos are saved to `~/.xhs-mcp/downloads/videos/{noteId}/`
+返回首页推荐的笔记列表，包含 `noteId` 和 `xsecToken`。

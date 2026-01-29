@@ -1,100 +1,53 @@
-# API Overview
+# API 概览
 
-XHS-MCP provides a comprehensive set of MCP tools for interacting with Xiaohongshu.
+小红书 MCP 服务器提供以下工具：
 
-## Tool Categories
+## 账号管理
 
-| Category | Tools | Description |
-|----------|-------|-------------|
-| [Account](/api/account) | 4 tools | Manage accounts, login, configuration |
-| [Content](/api/content) | 5 tools | Search, fetch notes, user profiles |
-| [Publish](/api/publish) | 2 tools | Post image and video notes |
-| [Interaction](/api/interaction) | 5 tools | Like, favorite, comment, reply |
-| [Statistics](/api/stats) | 2 tools | View operation logs and stats |
+| 工具 | 说明 |
+|------|------|
+| [xhs_list_accounts](/api/xhs_list_accounts) | 列出所有账号 |
+| [xhs_add_account](/api/xhs_add_account) | 添加账号 |
+| [xhs_remove_account](/api/xhs_remove_account) | 删除账号 |
+| [xhs_set_account_config](/api/xhs_set_account_config) | 修改账号配置 |
+| [xhs_check_login](/api/xhs_check_login) | 检查登录状态 |
+| [xhs_delete_cookies](/api/xhs_delete_cookies) | 删除会话 |
 
-## All Tools
+## 内容查询
 
-### Account Management
-- `xhs_list_accounts` - List all registered accounts
-- `xhs_add_account` - Add new account via QR login
-- `xhs_remove_account` - Remove an account
-- `xhs_set_account_config` - Update account name, proxy, or status
+| 工具 | 说明 |
+|------|------|
+| [xhs_search](/api/xhs_search) | 搜索笔记 |
+| [xhs_get_note](/api/xhs_get_note) | 获取笔记详情 |
+| [xhs_user_profile](/api/xhs_user_profile) | 获取用户资料 |
+| [xhs_list_feeds](/api/xhs_list_feeds) | 获取首页推荐 |
 
-### Authentication
-- `xhs_check_login` - Check login status
-- `xhs_delete_cookies` - Clear session
+## 内容发布
 
-### Content Query
-- `xhs_search` - Search for notes
-- `xhs_get_note` - Get note details
-- `xhs_user_profile` - Get user profile
-- `xhs_list_feeds` - Get homepage feeds
+| 工具 | 说明 |
+|------|------|
+| [xhs_publish_content](/api/xhs_publish_content) | 发布图文笔记 |
+| [xhs_publish_video](/api/xhs_publish_video) | 发布视频笔记 |
 
-### Publishing
-- `xhs_publish_content` - Publish image/text note
-- `xhs_publish_video` - Publish video note
+## 互动功能
 
-### Interactions
-- `xhs_like_feed` - Like/unlike a note
-- `xhs_favorite_feed` - Favorite/unfavorite a note
-- `xhs_post_comment` - Post a comment
-- `xhs_reply_comment` - Reply to a comment
+| 工具 | 说明 |
+|------|------|
+| [xhs_like_feed](/api/xhs_like_feed) | 点赞/取消点赞 |
+| [xhs_favorite_feed](/api/xhs_favorite_feed) | 收藏/取消收藏 |
+| [xhs_post_comment](/api/xhs_post_comment) | 发表评论 |
+| [xhs_reply_comment](/api/xhs_reply_comment) | 回复评论 |
 
-### Downloads
-- `xhs_download_images` - Download note images
-- `xhs_download_video` - Download note video
+## 数据统计
 
-### Statistics
-- `xhs_get_account_stats` - Get account statistics
-- `xhs_get_operation_logs` - Query operation history
+| 工具 | 说明 |
+|------|------|
+| [xhs_get_account_stats](/api/xhs_get_account_stats) | 获取账号统计 |
+| [xhs_get_operation_logs](/api/xhs_get_operation_logs) | 查询操作日志 |
 
-## Common Parameters
+## 下载
 
-### Account Selection
-
-Most tools support these parameters for account selection:
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `account` | string | Single account name or ID |
-| `accounts` | string[] \| "all" | Multiple accounts |
-
-If no account is specified and only one account exists, it's used automatically.
-
-### Security Token
-
-Content-related tools require `xsecToken` from search results:
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `noteId` | string | Note ID |
-| `xsecToken` | string | Security token from search |
-
-## Response Format
-
-All tools return responses in this format:
-
-```json
-{
-  "content": [
-    {
-      "type": "text",
-      "text": "{ ... JSON response ... }"
-    }
-  ]
-}
-```
-
-Error responses include `isError: true`:
-
-```json
-{
-  "content": [
-    {
-      "type": "text",
-      "text": "Error message"
-    }
-  ],
-  "isError": true
-}
-```
+| 工具 | 说明 |
+|------|------|
+| [xhs_download_images](/api/xhs_download_images) | 下载笔记图片 |
+| [xhs_download_video](/api/xhs_download_video) | 下载笔记视频 |

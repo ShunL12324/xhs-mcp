@@ -1,162 +1,132 @@
-# Multi-Account Management
+# 多账号管理
 
-XHS-MCP supports managing multiple Xiaohongshu accounts with features like account locking, session persistence, and operation logging.
+v2.0 支持多账号同时操作，每个账号独立管理会话和代理配置。
 
-## Account Lifecycle
+## 账号操作
 
-### Adding Accounts
-
-```
-xhs_add_account({ name: "work-account" })
-xhs_add_account({ name: "personal-account", proxy: "http://proxy:8080" })
-```
-
-Each account gets:
-- Unique UUID identifier
-- Persistent session storage
-- Optional proxy configuration
-- Operation history tracking
-
-### Listing Accounts
+### 列出所有账号
 
 ```
 xhs_list_accounts()
 ```
 
-Returns:
+返回：
 ```json
-{
-  "count": 2,
-  "accounts": [
-    {
-      "id": "uuid-1",
-      "name": "work-account",
-      "status": "active",
-      "hasSession": true,
-      "stats": { "totalOperations": 42, "successRate": 98 }
-    },
-    {
-      "id": "uuid-2",
-      "name": "personal-account",
-      "status": "active",
-      "hasSession": true,
-      "stats": { "totalOperations": 15, "successRate": 100 }
-    }
-  ]
-}
+[
+  {
+    "id": "uuid-1",
+    "name": "主账号",
+    "status": "active",
+    "hasSession": true,
+    "lastActivity": "2024-01-15T12:00:00Z"
+  },
+  {
+    "id": "uuid-2",
+    "name": "备用账号",
+    "status": "active",
+    "hasSession": true,
+    "lastActivity": "2024-01-15T11:30:00Z"
+  }
+]
 ```
 
-### Updating Accounts
-
-Rename an account:
-```
-xhs_set_account_config({ account: "old-name", name: "new-name" })
-```
-
-Change proxy:
-```
-xhs_set_account_config({ account: "my-account", proxy: "http://new-proxy:8080" })
-```
-
-Suspend an account:
-```
-xhs_set_account_config({ account: "my-account", status: "suspended" })
-```
-
-### Removing Accounts
+### 添加账号
 
 ```
-xhs_remove_account({ account: "my-account" })
+xhs_add_account({ name: "新账号" })
 ```
 
-This deletes:
-- Account record
-- Stored session
-- All operation logs for this account
+如果账号已存在，会触发重新登录。
 
-## Account Selection
-
-### Single Account
-
-Specify account by name or ID:
+### 修改账号配置
 
 ```
-xhs_search({ keyword: "美食", account: "work-account" })
-```
-
-### Default Account
-
-If only one account exists and no account is specified, it's used automatically:
-
-```
-xhs_search({ keyword: "美食" })  // Uses the only account
-```
-
-### Multiple Accounts
-
-Execute on specific accounts:
-
-```
-xhs_like_feed({
-  noteId: "abc123",
-  xsecToken: "token",
-  accounts: ["account1", "account2", "account3"]
+xhs_set_account_config({
+  account: "主账号",
+  name: "改名后的账号",      // 可选：修改名称
+  proxy: "http://proxy:8080", // 可选：设置代理
+  status: "suspended"         // 可选：暂停账号
 })
 ```
 
-Execute on all active accounts:
+### 删除账号
+
+```
+xhs_remove_account({ account: "旧账号" })
+```
+
+## 指定账号操作
+
+所有工具都支持 `account` 参数：
+
+```
+xhs_search({ keyword: "美食", account: "主账号" })
+xhs_get_note({ noteId: "xxx", xsecToken: "yyy", account: "备用账号" })
+```
+
+如果不指定且只有一个账号，自动使用该账号。
+
+## 多账号批量操作
+
+互动类工具支持 `accounts` 参数：
+
+### 指定多个账号
 
 ```
 xhs_like_feed({
-  noteId: "abc123",
-  xsecToken: "token",
+  noteId: "xxx",
+  xsecToken: "yyy",
+  accounts: ["账号1", "账号2", "账号3"]
+})
+```
+
+### 使用所有活跃账号
+
+```
+xhs_like_feed({
+  noteId: "xxx",
+  xsecToken: "yyy",
   accounts: "all"
 })
 ```
 
-## Account Locking
+### 批量操作返回结果
 
-XHS-MCP prevents concurrent operations on the same account to avoid browser state conflicts.
-
-If you try to run two operations on the same account simultaneously:
-- The second operation waits for the first to complete
-- Default timeout is 30 seconds
-- Prevents session corruption and rate limiting issues
-
-## Session Persistence
-
-Sessions are stored in SQLite and automatically restored:
-- Cookies
-- LocalStorage
-- Browser state
-
-Re-login is only needed when:
-- Session expires (typically after extended inactivity)
-- You explicitly delete cookies with `xhs_delete_cookies`
-
-## Operation Logging
-
-Every operation is logged with:
-- Timestamp
-- Account ID
-- Action type
-- Parameters
-- Result
-- Duration
-- Success/failure status
-
-Query logs with:
-
-```
-xhs_get_operation_logs({
-  account: "my-account",
-  action: "search",
-  limit: 50
-})
+```json
+[
+  {
+    "account": "账号1",
+    "success": true,
+    "result": { "action": "like", "noteId": "xxx" },
+    "durationMs": 2500
+  },
+  {
+    "account": "账号2",
+    "success": true,
+    "result": { "action": "like", "noteId": "xxx" },
+    "durationMs": 2300
+  },
+  {
+    "account": "账号3",
+    "success": false,
+    "error": "Rate limited",
+    "durationMs": 1500
+  }
+]
 ```
 
-Get aggregated stats:
+## 账号状态
+
+| 状态 | 说明 |
+|------|------|
+| `active` | 正常使用 |
+| `suspended` | 暂停使用（不参与 "all" 操作） |
+| `banned` | 已封禁 |
+
+## 并发保护
+
+同一账号同时只能执行一个操作，防止会话冲突。如果账号正在使用，会返回错误：
 
 ```
-xhs_get_account_stats({ account: "my-account" })
+Account "xxx" is currently in use
 ```

@@ -1,124 +1,114 @@
-# Publishing Content
+# 发布内容
 
-XHS-MCP supports publishing image/text and video notes to Xiaohongshu.
-
-::: warning Note
-Publishing opens a visible browser window to handle the upload process. This is required due to Xiaohongshu's anti-automation measures.
-:::
-
-## Publishing Image Notes
+## 发布图文笔记
 
 ```
 xhs_publish_content({
-  title: "My First Post",
-  content: "Check out these amazing photos! #photography #travel",
-  images: [
-    "/absolute/path/to/image1.jpg",
-    "/absolute/path/to/image2.jpg"
-  ],
-  tags: ["photography", "travel"],
-  account: "my-account"
+  title: "标题（最多20字）",
+  content: "正文内容...",
+  images: ["/absolute/path/to/image1.jpg", "/absolute/path/to/image2.jpg"]
 })
 ```
 
-### Parameters
+### 参数说明
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `title` | string | Yes | Note title (max 20 characters) |
-| `content` | string | Yes | Note description/content |
-| `images` | string[] | Yes | Array of absolute image paths |
-| `tags` | string[] | No | Tags/topics for the note |
-| `scheduleTime` | string | No | ISO 8601 datetime for scheduled publishing |
-| `account` | string | No | Account to use |
-| `accounts` | string[] \| "all" | No | Multiple accounts |
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `title` | string | 是 | 标题，最多 20 字 |
+| `content` | string | 是 | 正文内容 |
+| `images` | string[] | 是 | 图片绝对路径数组 |
+| `tags` | string[] | 否 | 话题标签 |
+| `scheduleTime` | string | 否 | 定时发布时间（ISO 8601 格式） |
+| `account` | string | 否 | 使用的账号 |
+| `accounts` | string[] \| "all" | 否 | 多账号发布 |
 
-### Scheduled Publishing
+### 带标签发布
 
 ```
 xhs_publish_content({
-  title: "Scheduled Post",
-  content: "This will be published tomorrow!",
+  title: "今日穿搭",
+  content: "分享一下今天的搭配...",
+  images: ["/path/to/ootd.jpg"],
+  tags: ["穿搭", "日常", "时尚"]
+})
+```
+
+### 定时发布
+
+```
+xhs_publish_content({
+  title: "早安分享",
+  content: "...",
   images: ["/path/to/image.jpg"],
-  scheduleTime: "2024-12-25T10:00:00Z"
+  scheduleTime: "2024-01-20T08:00:00+08:00"
 })
 ```
 
-## Publishing Video Notes
+## 发布视频笔记
 
 ```
 xhs_publish_video({
-  title: "My Video",
-  content: "Check out this video! #video #vlog",
-  videoPath: "/absolute/path/to/video.mp4",
-  coverPath: "/absolute/path/to/cover.jpg",
-  tags: ["video", "vlog"]
+  title: "视频标题",
+  content: "视频描述...",
+  videoPath: "/absolute/path/to/video.mp4"
 })
 ```
 
-### Parameters
+### 参数说明
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `title` | string | Yes | Note title (max 20 characters) |
-| `content` | string | Yes | Note description/content |
-| `videoPath` | string | Yes | Absolute path to video file |
-| `coverPath` | string | No | Absolute path to cover image |
-| `tags` | string[] | No | Tags/topics for the note |
-| `scheduleTime` | string | No | ISO 8601 datetime for scheduled publishing |
-| `account` | string | No | Account to use |
-| `accounts` | string[] \| "all" | No | Multiple accounts |
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `title` | string | 是 | 标题，最多 20 字 |
+| `content` | string | 是 | 视频描述 |
+| `videoPath` | string | 是 | 视频文件绝对路径 |
+| `coverPath` | string | 否 | 封面图片路径 |
+| `tags` | string[] | 否 | 话题标签 |
+| `scheduleTime` | string | 否 | 定时发布时间 |
+| `account` | string | 否 | 使用的账号 |
+| `accounts` | string[] \| "all" | 否 | 多账号发布 |
 
-## Multi-Account Publishing
-
-Publish the same content to multiple accounts:
+### 自定义封面
 
 ```
-xhs_publish_content({
-  title: "Cross-Post",
-  content: "Posted to multiple accounts!",
-  images: ["/path/to/image.jpg"],
-  accounts: ["account1", "account2"]
+xhs_publish_video({
+  title: "Vlog",
+  content: "...",
+  videoPath: "/path/to/vlog.mp4",
+  coverPath: "/path/to/cover.jpg"
 })
 ```
 
-Or to all active accounts:
+## 多账号发布
+
+同一内容发布到多个账号：
 
 ```
 xhs_publish_content({
-  title: "Broadcast",
-  content: "Posted to everyone!",
-  images: ["/path/to/image.jpg"],
+  title: "...",
+  content: "...",
+  images: [...],
+  accounts: ["账号1", "账号2"]
+})
+```
+
+发布到所有活跃账号：
+
+```
+xhs_publish_content({
+  title: "...",
+  content: "...",
+  images: [...],
   accounts: "all"
 })
 ```
 
-::: tip Sequential Execution
-Multi-account publishing runs sequentially (one at a time) to avoid browser conflicts.
+::: warning 注意
+发布操作需要显示浏览器窗口，不支持完全无头模式。
 :::
 
-## Response
+## 注意事项
 
-```json
-{
-  "success": true,
-  "noteId": "published-note-id"
-}
-```
-
-Or for multiple accounts:
-
-```json
-[
-  { "account": "account1", "success": true, "result": { "noteId": "..." } },
-  { "account": "account2", "success": true, "result": { "noteId": "..." } }
-]
-```
-
-## Best Practices
-
-1. **Image Quality**: Use high-resolution images (recommended: 1080x1440 or higher)
-2. **Title Length**: Keep titles under 20 characters
-3. **Tags**: Use 3-5 relevant tags for better discoverability
-4. **Timing**: Schedule posts during peak hours (evening in China timezone)
-5. **Rate Limits**: Don't publish too frequently - wait at least 10 minutes between posts
+1. **图片/视频路径必须是绝对路径**
+2. **标题最多 20 个字符**
+3. **发布需要可见的浏览器窗口**
+4. **遵守小红书社区规范**

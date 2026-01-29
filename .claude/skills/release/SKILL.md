@@ -1,6 +1,6 @@
 ---
 name: release
-description: Release a new version - auto-detect bump type from changes, tag, commit and push (project)
+description: Release a new version - auto-detect bump type, tag, commit, push and create GitHub Release to trigger npm publish (project)
 user-invocable: true
 allowed-tools: Bash, Read, Edit
 ---
@@ -80,7 +80,12 @@ When the user invokes `/release`:
    git push && git push --tags
    ```
 
-8. Report results:
+8. Create GitHub Release (triggers npm publish workflow):
+   ```bash
+   gh release create v{NEW_VERSION} --title "v{NEW_VERSION}" --notes "Release v{NEW_VERSION}"
+   ```
+
+9. Report results:
    ```
    Changes detected: {summary}
    Version bump: {type} ({old} → {new})
@@ -88,8 +93,9 @@ When the user invokes `/release`:
    Committed: chore: release v{new}
    Tagged: v{new}
    Pushed to remote.
+   GitHub Release created: v{new}
 
-   GitHub Actions: https://github.com/ShunL12324/xhs-mcp/actions
+   npm publish workflow triggered: https://github.com/ShunL12324/xhs-mcp/actions
    ```
 
 ## Example
@@ -109,6 +115,7 @@ Version bump: minor (1.0.0 → 1.1.0)
 ✓ Committed: chore: release v1.1.0
 ✓ Tagged: v1.1.0
 ✓ Pushed to remote
+✓ GitHub Release created
 
-GitHub Actions will publish v1.1.0 to npm.
+npm publish workflow triggered: https://github.com/ShunL12324/xhs-mcp/actions
 ```

@@ -1,60 +1,41 @@
-# Installation
+# 安装
 
-## Prerequisites
+## 使用 npx（推荐）
 
-- [Node.js](https://nodejs.org/) 18+ or [Bun](https://bun.sh/) runtime
-- A Xiaohongshu account
-
-## Install from npm
+无需安装，直接运行：
 
 ```bash
-npm install -g @anthropic/claude-code
-npx @anthropic/mcp add @anthropic/xhs-mcp
+npx @sillyl12324/xhs-mcp
 ```
 
-Or with Bun:
+## 全局安装
 
 ```bash
-bunx @anthropic/mcp add @anthropic/xhs-mcp
+npm install -g @sillyl12324/xhs-mcp
 ```
 
-## Manual Installation
-
-### Clone the Repository
+安装后运行：
 
 ```bash
-git clone https://github.com/ShunL12324/xhs-mcp.git
-cd xhs-mcp
+xhs-mcp
 ```
 
-### Install Dependencies
-
-```bash
-bun install
-# or
-npm install
-```
-
-### Build
-
-```bash
-bun run build
-# or
-npm run build
-```
-
-## Configure MCP Client
+## 配置 MCP 客户端
 
 ### Claude Desktop
 
-Add to your `claude_desktop_config.json`:
+编辑配置文件：
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+
+添加以下内容：
 
 ```json
 {
   "mcpServers": {
-    "xhs-mcp": {
-      "command": "node",
-      "args": ["/path/to/xhs-mcp/dist/index.js"]
+    "xhs": {
+      "command": "npx",
+      "args": ["-y", "@sillyl12324/xhs-mcp"]
     }
   }
 }
@@ -62,40 +43,36 @@ Add to your `claude_desktop_config.json`:
 
 ### Claude Code
 
-Add to your `.mcp.json`:
+在项目根目录创建 `.mcp.json`：
 
 ```json
 {
   "mcpServers": {
     "xhs": {
-      "command": "node",
-      "args": ["/path/to/xhs-mcp/dist/index.js"]
+      "command": "npx",
+      "args": ["-y", "@sillyl12324/xhs-mcp"]
     }
   }
 }
 ```
 
-## HTTP Transport Mode
+## HTTP 模式
 
-For web-based clients, you can run the server in HTTP mode:
+如需 HTTP 传输模式：
 
 ```bash
-bun run start:http
-# or
-node dist/index.js --http --port 18060
+npx @sillyl12324/xhs-mcp --http
+npx @sillyl12324/xhs-mcp --http --port 8080  # 自定义端口
 ```
 
-Endpoints:
-- `POST /mcp` - MCP protocol endpoint
-- `GET /health` - Health check
-- `GET /` - Server info
+## 数据目录
 
-## Verify Installation
-
-After configuration, you should see XHS-MCP tools available in your MCP client. Try listing accounts:
+所有数据存储在 `~/.xhs-mcp/` 目录：
 
 ```
-xhs_list_accounts
+~/.xhs-mcp/
+├── data.db          # SQLite 数据库
+└── downloads/       # 下载的图片和视频
+    ├── images/
+    └── videos/
 ```
-
-If no accounts exist, proceed to [Quick Start](/guide/quick-start) to add your first account.

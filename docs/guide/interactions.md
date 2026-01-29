@@ -1,139 +1,134 @@
-# Interactions
+# 互动功能
 
-XHS-MCP provides tools for interacting with notes on Xiaohongshu.
+所有互动功能都支持单账号和多账号操作。
 
-## Like / Unlike
+## 点赞
 
-### Like a Note
+### 点赞
 
 ```
 xhs_like_feed({
-  noteId: "note-id",
-  xsecToken: "token-from-search"
+  noteId: "xxx",
+  xsecToken: "yyy"
 })
 ```
 
-### Unlike a Note
+### 取消点赞
 
 ```
 xhs_like_feed({
-  noteId: "note-id",
-  xsecToken: "token-from-search",
+  noteId: "xxx",
+  xsecToken: "yyy",
   unlike: true
 })
 ```
 
-## Favorite / Unfavorite
+## 收藏
 
-### Favorite (Collect) a Note
+### 收藏
 
 ```
 xhs_favorite_feed({
-  noteId: "note-id",
-  xsecToken: "token-from-search"
+  noteId: "xxx",
+  xsecToken: "yyy"
 })
 ```
 
-### Unfavorite a Note
+### 取消收藏
 
 ```
 xhs_favorite_feed({
-  noteId: "note-id",
-  xsecToken: "token-from-search",
+  noteId: "xxx",
+  xsecToken: "yyy",
   unfavorite: true
 })
 ```
 
-## Comments
+## 评论
 
-### Post a Comment
+### 发表评论
 
 ```
 xhs_post_comment({
-  noteId: "note-id",
-  xsecToken: "token-from-search",
-  content: "Great post! 👍"
+  noteId: "xxx",
+  xsecToken: "yyy",
+  content: "这篇笔记太棒了！"
 })
 ```
 
-### Reply to a Comment
+### 回复评论
 
 ```
 xhs_reply_comment({
-  noteId: "note-id",
-  xsecToken: "token-from-search",
+  noteId: "xxx",
+  xsecToken: "yyy",
   commentId: "comment-id",
-  content: "Thanks for your comment!"
+  content: "谢谢你的喜欢！"
 })
 ```
 
-## Multi-Account Interactions
+::: tip 获取评论 ID
+评论 ID 可以从 `xhs_get_note` 返回的评论列表中获取。
+:::
 
-Run interactions across multiple accounts:
+## 多账号互动
+
+所有互动工具都支持 `accounts` 参数：
 
 ```
 xhs_like_feed({
-  noteId: "note-id",
-  xsecToken: "token",
-  accounts: ["account1", "account2", "account3"]
+  noteId: "xxx",
+  xsecToken: "yyy",
+  accounts: ["账号1", "账号2"]
 })
 ```
 
-Or use all active accounts:
+使用所有活跃账号：
 
 ```
-xhs_like_feed({
-  noteId: "note-id",
-  xsecToken: "token",
+xhs_favorite_feed({
+  noteId: "xxx",
+  xsecToken: "yyy",
   accounts: "all"
 })
 ```
 
-### Response for Multi-Account
+## 返回结果
 
-```json
-[
-  { "account": "account1", "success": true, "result": { "action": "like", "noteId": "..." } },
-  { "account": "account2", "success": true, "result": { "action": "like", "noteId": "..." } },
-  { "account": "account3", "success": false, "error": "Rate limited" }
-]
-```
-
-## Response Types
-
-### Interaction Result
+### 单账号
 
 ```json
 {
   "success": true,
   "action": "like",
-  "noteId": "note-id"
+  "noteId": "xxx"
 }
 ```
 
-### Comment Result
+### 多账号
 
 ```json
-{
-  "success": true,
-  "commentId": "new-comment-id"
-}
+[
+  {
+    "account": "账号1",
+    "success": true,
+    "result": { "action": "like", "noteId": "xxx" },
+    "durationMs": 2500
+  },
+  {
+    "account": "账号2",
+    "success": false,
+    "error": "Already liked",
+    "durationMs": 1200
+  }
+]
 ```
 
-## Session Management
+## 常见错误
 
-### Delete Cookies
-
-Clear the session for an account (forces re-login):
-
-```
-xhs_delete_cookies({ account: "my-account" })
-```
-
-## Best Practices
-
-1. **Rate Limiting**: Don't interact too quickly - add delays between operations
-2. **Natural Behavior**: Vary your interaction patterns to avoid detection
-3. **xsecToken**: Always use the token from search results for reliable access
-4. **Error Handling**: Check the `success` field and handle failures gracefully
-5. **Account Rotation**: For bulk operations, rotate between multiple accounts
+| 错误 | 原因 | 解决方法 |
+|------|------|----------|
+| `Not logged in` | 会话过期 | 用 `xhs_add_account` 重新登录 |
+| `Rate limited` | 请求过于频繁 | 等待后重试 |
+| `Note not found` | noteId 或 token 无效 | 重新搜索获取新 token |
+| `Already liked` | 已经点赞过 | 无需操作 |
