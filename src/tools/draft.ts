@@ -32,6 +32,11 @@ export const draftTools: Tool[] = [
           type: 'string',
           description: 'Image generation prompt describing the desired image',
         },
+        aspectRatio: {
+          type: 'string',
+          enum: ['3:4', '1:1', '4:3'],
+          description: 'Image aspect ratio. 3:4 (portrait, default), 1:1 (square), 4:3 (landscape)',
+        },
       },
       required: ['prompt'],
     },
@@ -194,10 +199,14 @@ export async function handleDraftTools(
       const params = z
         .object({
           prompt: z.string(),
+          aspectRatio: z.enum(['3:4', '1:1', '4:3']).optional(),
         })
         .parse(args);
 
-      const result = await generateImage(params.prompt);
+      const result = await generateImage({
+        prompt: params.prompt,
+        aspectRatio: params.aspectRatio,
+      });
 
       if (!result.success) {
         return {

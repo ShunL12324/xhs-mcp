@@ -73,27 +73,31 @@ async function fetchAndCompressImage(url: string): Promise<{ base64: string; mim
 }
 
 /**
- * System prompt for image understanding
+ * 图片理解 System Prompt
+ * 基于 Google 最佳实践：明确任务、结构化输出、提供上下文
  */
-const SYSTEM_PROMPT = `你是一个专业的小红书笔记分析助手。用户会提供一篇笔记的标题、文字内容，以及按顺序排列的图片。
+const UNDERSTANDING_PROMPT = `你是一位专业的小红书内容分析师。请分析用户提供的笔记内容（标题、正文、图片序列）。
 
-你的任务是：
-1. 分析每张图片的具体内容
-2. 结合文字和图片，给出综合理解
+## 分析要求
 
-请以 JSON 格式返回结果，格式如下：
+### 每张图片分析
+- 识别图片主体内容（人物、物品、场景等）
+- 描述构图、色调、风格特点
+- 注意图片之间的关联性和叙事逻辑
+
+### 综合分析
+- 判断笔记类型（种草、教程、日常分享、测评等）
+- 分析目标受众和内容价值
+- 总结笔记亮点和改进建议
+
+## 输出格式
+严格按以下 JSON 格式输出，不要包含其他文字：
 {
   "images": [
-    { "order": 0, "description": "第一张图片的描述" },
-    { "order": 1, "description": "第二张图片的描述" }
+    {"order": 0, "description": "图片内容描述，50-100字"}
   ],
-  "summary": "综合分析：结合文字和所有图片的整体理解"
-}
-
-注意：
-- description 应简洁准确描述图片内容（50-100字）
-- summary 应综合文字和图片，分析笔记的主题、风格、亮点（100-200字）
-- 只返回 JSON，不要其他文字`;
+  "summary": "综合分析，包含笔记类型、主题、风格、亮点，100-200字"
+}`;
 
 /**
  * 安全解析 JSON，处理可能的格式问题
@@ -164,34 +168,39 @@ export async function understandNoteImages(
     }
   }
 
-  // 构建用户消息内容
+  // 构建用户消息内容 - 图片优先，文字在后（符合多模态最佳实践）
   const userParts: any[] = [];
 
-  // 添加笔记文字内容
-  userParts.push({ text: `【笔记标题】${title}\n\n【笔记内容】${desc || '（无文字内容）'}\n\n【笔记图片】以下是按顺序排列的图片：\n` });
-
-  // 添加图片（按顺序）
+  // 先添加所有图片（按顺序）
   for (let i = 0; i < imageDataList.length; i++) {
     const img = imageDataList[i];
     if (img.base64) {
-      userParts.push({ text: `\n<img order=${i}>图片${i}</img>\n` });
       userParts.push({
         inlineData: {
           mimeType: img.mimeType,
           data: img.base64,
         },
       });
-    } else {
-      userParts.push({ text: `\n<img order=${i}>（图片加载失败）</img>\n` });
     }
   }
+
+  // 再添加文字说明
+  userParts.push({
+    text: `以上是笔记的 ${imageDataList.length} 张图片（按顺序排列）。
+
+【笔记标题】${title}
+
+【笔记正文】${desc || '（无文字内容）'}
+
+请分析这篇笔记的图片和文字内容。`,
+  });
 
   // 调用 Gemini API
   try {
     const response = await ai.models.generateContent({
       model: config.gemini.model,
       contents: [
-        { role: 'user', parts: [{ text: SYSTEM_PROMPT }] },
+        { role: 'user', parts: [{ text: UNDERSTANDING_PROMPT }] },
         { role: 'model', parts: [{ text: '好的，我会按照要求分析笔记并以 JSON 格式返回结果。' }] },
         { role: 'user', parts: userParts },
       ],
@@ -224,7 +233,27 @@ const GENERATE_CONFIG = {
   MAX_RETRIES: 3,
   /** 重试延迟（毫秒） */
   RETRY_DELAY: 1000,
+  /** 默认宽高比（小红书常用 3:4） */
+  DEFAULT_ASPECT_RATIO: '3:4' as const,
 } as const;
+
+/**
+ * 支持的宽高比
+ * 小红书常用比例：3:4（竖图）、1:1（方图）、4:3（横图）
+ */
+export type AspectRatio = '3:4' | '1:1' | '4:3';
+
+/**
+ * 图片生成选项
+ */
+export interface GenerateImageOptions {
+  /** 图片生成提示词 */
+  prompt: string;
+  /** 宽高比，默认 3:4（小红书竖图） */
+  aspectRatio?: AspectRatio;
+  /** 输出目录，默认 ~/.xhs-mcp/generated */
+  outputDir?: string;
+}
 
 /**
  * 图片生成结果
@@ -249,19 +278,27 @@ function ensureDir(dir: string): void {
 
 /**
  * 使用 Gemini 生成图片
- * @param prompt 图片生成提示词
- * @param outputDir 可选，指定输出目录，默认为 ~/.xhs-mcp/generated
+ * @param options 生成选项（prompt、aspectRatio、outputDir）
  * @returns 生成结果，包含本地路径
  */
 export async function generateImage(
-  prompt: string,
-  outputDir?: string
+  options: GenerateImageOptions | string
 ): Promise<GenerateImageResult> {
+  // 兼容旧的字符串参数
+  const opts: GenerateImageOptions = typeof options === 'string'
+    ? { prompt: options }
+    : options;
+
+  const { prompt, aspectRatio = GENERATE_CONFIG.DEFAULT_ASPECT_RATIO, outputDir } = opts;
+
   if (!config.gemini.apiKey) {
     return { success: false, error: 'GEMINI_API_KEY is not configured' };
   }
 
-  log.info('Starting image generation', { prompt: prompt.slice(0, 50) });
+  log.info('Starting image generation', {
+    prompt: prompt.slice(0, 50),
+    aspectRatio,
+  });
 
   // 初始化 Gemini 客户端
   const ai = new GoogleGenAI({
@@ -286,6 +323,8 @@ export async function generateImage(
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         config: {
           responseModalities: ['TEXT', 'IMAGE'],
+          // @ts-ignore - aspectRatio 是 Gemini 图片生成的有效参数
+          aspectRatio: aspectRatio,
         },
       });
 
@@ -303,7 +342,7 @@ export async function generateImage(
           const buffer = Buffer.from(part.inlineData.data, 'base64');
           fs.writeFileSync(filePath, buffer);
 
-          log.info('Image generated successfully', { path: filePath });
+          log.info('Image generated successfully', { path: filePath, aspectRatio });
           return { success: true, path: filePath };
         }
       }
