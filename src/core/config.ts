@@ -102,8 +102,8 @@ export const config = {
     apiKey: process.env.GEMINI_API_KEY || '',
     /** 图片生成模型 (GEMINI_IMAGE_GENERATE_MODEL) */
     imageGenerateModel: process.env.GEMINI_IMAGE_GENERATE_MODEL || 'gemini-3-pro-image',
-    /** 图片理解模型 (GEMINI_IMAGE_UNDERSTAND_MODEL) */
-    imageUnderstandModel: process.env.GEMINI_IMAGE_UNDERSTAND_MODEL || 'gemini-3-flash',
+    /** 通用模型 (GEMINI_MODEL) */
+    model: process.env.GEMINI_MODEL || 'gemini-3-flash',
   },
 } as const;
 
@@ -174,6 +174,6 @@ export function printConfig(): void {
   console.error(`  Gemini Base URL: ${config.gemini.baseUrl}`);
   console.error(`  Gemini API Key: ${config.gemini.apiKey ? '[SET]' : '[NOT SET]'}`);
   console.error(`  Gemini Image Generate Model: ${config.gemini.imageGenerateModel}`);
-  console.error(`  Gemini Image Understand Model: ${config.gemini.imageUnderstandModel}`);
+  console.error(`  Gemini Model: ${config.gemini.model}`);
   console.error('=============================');
 }

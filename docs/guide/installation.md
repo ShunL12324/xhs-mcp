@@ -161,7 +161,7 @@ npx @sillyl12324/xhs-mcp@latest --http --port 8080  # 自定义端口
 | `GEMINI_BASE_URL` | `https://generativelanguage.googleapis.com` | Gemini API 地址 |
 | `GEMINI_API_KEY` | - | Gemini API 密钥 |
 | `GEMINI_IMAGE_GENERATE_MODEL` | `gemini-3-pro-image` | Gemini 图片生成模型 |
-| `GEMINI_IMAGE_UNDERSTAND_MODEL` | `gemini-3-flash` | Gemini 图片理解模型 |
+| `GEMINI_MODEL` | `gemini-3-flash` | Gemini 通用模型 |
 
 在 MCP 配置中设置环境变量：
 

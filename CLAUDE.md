@@ -162,7 +162,7 @@ All configuration can be controlled via environment variables:
 | `GEMINI_BASE_URL` | `https://generativelanguage.googleapis.com` | Gemini API base URL |
 | `GEMINI_API_KEY` | - | Gemini API key (for future AI features) |
 | `GEMINI_IMAGE_GENERATE_MODEL` | `gemini-3-pro-image` | Gemini image generation model |
-| `GEMINI_IMAGE_UNDERSTAND_MODEL` | `gemini-3-flash` | Gemini image understanding model |
+| `GEMINI_MODEL` | `gemini-3-flash` | Gemini general model |
 
 ## Key Commands
 
