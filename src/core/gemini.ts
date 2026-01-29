@@ -1,12 +1,15 @@
 /**
- * @fileoverview Gemini AI 图片理解模块
- * 使用 Google Gemini API 分析笔记图片内容
+ * @fileoverview Gemini AI 图片理解与生成模块
+ * 使用 Google Gemini API 分析和生成图片
  * @module core/gemini
  */
 
-import { GoogleGenAI, createUserContent } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 import sharp from 'sharp';
-import { config } from './config.js';
+import { randomUUID } from 'crypto';
+import * as fs from 'fs';
+import * as path from 'path';
+import { config, paths } from './config.js';
 import { createLogger } from './logger.js';
 
 const log = createLogger('gemini');
@@ -211,4 +214,115 @@ export async function understandNoteImages(
     log.error('Gemini API call failed', { error });
     throw error;
   }
+}
+
+/**
+ * 图片生成配置
+ */
+const GENERATE_CONFIG = {
+  /** 默认重试次数 */
+  MAX_RETRIES: 3,
+  /** 重试延迟（毫秒） */
+  RETRY_DELAY: 1000,
+} as const;
+
+/**
+ * 图片生成结果
+ */
+export interface GenerateImageResult {
+  /** 是否成功 */
+  success: boolean;
+  /** 生成的图片本地路径 */
+  path?: string;
+  /** 错误信息 */
+  error?: string;
+}
+
+/**
+ * 确保目录存在
+ */
+function ensureDir(dir: string): void {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+}
+
+/**
+ * 使用 Gemini 生成图片
+ * @param prompt 图片生成提示词
+ * @param outputDir 可选，指定输出目录，默认为 ~/.xhs-mcp/generated
+ * @returns 生成结果，包含本地路径
+ */
+export async function generateImage(
+  prompt: string,
+  outputDir?: string
+): Promise<GenerateImageResult> {
+  if (!config.gemini.apiKey) {
+    return { success: false, error: 'GEMINI_API_KEY is not configured' };
+  }
+
+  log.info('Starting image generation', { prompt: prompt.slice(0, 50) });
+
+  // 初始化 Gemini 客户端
+  const ai = new GoogleGenAI({
+    apiKey: config.gemini.apiKey,
+    httpOptions: config.gemini.baseUrl !== 'https://generativelanguage.googleapis.com'
+      ? { baseUrl: config.gemini.baseUrl }
+      : undefined,
+  });
+
+  // 确保输出目录存在
+  const targetDir = outputDir || path.join(paths.dataDir, 'generated');
+  ensureDir(targetDir);
+
+  let lastError: Error | null = null;
+
+  for (let attempt = 1; attempt <= GENERATE_CONFIG.MAX_RETRIES; attempt++) {
+    try {
+      log.debug(`Generation attempt ${attempt}/${GENERATE_CONFIG.MAX_RETRIES}`);
+
+      const response = await ai.models.generateContent({
+        model: config.gemini.imageGenerateModel,
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        config: {
+          responseModalities: ['TEXT', 'IMAGE'],
+        },
+      });
+
+      // 查找图片数据
+      const parts = response.candidates?.[0]?.content?.parts || [];
+      for (const part of parts) {
+        if (part.inlineData?.data) {
+          // 生成 UUID 文件名
+          const imageId = randomUUID();
+          const mimeType = part.inlineData.mimeType || 'image/jpeg';
+          const ext = mimeType.includes('png') ? 'png' : 'jpg';
+          const filePath = path.join(targetDir, `${imageId}.${ext}`);
+
+          // 保存图片
+          const buffer = Buffer.from(part.inlineData.data, 'base64');
+          fs.writeFileSync(filePath, buffer);
+
+          log.info('Image generated successfully', { path: filePath });
+          return { success: true, path: filePath };
+        }
+      }
+
+      // 没有找到图片数据
+      lastError = new Error('No image data in response');
+      log.warn('No image data in response, retrying...');
+
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      log.warn(`Generation attempt ${attempt} failed`, { error: lastError.message });
+    }
+
+    // 等待后重试
+    if (attempt < GENERATE_CONFIG.MAX_RETRIES) {
+      await new Promise(resolve => setTimeout(resolve, GENERATE_CONFIG.RETRY_DELAY));
+    }
+  }
+
+  log.error('Image generation failed after all retries', { error: lastError?.message });
+  return { success: false, error: lastError?.message || 'Unknown error' };
 }

@@ -151,6 +151,32 @@ export class XhsDatabase {
     this.db.close();
   }
 
+  // ============ Generic Query Methods ============
+
+  /**
+   * Execute a SQL statement with parameters
+   */
+  run(sql: string, params: any[] = []): Database.RunResult {
+    const stmt = this.db.prepare(sql);
+    return stmt.run(...params);
+  }
+
+  /**
+   * Get a single row from the database
+   */
+  get(sql: string, params: any[] = []): any {
+    const stmt = this.db.prepare(sql);
+    return stmt.get(...params);
+  }
+
+  /**
+   * Get all rows from the database
+   */
+  all(sql: string, params: any[] = []): any[] {
+    const stmt = this.db.prepare(sql);
+    return stmt.all(...params);
+  }
+
   // ============ Accounts ============
 
   /**

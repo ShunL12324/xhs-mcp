@@ -96,6 +96,18 @@ CREATE TABLE IF NOT EXISTS downloads (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Note drafts: AI-generated note drafts for multi-account publishing
+CREATE TABLE IF NOT EXISTS note_drafts (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  tags JSON,
+  images JSON,
+  published_at DATETIME,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Config table: key-value store for application configuration
 CREATE TABLE IF NOT EXISTS config (
   key TEXT PRIMARY KEY,
@@ -111,6 +123,7 @@ CREATE INDEX IF NOT EXISTS idx_published_notes_account_id ON published_notes(acc
 CREATE INDEX IF NOT EXISTS idx_interactions_account_id ON interactions(account_id);
 CREATE INDEX IF NOT EXISTS idx_interactions_target_note_id ON interactions(target_note_id);
 CREATE INDEX IF NOT EXISTS idx_downloads_note_id ON downloads(note_id);
+CREATE INDEX IF NOT EXISTS idx_note_drafts_created_at ON note_drafts(created_at);
 `;
 
 // ============================================================================
@@ -286,6 +299,29 @@ export interface ConfigRow {
   key: string;
   /** Configuration value as JSON string */
   value: string | null;
+  /** Last update timestamp */
+  updated_at: string;
+}
+
+/**
+ * Raw database row for a note draft.
+ * AI-generated drafts for multi-account publishing.
+ */
+export interface NoteDraftRow {
+  /** UUID primary key */
+  id: string;
+  /** Note title */
+  title: string;
+  /** Note content/description */
+  content: string;
+  /** Tags as JSON array */
+  tags: string | null;
+  /** Image paths as JSON array */
+  images: string | null;
+  /** Publish timestamp (null = not published) */
+  published_at: string | null;
+  /** Record creation timestamp */
+  created_at: string;
   /** Last update timestamp */
   updated_at: string;
 }
