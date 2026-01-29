@@ -160,8 +160,8 @@ Customize server behavior via environment variables:
 | `XHS_MCP_TIMEOUT_VIDEO_UPLOAD` | `300000` | Video upload timeout in ms |
 | `GEMINI_BASE_URL` | `https://generativelanguage.googleapis.com` | Gemini API base URL |
 | `GEMINI_API_KEY` | - | Gemini API key |
-| `GEMINI_IMAGE_GENERATE_MODEL` | `gemini-2.0-flash-exp-image-generation` | Gemini image generation model |
-| `GEMINI_IMAGE_UNDERSTAND_MODEL` | `gemini-2.0-flash` | Gemini image understanding model |
+| `GEMINI_IMAGE_GENERATE_MODEL` | `gemini-3-pro-image` | Gemini image generation model |
+| `GEMINI_IMAGE_UNDERSTAND_MODEL` | `gemini-3-flash` | Gemini image understanding model |
 
 Set environment variables in MCP configuration:
 

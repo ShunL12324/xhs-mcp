@@ -101,9 +101,9 @@ export const config = {
     /** Gemini API Key (GEMINI_API_KEY) */
     apiKey: process.env.GEMINI_API_KEY || '',
     /** 图片生成模型 (GEMINI_IMAGE_GENERATE_MODEL) */
-    imageGenerateModel: process.env.GEMINI_IMAGE_GENERATE_MODEL || 'gemini-2.0-flash-exp-image-generation',
+    imageGenerateModel: process.env.GEMINI_IMAGE_GENERATE_MODEL || 'gemini-3-pro-image',
     /** 图片理解模型 (GEMINI_IMAGE_UNDERSTAND_MODEL) */
-    imageUnderstandModel: process.env.GEMINI_IMAGE_UNDERSTAND_MODEL || 'gemini-2.0-flash',
+    imageUnderstandModel: process.env.GEMINI_IMAGE_UNDERSTAND_MODEL || 'gemini-3-flash',
   },
 } as const;
 
