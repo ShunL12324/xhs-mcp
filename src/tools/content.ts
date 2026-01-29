@@ -10,6 +10,8 @@ import type { XhsSearchFilters } from '../xhs/types.js';
 import { AccountPool } from '../core/account-pool.js';
 import { XhsDatabase } from '../db/index.js';
 import { executeWithMultipleAccounts, MultiAccountParams } from '../core/multi-account.js';
+import { understandNoteImages } from '../core/gemini.js';
+import { config } from '../core/config.js';
 
 /**
  * Content query tool definitions for MCP.
@@ -74,6 +76,10 @@ export const contentTools: Tool[] = [
         xsecToken: {
           type: 'string',
           description: 'Security token from search results (required for reliable access)',
+        },
+        describeImages: {
+          type: 'boolean',
+          description: 'If true, use Gemini LLM to analyze and describe all images in the note. WARNING: This consumes significant tokens and requires GEMINI_API_KEY to be configured.',
         },
         account: {
           type: 'string',
@@ -218,6 +224,7 @@ export async function handleContentTools(
         .object({
           noteId: z.string(),
           xsecToken: z.string(),
+          describeImages: z.boolean().optional().default(false),
           account: z.string().optional(),
         })
         .parse(args);
@@ -253,6 +260,72 @@ export async function handleContentTools(
           ],
           isError: true,
         };
+      }
+
+      // 如果需要图片理解
+      if (params.describeImages) {
+        if (!config.gemini.apiKey) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    ...r.result,
+                    imageUnderstanding: {
+                      error: 'GEMINI_API_KEY is not configured. Set it to enable image understanding.',
+                    },
+                  },
+                  null,
+                  2
+                ),
+              },
+            ],
+          };
+        }
+
+        try {
+          const imageUrls = r.result.imageList?.map((img: any) => img.url) || [];
+          const understanding = await understandNoteImages(
+            r.result.title || '',
+            r.result.desc || '',
+            imageUrls
+          );
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    ...r.result,
+                    imageUnderstanding: understanding,
+                  },
+                  null,
+                  2
+                ),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    ...r.result,
+                    imageUnderstanding: {
+                      error: `Image understanding failed: ${error instanceof Error ? error.message : String(error)}`,
+                    },
+                  },
+                  null,
+                  2
+                ),
+              },
+            ],
+          };
+        }
       }
 
       return {
