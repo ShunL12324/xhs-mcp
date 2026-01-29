@@ -4,8 +4,7 @@
  */
 
 import * as fs from 'fs';
-import * as path from 'path';
-import { XHS_MCP_DIR } from './paths.js';
+import { config, paths } from './config.js';
 
 // Log levels
 export enum LogLevel {
@@ -23,12 +22,20 @@ const LEVEL_NAMES: Record<LogLevel, string> = {
   [LogLevel.ERROR]: 'ERROR',
 };
 
-// Current log level (can be configured)
-let currentLogLevel = LogLevel.DEBUG;
+// Map config log level to enum
+const LOG_LEVEL_MAP: Record<string, LogLevel> = {
+  debug: LogLevel.DEBUG,
+  info: LogLevel.INFO,
+  warn: LogLevel.WARN,
+  error: LogLevel.ERROR,
+};
 
-// Log file path
-const LOG_DIR = path.join(XHS_MCP_DIR, 'logs');
-const LOG_FILE = path.join(LOG_DIR, 'xhs-mcp.log');
+// Current log level from config
+let currentLogLevel = LOG_LEVEL_MAP[config.log.level] ?? LogLevel.DEBUG;
+
+// Log file path from config
+const LOG_DIR = paths.logs;
+const LOG_FILE = paths.logFile;
 
 // Ensure log directory exists
 if (!fs.existsSync(LOG_DIR)) {

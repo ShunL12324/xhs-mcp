@@ -12,8 +12,7 @@ import { initDatabase } from './db/index.js';
 import { getAccountPool } from './core/account-pool.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-
-const DEFAULT_PORT = 18060;
+import { config } from './core/config.js';
 
 /**
  * Start the HTTP transport server for the MCP protocol.
@@ -21,7 +20,7 @@ const DEFAULT_PORT = 18060;
  *
  * @param port - Port number to listen on (default: 18060)
  */
-export async function startHttpServer(port: number = DEFAULT_PORT) {
+export async function startHttpServer(port: number = config.server.port) {
   // Initialize database and account pool
   const db = await initDatabase();
   const pool = getAccountPool(db);

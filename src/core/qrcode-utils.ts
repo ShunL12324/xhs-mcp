@@ -10,7 +10,7 @@ import { PNG } from 'pngjs';
 import { exec } from 'child_process';
 import { writeFileSync } from 'fs';
 import { join } from 'path';
-import { QRCODE_DIR } from './paths.js';
+import { paths } from './config.js';
 
 /**
  * Decode a QR code from a PNG image buffer.
@@ -85,7 +85,7 @@ export async function saveAndOpenQrCode(imageBuffer: Buffer, filename: string = 
     const homeDir = process.env.HOME || '/tmp';
     filePath = join(homeDir, filename);
   } else {
-    filePath = join(QRCODE_DIR, filename);
+    filePath = join(paths.qrcode, filename);
   }
 
   // Save the image

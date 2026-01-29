@@ -21,6 +21,7 @@ import {
 import { getStealthScript, sleep, generateWebId, humanScroll } from '../utils/index.js';
 import { saveAndOpenQrCode } from '../../core/qrcode-utils.js';
 import { createLogger } from '../../core/logger.js';
+import { config } from '../../core/config.js';
 
 // Create logger for browser module
 const log = createLogger('browser');
@@ -56,10 +57,11 @@ const BROWSER_ARGS = [
 /**
  * 超时时间常量（毫秒）
  * 用于控制各种操作的最大等待时间
+ * 部分值可通过环境变量覆盖
  */
 const TIMEOUTS = {
-  /** 页面加载超时 */
-  PAGE_LOAD: 30000,
+  /** 页面加载超时 (XHS_MCP_TIMEOUT_PAGE_LOAD) */
+  PAGE_LOAD: config.timeout.pageLoad,
   /** 等待用户扫码登录超时 */
   LOGIN_WAIT: 120000,
   /** 检查登录状态超时 */
@@ -68,8 +70,8 @@ const TIMEOUTS = {
   NETWORK_IDLE: 10000,
   /** 等待上传内容区域出现 */
   UPLOAD_CONTENT: 15000,
-  /** 视频上传处理超时（5分钟，视频处理需要较长时间） */
-  VIDEO_UPLOAD: 300000,
+  /** 视频上传处理超时 (XHS_MCP_TIMEOUT_VIDEO_UPLOAD) */
+  VIDEO_UPLOAD: config.timeout.videoUpload,
   /** 图片上传完成超时 */
   IMAGE_UPLOAD: 60000,
 } as const;
@@ -122,8 +124,8 @@ const DELAYS = {
   SCROLL_EXTRA_RANDOM: 500,
 } as const;
 
-// Request interval to avoid rate limiting (milliseconds)
-const REQUEST_INTERVAL = 2000;
+// Request interval to avoid rate limiting (XHS_MCP_REQUEST_INTERVAL)
+const REQUEST_INTERVAL = config.browser.requestInterval;
 
 /**
  * 发布页面 CSS 选择器
@@ -354,7 +356,7 @@ export class BrowserClient {
     }
 
     const launchOptions: any = {
-      headless: false,  // Visible mode for debugging
+      headless: config.browser.headless,  // 可通过 XHS_MCP_HEADLESS 控制
       args: BROWSER_ARGS,
     };
 
@@ -1055,7 +1057,7 @@ export class BrowserClient {
     }
 
     const launchOptions: any = {
-      headless: false,  // Need visible browser for publishing
+      headless: config.browser.headless,  // 发布操作建议使用可见模式 (XHS_MCP_HEADLESS=false)
       args: BROWSER_ARGS,
     };
 
@@ -1361,7 +1363,7 @@ export class BrowserClient {
     }
 
     const launchOptions: any = {
-      headless: false,
+      headless: config.browser.headless,  // 可通过 XHS_MCP_HEADLESS 控制
       args: BROWSER_ARGS,
     };
 

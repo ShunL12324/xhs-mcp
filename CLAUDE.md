@@ -30,7 +30,8 @@ src/
 ├── server.ts                 # MCP Server configuration and tool registration
 ├── http-server.ts            # HTTP transport server (StreamableHTTP)
 ├── core/
-│   ├── paths.ts              # Path constants (~/.xhs-mcp)
+│   ├── config.ts             # Unified configuration with environment variables
+│   ├── paths.ts              # Path utilities (re-exports from config)
 │   ├── logger.ts             # Structured logging (console + file)
 │   ├── account-pool.ts       # Multi-account client pool (池化管理)
 │   ├── account-lock.ts       # Concurrent access prevention (互斥锁)
@@ -145,6 +146,22 @@ xhs_publish_content({ title: "...", content: "...", images: [...], accounts: "al
 
 If no account is specified and only one account exists, it will be used automatically.
 
+## Environment Variables
+
+All configuration can be controlled via environment variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `XHS_MCP_PORT` | `18060` | HTTP server port |
+| `XHS_MCP_DATA_DIR` | `~/.xhs-mcp` | Data directory path |
+| `XHS_MCP_LOG_LEVEL` | `debug` | Log level: debug, info, warn, error |
+| `XHS_MCP_HEADLESS` | `true` | Browser headless mode (set `false` for debugging) |
+| `XHS_MCP_REQUEST_INTERVAL` | `2000` | Request interval in ms (rate limiting) |
+| `XHS_MCP_TIMEOUT_PAGE_LOAD` | `30000` | Page load timeout in ms |
+| `XHS_MCP_TIMEOUT_VIDEO_UPLOAD` | `300000` | Video upload timeout in ms (5 min) |
+| `GEMINI_BASE_URL` | `https://generativelanguage.googleapis.com` | Gemini API base URL |
+| `GEMINI_API_KEY` | - | Gemini API key (for future AI features) |
+
 ## Key Commands
 
 ```bash
@@ -220,16 +237,17 @@ Key tables:
 8. **xsecToken**: Required for reliable note access - obtained from search results
 9. **Dual Transport**: Supports both stdio (default) and HTTP transport modes
 10. **Configurable Constants**: Timeouts, delays, and limits defined in constant objects (`TIMEOUTS`, `SEARCH_DEFAULTS`, `SCROLL_CONFIG`, `DELAYS`)
+11. **Environment Configuration**: All major settings controllable via environment variables (see `core/config.ts`)
 
 ## Development Guidelines
 
 - All source in `src/`, compiled output in `dist/`
 - Use absolute imports with `.js` extension (e.g., `'./xhs/index.js'`)
 - Handle Vue reactive objects (`_rawValue`, `_value`, `.value`)
-- Respect rate limits - 2 second delay between requests (`REQUEST_INTERVAL`)
-- Publishing operations require a visible browser window
+- Respect rate limits - configurable via `XHS_MCP_REQUEST_INTERVAL` (default 2s)
+- Publishing operations may require visible browser (`XHS_MCP_HEADLESS=false`)
 - All database operations are synchronous (better-sqlite3)
-- Login runs in headless mode with QR code uploaded to temp image hosting
+- Login runs in headless mode by default (controllable via `XHS_MCP_HEADLESS`)
 - Use `createLogger('module-name')` for logging instead of `console.error/log`
 - Extract magic numbers to constant objects with Chinese comments
 - All code comments should be in Chinese for consistency

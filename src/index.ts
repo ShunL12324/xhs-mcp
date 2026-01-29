@@ -10,6 +10,7 @@ import { createMcpServer } from './server.js';
 import { initDatabase, getDatabase } from './db/index.js';
 import { AccountPool, getAccountPool } from './core/account-pool.js';
 import { startHttpServer } from './http-server.js';
+import { config } from './core/config.js';
 
 /**
  * Parse command line arguments.
@@ -18,7 +19,7 @@ import { startHttpServer } from './http-server.js';
 function parseArgs(): { http: boolean; port: number } {
   const args = process.argv.slice(2);
   let http = false;
-  let port = 18060;
+  let port = config.server.port; // 使用配置中的默认端口
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];

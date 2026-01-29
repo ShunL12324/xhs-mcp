@@ -7,7 +7,7 @@
 
 import Database from 'better-sqlite3';
 import { randomUUID } from 'crypto';
-import { DATABASE_PATH, ensureDirectories } from '../core/paths.js';
+import { paths, ensureDirectories } from '../core/paths.js';
 import {
   SCHEMA_SQL,
   AccountRow,
@@ -128,7 +128,7 @@ export class XhsDatabase {
    * Create a new database instance.
    * @param dbPath - Path to the SQLite database file
    */
-  constructor(dbPath: string = DATABASE_PATH) {
+  constructor(dbPath: string = paths.database) {
     this.db = new Database(dbPath);
     // Enable WAL mode for better write performance
     this.db.pragma('journal_mode = WAL');

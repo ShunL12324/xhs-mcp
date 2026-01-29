@@ -8,6 +8,7 @@ import { chromium, Browser, BrowserContext, Page } from 'playwright';
 import { LoginUserInfo } from '../xhs/types.js';
 import { getStealthScript, sleep, generateWebId } from '../xhs/utils/index.js';
 import { createLogger } from './logger.js';
+import { config } from './config.js';
 
 const log = createLogger('login-session');
 
@@ -243,7 +244,7 @@ export class LoginSessionManager {
 
     // Launch browser
     const launchOptions: any = {
-      headless: false,  // Visible mode for debugging
+      headless: config.browser.headless,  // 可通过 XHS_MCP_HEADLESS 控制
       args: BROWSER_ARGS,
     };
 
