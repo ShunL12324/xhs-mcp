@@ -28,6 +28,24 @@
 
 ## Claude Code
 
+### 命令行安装（推荐）
+
+```bash
+claude mcp add xhs -- npx -y @sillyl12324/xhs-mcp
+```
+
+使用 `--scope` 指定作用域：
+
+```bash
+# 用户级别（所有项目可用）
+claude mcp add xhs --scope user -- npx -y @sillyl12324/xhs-mcp
+
+# 项目级别（当前项目）
+claude mcp add xhs --scope project -- npx -y @sillyl12324/xhs-mcp
+```
+
+### 手动配置
+
 在项目根目录创建 `.mcp.json` 文件：
 
 ```json
@@ -52,6 +70,14 @@
     }
   }
 }
+```
+
+### 管理命令
+
+```bash
+claude mcp list          # 查看已安装的 MCP 服务器
+claude mcp remove xhs    # 移除服务器
+claude mcp get xhs       # 查看服务器详情
 ```
 
 ## Cursor

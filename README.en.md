@@ -54,7 +54,13 @@ Edit configuration file:
 <details>
 <summary><b>Claude Code</b></summary>
 
-Create `.mcp.json` in your project root:
+Install via CLI (recommended):
+
+```bash
+claude mcp add xhs -- npx -y @sillyl12324/xhs-mcp
+```
+
+Or manually create `.mcp.json`:
 
 ```json
 {

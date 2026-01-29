@@ -54,7 +54,13 @@
 <details>
 <summary><b>Claude Code</b></summary>
 
-在项目根目录创建 `.mcp.json`：
+使用命令行安装（推荐）：
+
+```bash
+claude mcp add xhs -- npx -y @sillyl12324/xhs-mcp
+```
+
+或手动创建 `.mcp.json`：
 
 ```json
 {

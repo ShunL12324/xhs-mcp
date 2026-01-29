@@ -28,6 +28,24 @@ Restart Claude Desktop to use.
 
 ## Claude Code
 
+### CLI Installation (Recommended)
+
+```bash
+claude mcp add xhs -- npx -y @sillyl12324/xhs-mcp
+```
+
+Use `--scope` to specify the scope:
+
+```bash
+# User level (available in all projects)
+claude mcp add xhs --scope user -- npx -y @sillyl12324/xhs-mcp
+
+# Project level (current project only)
+claude mcp add xhs --scope project -- npx -y @sillyl12324/xhs-mcp
+```
+
+### Manual Configuration
+
 Create a `.mcp.json` file in your project root:
 
 ```json
@@ -52,6 +70,14 @@ Or add to global settings `~/.claude/settings.json`:
     }
   }
 }
+```
+
+### Management Commands
+
+```bash
+claude mcp list          # List installed MCP servers
+claude mcp remove xhs    # Remove a server
+claude mcp get xhs       # View server details
 ```
 
 ## Cursor
