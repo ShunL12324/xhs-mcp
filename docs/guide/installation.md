@@ -160,6 +160,8 @@ npx @sillyl12324/xhs-mcp@latest --http --port 8080  # 自定义端口
 | `XHS_MCP_TIMEOUT_VIDEO_UPLOAD` | `300000` | 视频上传超时(毫秒) |
 | `GEMINI_BASE_URL` | `https://generativelanguage.googleapis.com` | Gemini API 地址 |
 | `GEMINI_API_KEY` | - | Gemini API 密钥 |
+| `GEMINI_IMAGE_GENERATE_MODEL` | `gemini-2.0-flash-exp-image-generation` | Gemini 图片生成模型 |
+| `GEMINI_IMAGE_UNDERSTAND_MODEL` | `gemini-2.0-flash` | Gemini 图片理解模型 |
 
 在 MCP 配置中设置环境变量：
 

@@ -93,13 +93,17 @@ export const config = {
   },
 
   /**
-   * Gemini AI 配置（预留）
+   * Gemini AI 配置
    */
   gemini: {
     /** Gemini API Base URL (GEMINI_BASE_URL) */
     baseUrl: process.env.GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com',
     /** Gemini API Key (GEMINI_API_KEY) */
     apiKey: process.env.GEMINI_API_KEY || '',
+    /** 图片生成模型 (GEMINI_IMAGE_GENERATE_MODEL) */
+    imageGenerateModel: process.env.GEMINI_IMAGE_GENERATE_MODEL || 'gemini-2.0-flash-exp-image-generation',
+    /** 图片理解模型 (GEMINI_IMAGE_UNDERSTAND_MODEL) */
+    imageUnderstandModel: process.env.GEMINI_IMAGE_UNDERSTAND_MODEL || 'gemini-2.0-flash',
   },
 } as const;
 
@@ -169,5 +173,7 @@ export function printConfig(): void {
   console.error(`  Video Upload Timeout: ${config.timeout.videoUpload}ms`);
   console.error(`  Gemini Base URL: ${config.gemini.baseUrl}`);
   console.error(`  Gemini API Key: ${config.gemini.apiKey ? '[SET]' : '[NOT SET]'}`);
+  console.error(`  Gemini Image Generate Model: ${config.gemini.imageGenerateModel}`);
+  console.error(`  Gemini Image Understand Model: ${config.gemini.imageUnderstandModel}`);
   console.error('=============================');
 }
