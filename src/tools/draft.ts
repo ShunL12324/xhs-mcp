@@ -11,7 +11,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { AccountPool } from '../core/account-pool.js';
 import { XhsDatabase } from '../db/index.js';
-import { generateImage } from '../core/gemini.js';
+import { generateImage, type ImageStyle, type ShotType, type AspectRatio } from '../core/gemini.js';
 import { paths } from '../core/config.js';
 import { executeWithMultipleAccounts, MultiAccountParams } from '../core/multi-account.js';
 import { createLogger } from '../core/logger.js';
@@ -32,10 +32,40 @@ export const draftTools: Tool[] = [
           type: 'string',
           description: 'Image generation prompt describing the desired image',
         },
+        style: {
+          type: 'string',
+          enum: ['photo', 'illustration', 'product', 'minimalist', 'sticker'],
+          description: 'Image style: photo (photorealistic), illustration (artistic), product (commercial photography), minimalist (negative space), sticker (cute icon)',
+        },
+        subject: {
+          type: 'string',
+          description: 'Main subject of the image (e.g., "a cup of latte coffee", "a young woman in summer dress")',
+        },
+        environment: {
+          type: 'string',
+          description: 'Scene environment or background (e.g., "cozy cafe interior", "outdoor garden")',
+        },
+        lighting: {
+          type: 'string',
+          description: 'Lighting description (e.g., "soft natural light", "warm golden hour", "studio softbox")',
+        },
+        mood: {
+          type: 'string',
+          description: 'Atmosphere or mood (e.g., "cozy and warm", "fresh and vibrant", "elegant and luxurious")',
+        },
+        shotType: {
+          type: 'string',
+          enum: ['close-up', 'medium shot', 'wide shot', 'macro', 'aerial', 'low-angle', 'high-angle'],
+          description: 'Camera shot type',
+        },
+        colorPalette: {
+          type: 'string',
+          description: 'Color scheme (e.g., "warm earth tones", "pastel colors", "monochrome")',
+        },
         aspectRatio: {
           type: 'string',
           enum: ['3:4', '1:1', '4:3'],
-          description: 'Image aspect ratio. 3:4 (portrait, default), 1:1 (square), 4:3 (landscape)',
+          description: 'Image aspect ratio. 3:4 (portrait, default for Xiaohongshu), 1:1 (square), 4:3 (landscape)',
         },
       },
       required: ['prompt'],
@@ -199,13 +229,32 @@ export async function handleDraftTools(
       const params = z
         .object({
           prompt: z.string(),
+          style: z.enum(['photo', 'illustration', 'product', 'minimalist', 'sticker']).optional(),
+          subject: z.string().optional(),
+          environment: z.string().optional(),
+          lighting: z.string().optional(),
+          mood: z.string().optional(),
+          shotType: z.enum(['close-up', 'medium shot', 'wide shot', 'macro', 'aerial', 'low-angle', 'high-angle']).optional(),
+          colorPalette: z.string().optional(),
           aspectRatio: z.enum(['3:4', '1:1', '4:3']).optional(),
         })
         .parse(args);
 
-      const result = await generateImage({
+      // 构建结构化参数
+      const structuredParams = {
         prompt: params.prompt,
-        aspectRatio: params.aspectRatio,
+        style: params.style as ImageStyle | undefined,
+        subject: params.subject,
+        environment: params.environment,
+        lighting: params.lighting,
+        mood: params.mood,
+        shotType: params.shotType as ShotType | undefined,
+        colorPalette: params.colorPalette,
+      };
+
+      const result = await generateImage({
+        prompt: structuredParams,
+        aspectRatio: params.aspectRatio as AspectRatio | undefined,
       });
 
       if (!result.success) {

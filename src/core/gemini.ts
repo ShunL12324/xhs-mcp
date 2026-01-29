@@ -244,11 +244,43 @@ const GENERATE_CONFIG = {
 export type AspectRatio = '3:4' | '1:1' | '4:3';
 
 /**
+ * 图片风格类型
+ */
+export type ImageStyle = 'photo' | 'illustration' | 'product' | 'minimalist' | 'sticker';
+
+/**
+ * 相机镜头类型
+ */
+export type ShotType = 'close-up' | 'medium shot' | 'wide shot' | 'macro' | 'aerial' | 'low-angle' | 'high-angle';
+
+/**
+ * 结构化图片生成参数
+ */
+export interface StructuredImageParams {
+  /** 主要提示词（会与其他参数组合） */
+  prompt: string;
+  /** 图片风格 */
+  style?: ImageStyle;
+  /** 主体描述 */
+  subject?: string;
+  /** 场景环境 */
+  environment?: string;
+  /** 光照描述 */
+  lighting?: string;
+  /** 氛围情绪 */
+  mood?: string;
+  /** 镜头类型 */
+  shotType?: ShotType;
+  /** 色彩方案 */
+  colorPalette?: string;
+}
+
+/**
  * 图片生成选项
  */
 export interface GenerateImageOptions {
-  /** 图片生成提示词 */
-  prompt: string;
+  /** 图片生成提示词（或结构化参数） */
+  prompt: string | StructuredImageParams;
   /** 宽高比，默认 3:4（小红书竖图） */
   aspectRatio?: AspectRatio;
   /** 输出目录，默认 ~/.xhs-mcp/generated */
@@ -277,6 +309,66 @@ function ensureDir(dir: string): void {
 }
 
 /**
+ * 风格模板 - 每种风格的基础描述词
+ */
+const STYLE_TEMPLATES: Record<ImageStyle, string> = {
+  photo: 'Professional photography, photorealistic, high resolution, sharp focus, natural colors',
+  illustration: 'Digital illustration, artistic style, creative composition, vibrant artwork',
+  product: 'Commercial product photography, studio lighting, clean background, professional catalog style',
+  minimalist: 'Minimalist design, clean composition, negative space, simple and elegant',
+  sticker: 'Cute sticker style, kawaii icon, simple outline, adorable character design, white background',
+};
+
+/**
+ * 从结构化参数构建英文提示词
+ * @param params 结构化参数
+ * @returns 组合后的英文提示词
+ */
+export function buildImagePrompt(params: StructuredImageParams): string {
+  const parts: string[] = [];
+
+  // 1. 风格模板（如果指定）
+  if (params.style) {
+    parts.push(STYLE_TEMPLATES[params.style]);
+  }
+
+  // 2. 主体描述
+  if (params.subject) {
+    parts.push(`Subject: ${params.subject}`);
+  }
+
+  // 3. 场景环境
+  if (params.environment) {
+    parts.push(`Environment: ${params.environment}`);
+  }
+
+  // 4. 光照
+  if (params.lighting) {
+    parts.push(`Lighting: ${params.lighting}`);
+  }
+
+  // 5. 镜头类型
+  if (params.shotType) {
+    parts.push(`Shot type: ${params.shotType}`);
+  }
+
+  // 6. 色彩方案
+  if (params.colorPalette) {
+    parts.push(`Color palette: ${params.colorPalette}`);
+  }
+
+  // 7. 氛围情绪
+  if (params.mood) {
+    parts.push(`Mood: ${params.mood}`);
+  }
+
+  // 8. 用户的主提示词
+  parts.push(params.prompt);
+
+  return parts.join('. ');
+}
+
+/**
  * 使用 Gemini 生成图片
  * @param options 生成选项（prompt、aspectRatio、outputDir）
  * @returns 生成结果，包含本地路径
@@ -289,14 +381,19 @@ export async function generateImage(
     ? { prompt: options }
     : options;
 
-  const { prompt, aspectRatio = GENERATE_CONFIG.DEFAULT_ASPECT_RATIO, outputDir } = opts;
+  const { prompt: promptInput, aspectRatio = GENERATE_CONFIG.DEFAULT_ASPECT_RATIO, outputDir } = opts;
+
+  // 构建最终提示词
+  const finalPrompt = typeof promptInput === 'string'
+    ? promptInput
+    : buildImagePrompt(promptInput);
 
   if (!config.gemini.apiKey) {
     return { success: false, error: 'GEMINI_API_KEY is not configured' };
   }
 
   log.info('Starting image generation', {
-    prompt: prompt.slice(0, 50),
+    prompt: finalPrompt.slice(0, 100),
     aspectRatio,
   });
 
@@ -320,7 +417,7 @@ export async function generateImage(
 
       const response = await ai.models.generateContent({
         model: config.gemini.imageGenerateModel,
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        contents: [{ role: 'user', parts: [{ text: finalPrompt }] }],
         config: {
           responseModalities: ['TEXT', 'IMAGE'],
           // @ts-ignore - aspectRatio 是 Gemini 图片生成的有效参数
