@@ -21,6 +21,8 @@ A Model Context Protocol (MCP) server that provides tools for interacting with X
 ├── data.db                   # SQLite database (accounts, logs, etc.)
 ├── logs/                     # Log files
 │   └── xhs-mcp.log           # Application log
+├── temp/                     # Temporary files
+│   └── images/               # Downloaded HTTP images for publishing
 └── downloads/
     ├── images/{noteId}/
     └── videos/{noteId}/
@@ -38,8 +40,11 @@ src/
 │   ├── multi-account.ts      # Multi-account operation helpers (并行/串行执行)
 │   ├── login-session.ts      # Multi-step login session manager
 │   ├── gemini.ts             # Gemini AI integration (image generation, etc.)
+│   ├── explore-ai.ts         # AI decision module for explore (note selection, comment generation)
 │   ├── image-upload.ts       # Image upload utilities
-│   └── qrcode-utils.ts       # QR code generation and display utilities
+│   ├── qrcode-utils.ts       # QR code generation and display utilities
+│   └── prompts/              # AI prompt templates
+│       └── explore.ts        # Explore prompts (note selection, comment generation)
 ├── db/
 │   ├── index.ts              # XhsDatabase class (组合所有 Repository)
 │   ├── schema.ts             # Table definitions
@@ -52,17 +57,20 @@ src/
 │       ├── interactions.ts   # InteractionRepository - 互动记录
 │       ├── downloads.ts      # DownloadRepository - 下载记录
 │       ├── config.ts         # ConfigRepository - 配置键值对
-│       └── my-notes.ts       # MyNotesRepository - 我的已发布笔记缓存
+│       ├── my-notes.ts       # MyNotesRepository - 我的已发布笔记缓存
+│       └── explore.ts        # ExploreRepository - 探索会话和日志
 ├── tools/
 │   ├── account.ts            # xhs_list_accounts, xhs_add_account, xhs_check_login_session, xhs_remove_account, xhs_set_account_config
 │   ├── auth.ts               # xhs_check_auth_status (+account parameter, syncs profile)
 │   ├── content.ts            # xhs_search, xhs_get_note, xhs_user_profile, xhs_list_feeds (+account parameter)
 │   ├── publish.ts            # xhs_publish_content, xhs_publish_video (+account/accounts parameter)
-│   ├── interaction.ts        # xhs_like_feed, xhs_favorite_feed, xhs_post_comment, xhs_reply_comment, xhs_delete_cookies (+account/accounts)
+│   ├── interaction.ts        # xhs_like_feed, xhs_favorite_feed, xhs_post_comment, xhs_reply_comment, xhs_like_comment, xhs_delete_cookies (+account/accounts)
 │   ├── stats.ts              # xhs_get_account_stats, xhs_get_operation_logs
 │   ├── download.ts           # xhs_download_images, xhs_download_video
 │   ├── draft.ts              # xhs_create_draft, xhs_list_drafts, xhs_publish_draft, etc.
-│   └── creator.ts            # xhs_get_my_notes, xhs_query_my_notes
+│   ├── creator.ts            # xhs_get_my_notes, xhs_query_my_notes
+│   ├── notification.ts       # xhs_get_notifications
+│   └── explore.ts            # xhs_explore (自动浏览)
 └── xhs/
     ├── index.ts              # XhsClient facade class (supports account options)
     ├── types.ts              # TypeScript interfaces
@@ -77,7 +85,9 @@ src/
     │       ├── content.ts    # ContentService - 内容获取
     │       ├── publish.ts    # PublishService - 发布功能
     │       ├── interact.ts   # InteractService - 互动功能
-    │       └── creator.ts    # CreatorService - 创作者中心
+    │       ├── creator.ts    # CreatorService - 创作者中心
+    │       ├── notification.ts # NotificationService - 通知获取
+    │       └── explore.ts    # ExploreService - 自动浏览
     └── utils/
         ├── index.ts          # Utilities (sleep, humanScroll, generateWebId)
         └── stealth.js        # Browser automation script
@@ -132,7 +142,7 @@ QR code is generated via api.qrserver.com - works remotely without local file ac
 ### Publishing
 | Tool | Description |
 |------|-------------|
-| `xhs_publish_content` | Publish image/text note (supports `account`/`accounts` params) |
+| `xhs_publish_content` | Publish image/text note (supports HTTP URLs for images, auto-downloads) |
 | `xhs_publish_video` | Publish video note (supports `account`/`accounts` params) |
 
 ### Interaction
@@ -142,6 +152,7 @@ QR code is generated via api.qrserver.com - works remotely without local file ac
 | `xhs_favorite_feed` | Favorite/unfavorite a note |
 | `xhs_post_comment` | Post a comment on a note |
 | `xhs_reply_comment` | Reply to a comment |
+| `xhs_like_comment` | Like/unlike a comment |
 | `xhs_delete_cookies` | Delete saved cookies/session for an account |
 
 ### Statistics (New in v2.0)
@@ -172,6 +183,16 @@ QR code is generated via api.qrserver.com - works remotely without local file ac
 |------|-------------|
 | `xhs_get_my_notes` | Fetch published notes from creator center and cache to database |
 | `xhs_query_my_notes` | Query cached notes from database with multi-field filter support |
+
+### Notifications (New in v2.3)
+| Tool | Description |
+|------|-------------|
+| `xhs_get_notifications` | Get notifications (mentions, likes, connections) with info for replying |
+
+### Explore (New in v2.4)
+| Tool | Description |
+|------|-------------|
+| `xhs_explore` | Automated browsing with AI note selection, probability-based liking/commenting |
 
 ## Multi-Account Usage
 

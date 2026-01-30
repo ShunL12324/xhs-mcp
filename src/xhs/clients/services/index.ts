@@ -9,3 +9,5 @@ export { ContentService } from './content.js';
 export { PublishService } from './publish.js';
 export { InteractService } from './interact.js';
 export { CreatorService } from './creator.js';
+export { NotificationService } from './notification.js';
+export { ExploreService, ExploreParams } from './explore.js';

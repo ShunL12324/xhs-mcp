@@ -18,7 +18,7 @@ export class InteractionRepository {
     accountId: string;
     targetNoteId: string;
     targetUserId?: string;
-    action: 'like' | 'unlike' | 'favorite' | 'unfavorite' | 'comment' | 'reply';
+    action: 'like' | 'unlike' | 'favorite' | 'unfavorite' | 'comment' | 'reply' | 'like_comment' | 'unlike_comment';
     commentId?: string;
     commentContent?: string;
     success: boolean;

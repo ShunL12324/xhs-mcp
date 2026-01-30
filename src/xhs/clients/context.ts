@@ -8,6 +8,7 @@ import { chromium, Browser, BrowserContext, Page } from 'playwright';
 import { LoginUserInfo, FullUserProfile } from '../types.js';
 import { getStealthScript, generateWebId } from '../utils/index.js';
 import { createLogger } from '../../core/logger.js';
+import { config } from '../../core/config.js';
 import { USER_AGENT, BROWSER_ARGS } from './constants.js';
 
 // Create logger for browser module
@@ -50,8 +51,9 @@ export class BrowserContextManager {
 
   /**
    * Initialize browser with optional headless mode
+   * Defaults to config.browser.headless (which respects DEBUG env)
    */
-  async init(headless = true): Promise<void> {
+  async init(headless = config.browser.headless): Promise<void> {
     const launchOptions: any = {
       headless,
       args: BROWSER_ARGS,
@@ -103,8 +105,9 @@ export class BrowserContextManager {
 
   /**
    * Ensure context is initialized, initializing if needed
+   * Defaults to config.browser.headless (which respects DEBUG env)
    */
-  async ensureContext(headless = true): Promise<BrowserContext> {
+  async ensureContext(headless = config.browser.headless): Promise<BrowserContext> {
     if (!this.context) {
       await this.init(headless);
     }

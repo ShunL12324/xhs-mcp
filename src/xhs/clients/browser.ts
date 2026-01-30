@@ -39,6 +39,9 @@ import { ContentService } from './services/content.js';
 import { PublishService } from './services/publish.js';
 import { InteractService } from './services/interact.js';
 import { CreatorService } from './services/creator.js';
+import { NotificationService, NotificationsResult } from './services/notification.js';
+import { ExploreService, ExploreParams } from './services/explore.js';
+import { ExploreSessionResult } from '../../db/index.js';
 
 // Import types for method signatures
 import {
@@ -83,6 +86,8 @@ export class BrowserClient {
   private publishService: PublishService;
   private interactService: InteractService;
   private creatorService: CreatorService;
+  private notificationService: NotificationService;
+  private exploreService: ExploreService;
 
   constructor(options: BrowserClientOptions = {}) {
     this.ctx = new BrowserContextManager(options);
@@ -92,6 +97,8 @@ export class BrowserClient {
     this.publishService = new PublishService(this.ctx);
     this.interactService = new InteractService(this.ctx);
     this.creatorService = new CreatorService(this.ctx);
+    this.notificationService = new NotificationService(this.ctx);
+    this.exploreService = new ExploreService(this.ctx);
   }
 
   // ============ Context Methods ============
@@ -233,6 +240,18 @@ export class BrowserClient {
     return this.interactService.replyComment(noteId, xsecToken, commentId, content);
   }
 
+  /**
+   * Like or unlike a comment
+   */
+  async likeComment(
+    noteId: string,
+    xsecToken: string,
+    commentId: string,
+    unlike?: boolean
+  ): Promise<InteractionResult> {
+    return this.interactService.likeComment(noteId, xsecToken, commentId, unlike);
+  }
+
   // ============ Creator Methods ============
 
   /**
@@ -240,5 +259,27 @@ export class BrowserClient {
    */
   async getMyPublishedNotes(tab?: number, limit?: number, timeout?: number): Promise<any[]> {
     return this.creatorService.getMyPublishedNotes(tab, limit, timeout);
+  }
+
+  // ============ Notification Methods ============
+
+  /**
+   * Get notifications (mentions, likes, connections)
+   */
+  async getNotifications(
+    type?: 'mentions' | 'likes' | 'connections' | 'all',
+    limit?: number
+  ): Promise<NotificationsResult> {
+    return this.notificationService.getNotifications(type, limit);
+  }
+
+  // ============ Explore Methods ============
+
+  /**
+   * Automatically browse the explore page
+   * Simulates human behavior, opening notes, liking, and commenting based on probability
+   */
+  async explore(accountId: string, params?: ExploreParams): Promise<ExploreSessionResult> {
+    return this.exploreService.explore(accountId, params);
   }
 }

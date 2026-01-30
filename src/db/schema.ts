@@ -81,7 +81,7 @@ CREATE TABLE IF NOT EXISTS interactions (
   account_id TEXT NOT NULL,
   target_note_id TEXT NOT NULL,
   target_user_id TEXT,
-  action TEXT NOT NULL CHECK(action IN ('like', 'unlike', 'favorite', 'unfavorite', 'comment', 'reply')),
+  action TEXT NOT NULL CHECK(action IN ('like', 'unlike', 'favorite', 'unfavorite', 'comment', 'reply', 'like_comment', 'unlike_comment')),
   comment_id TEXT,
   comment_content TEXT,
   success BOOLEAN NOT NULL,
@@ -157,6 +157,49 @@ CREATE INDEX IF NOT EXISTS idx_my_published_notes_account_id ON my_published_not
 CREATE INDEX IF NOT EXISTS idx_my_published_notes_publish_time ON my_published_notes(publish_time);
 CREATE INDEX IF NOT EXISTS idx_my_published_notes_level ON my_published_notes(level);
 CREATE INDEX IF NOT EXISTS idx_my_published_notes_permission_code ON my_published_notes(permission_code);
+
+-- Explore sessions: tracks automated browsing sessions
+CREATE TABLE IF NOT EXISTS explore_sessions (
+  id TEXT PRIMARY KEY,
+  account_id TEXT NOT NULL,
+  started_at DATETIME NOT NULL,
+  ended_at DATETIME,
+  config JSON,
+  notes_seen INTEGER DEFAULT 0,
+  notes_opened INTEGER DEFAULT 0,
+  notes_liked INTEGER DEFAULT 0,
+  notes_commented INTEGER DEFAULT 0,
+  status TEXT DEFAULT 'running' CHECK(status IN ('running', 'completed', 'stopped')),
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+);
+
+-- Explore logs: detailed action logs for each session
+CREATE TABLE IF NOT EXISTS explore_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id TEXT NOT NULL,
+  note_id TEXT NOT NULL,
+  note_title TEXT,
+  action TEXT NOT NULL CHECK(action IN ('seen', 'opened', 'liked', 'commented')),
+  content TEXT,
+  ai_reason TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (session_id) REFERENCES explore_sessions(id) ON DELETE CASCADE
+);
+
+-- Explored notes: tracks which notes have been seen (for deduplication)
+CREATE TABLE IF NOT EXISTS explored_notes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  account_id TEXT NOT NULL,
+  note_id TEXT NOT NULL,
+  explored_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  interacted INTEGER DEFAULT 0,
+  UNIQUE(account_id, note_id),
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_explore_sessions_account_id ON explore_sessions(account_id);
+CREATE INDEX IF NOT EXISTS idx_explore_logs_session_id ON explore_logs(session_id);
+CREATE INDEX IF NOT EXISTS idx_explored_notes_account_id ON explored_notes(account_id);
 
 -- Migration: Add new columns to account_profiles if they don't exist
 -- SQLite doesn't support IF NOT EXISTS for ALTER TABLE, so we use a workaround
@@ -303,7 +346,7 @@ export interface InteractionRow {
   /** Target note author's user ID */
   target_user_id: string | null;
   /** Interaction type */
-  action: 'like' | 'unlike' | 'favorite' | 'unfavorite' | 'comment' | 'reply';
+  action: 'like' | 'unlike' | 'favorite' | 'unfavorite' | 'comment' | 'reply' | 'like_comment' | 'unlike_comment';
   /** Comment ID (for comments and replies) */
   comment_id: string | null;
   /** Comment text content */
@@ -416,4 +459,71 @@ export interface MyPublishedNoteRow {
   fetched_at: string;
   /** Last update timestamp */
   updated_at: string;
+}
+
+/**
+ * Raw database row for an explore session.
+ * Tracks automated browsing sessions.
+ */
+export interface ExploreSessionRow {
+  /** UUID primary key */
+  id: string;
+  /** Foreign key to accounts.id */
+  account_id: string;
+  /** Session start time */
+  started_at: string;
+  /** Session end time */
+  ended_at: string | null;
+  /** Session config as JSON string */
+  config: string | null;
+  /** Number of notes seen */
+  notes_seen: number;
+  /** Number of notes opened */
+  notes_opened: number;
+  /** Number of notes liked */
+  notes_liked: number;
+  /** Number of notes commented */
+  notes_commented: number;
+  /** Session status */
+  status: 'running' | 'completed' | 'stopped';
+}
+
+/**
+ * Raw database row for an explore log entry.
+ * Detailed action logs for each session.
+ */
+export interface ExploreLogRow {
+  /** Auto-increment primary key */
+  id: number;
+  /** Foreign key to explore_sessions.id */
+  session_id: string;
+  /** Note ID */
+  note_id: string;
+  /** Note title */
+  note_title: string | null;
+  /** Action type */
+  action: 'seen' | 'opened' | 'liked' | 'commented';
+  /** Comment content (for commented action) */
+  content: string | null;
+  /** AI decision reason */
+  ai_reason: string | null;
+  /** Action timestamp */
+  created_at: string;
+}
+
+/**
+ * Raw database row for an explored note.
+ * Tracks which notes have been seen for deduplication.
+ */
+export interface ExploredNoteRow {
+  /** Auto-increment primary key */
+  id: number;
+  /** Foreign key to accounts.id */
+  account_id: string;
+  /** Note ID */
+  note_id: string;
+  /** When the note was explored */
+  explored_at: string;
+  /** Whether the user interacted with the note */
+  interacted: number;
 }

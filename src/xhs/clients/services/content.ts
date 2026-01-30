@@ -5,7 +5,7 @@
  */
 
 import { XhsNote, XhsSearchItem, XhsUserInfo } from '../../types.js';
-import { sleep } from '../../utils/index.js';
+import { sleep, navigateWithRetry } from '../../utils/index.js';
 import { BrowserContextManager, log } from '../context.js';
 import { TIMEOUTS, REQUEST_INTERVAL } from '../constants.js';
 
@@ -34,10 +34,12 @@ export class ContentService {
         url += `?xsec_token=${encodeURIComponent(xsecToken)}&xsec_source=pc_feed`;
       }
 
-      await page.goto(url, { waitUntil: 'domcontentloaded' });
-
-      // 等待页面稳定
-      await page.waitForLoadState('networkidle').catch(() => {});
+      // 带重试的页面导航
+      const accessError = await navigateWithRetry(page, url);
+      if (accessError) {
+        log.warn('Note page not accessible', { noteId, error: accessError });
+        return null;
+      }
 
       // 等待 __INITIAL_STATE__ 存在
       await page.waitForFunction(() => (window as any).__INITIAL_STATE__ !== undefined, {

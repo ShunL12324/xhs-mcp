@@ -144,6 +144,43 @@ export const interactionTools: Tool[] = [
     },
   },
   {
+    name: 'xhs_like_comment',
+    description: 'Like or unlike a comment on Xiaohongshu. Requires login.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        noteId: {
+          type: 'string',
+          description: 'Note ID containing the comment',
+        },
+        xsecToken: {
+          type: 'string',
+          description: 'Security token from search results',
+        },
+        commentId: {
+          type: 'string',
+          description: 'Comment ID to like/unlike',
+        },
+        unlike: {
+          type: 'boolean',
+          description: 'If true, unlike the comment. Default is false (like).',
+        },
+        account: {
+          type: 'string',
+          description: 'Account name or ID to use',
+        },
+        accounts: {
+          oneOf: [
+            { type: 'array', items: { type: 'string' } },
+            { type: 'string', enum: ['all'] },
+          ],
+          description: 'Multiple accounts (array of names/IDs, or "all")',
+        },
+      },
+      required: ['noteId', 'xsecToken', 'commentId'],
+    },
+  },
+  {
     name: 'xhs_delete_cookies',
     description: 'Delete saved login cookies/session for an account. Use this to log out or re-authenticate.',
     inputSchema: {
@@ -364,6 +401,61 @@ export async function handleInteractionTools(
 
       return {
         content: [{ type: 'text', text: JSON.stringify(results[0], null, 2) }],
+      };
+    }
+
+    case 'xhs_like_comment': {
+      const params = z
+        .object({
+          noteId: z.string(),
+          xsecToken: z.string(),
+          commentId: z.string(),
+          unlike: z.boolean().optional().default(false),
+          account: z.string().optional(),
+          accounts: z.union([z.array(z.string()), z.literal('all')]).optional(),
+        })
+        .parse(args);
+
+      const multiParams: MultiAccountParams = {
+        account: params.account,
+        accounts: params.accounts,
+      };
+
+      const results = await executeWithMultipleAccounts(
+        pool,
+        db,
+        multiParams,
+        params.unlike ? 'unlike_comment' : 'like_comment',
+        async (ctx) => {
+          const result = await ctx.client.likeComment(
+            params.noteId,
+            params.xsecToken,
+            params.commentId,
+            params.unlike
+          );
+
+          db.interactions.record({
+            accountId: ctx.accountId,
+            targetNoteId: params.noteId,
+            action: params.unlike ? 'unlike_comment' : 'like_comment',
+            commentId: params.commentId,
+            success: result.success,
+            error: result.error,
+          });
+
+          return result;
+        },
+        { logParams: { noteId: params.noteId, commentId: params.commentId, unlike: params.unlike } }
+      );
+
+      if (results.length === 1) {
+        return {
+          content: [{ type: 'text', text: JSON.stringify(results[0], null, 2) }],
+        };
+      }
+
+      return {
+        content: [{ type: 'text', text: JSON.stringify(results, null, 2) }],
       };
     }
 

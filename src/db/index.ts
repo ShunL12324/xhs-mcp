@@ -19,6 +19,7 @@ import {
   DownloadRepository,
   ConfigRepository,
   MyNotesRepository,
+  ExploreRepository,
 } from './repos/index.js';
 
 // Re-export domain models
@@ -26,6 +27,7 @@ export type { Account } from './repos/accounts.js';
 export type { AccountProfile } from './repos/profiles.js';
 export type { OperationLog, AccountStats } from './repos/operations.js';
 export type { MyPublishedNote, MyNotesFilter } from './repos/my-notes.js';
+export type { ExploreConfig, ExploreLogEntry, ExploreSessionStats, ExploreSessionResult } from './repos/explore.js';
 
 // Re-export schema types
 export type {
@@ -57,6 +59,7 @@ export class XhsDatabase {
   readonly downloads: DownloadRepository;
   readonly config: ConfigRepository;
   readonly myNotes: MyNotesRepository;
+  readonly explore: ExploreRepository;
 
   /**
    * Create a new database instance.
@@ -78,6 +81,7 @@ export class XhsDatabase {
     this.downloads = new DownloadRepository(this.db);
     this.config = new ConfigRepository(this.db);
     this.myNotes = new MyNotesRepository(this.db);
+    this.explore = new ExploreRepository(this.db);
   }
 
   /**

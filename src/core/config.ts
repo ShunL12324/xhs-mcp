@@ -84,10 +84,12 @@ export const config = {
    * 浏览器配置
    */
   browser: {
-    /** 是否使用无头模式 (XHS_MCP_HEADLESS)，默认 true */
-    headless: parseBoolean(process.env.XHS_MCP_HEADLESS, true),
+    /** 是否使用无头模式 (XHS_MCP_HEADLESS)，DEBUG 模式下默认 false，否则默认 true */
+    headless: parseBoolean(process.env.XHS_MCP_HEADLESS, !parseBoolean(process.env.DEBUG, false)),
     /** 请求间隔（毫秒）(XHS_MCP_REQUEST_INTERVAL)，用于速率限制 */
     requestInterval: parseInteger(process.env.XHS_MCP_REQUEST_INTERVAL, 2000),
+    /** DEBUG 模式下是否保持浏览器打开不自动关闭 */
+    keepOpen: parseBoolean(process.env.DEBUG, false),
   },
 
   /**
@@ -151,6 +153,14 @@ export const paths = {
   get logFile() {
     return path.join(config.data.dir, 'logs', 'xhs-mcp.log');
   },
+  /** 临时文件目录 */
+  get temp() {
+    return path.join(config.data.dir, 'temp');
+  },
+  /** 临时图片目录（用于下载 HTTP 图片后上传） */
+  get tempImages() {
+    return path.join(config.data.dir, 'temp', 'images');
+  },
 };
 
 /**
@@ -177,6 +187,7 @@ export function printConfig(): void {
   console.error(`  Data Directory: ${config.data.dir}`);
   console.error(`  Log Level: ${config.log.level}`);
   console.error(`  Headless Mode: ${config.browser.headless}`);
+  console.error(`  Keep Browser Open (DEBUG): ${config.browser.keepOpen}`);
   console.error(`  Request Interval: ${config.browser.requestInterval}ms`);
   console.error(`  Page Load Timeout: ${config.timeout.pageLoad}ms`);
   console.error(`  Video Upload Timeout: ${config.timeout.videoUpload}ms`);

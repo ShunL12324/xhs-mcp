@@ -6,7 +6,7 @@
 
 import { chromium, Page } from 'playwright';
 import { PublishContentParams, PublishVideoParams, PublishResult } from '../../types.js';
-import { getStealthScript, sleep } from '../../utils/index.js';
+import { getStealthScript, sleep, resolveImagePaths, isHttpUrl } from '../../utils/index.js';
 import { config } from '../../../core/config.js';
 import { BrowserContextManager, log } from '../context.js';
 import {
@@ -36,6 +36,20 @@ export class PublishService {
     if (!this.ctx.options.state) {
       log.error('Not logged in');
       return { success: false, error: 'Not logged in. Please use xhs_add_account first.' };
+    }
+
+    // 处理 HTTP URL 图片：下载到本地临时目录
+    let imagePaths = params.images;
+    const hasHttpUrls = params.images.some(p => isHttpUrl(p));
+    if (hasHttpUrls) {
+      log.info('Detected HTTP image URLs, downloading to local...');
+      try {
+        imagePaths = await resolveImagePaths(params.images);
+        log.info('HTTP images downloaded', { count: imagePaths.length });
+      } catch (error) {
+        log.error('Failed to download HTTP images', { error: error instanceof Error ? error.message : String(error) });
+        return { success: false, error: `Failed to download HTTP images: ${error instanceof Error ? error.message : String(error)}` };
+      }
     }
 
     if (this.ctx.browser) {
@@ -125,7 +139,7 @@ export class PublishService {
 
       // Validate image paths
       const validPaths: string[] = [];
-      for (const imgPath of params.images) {
+      for (const imgPath of imagePaths) {
         try {
           const fs = await import('fs');
           if (fs.existsSync(imgPath)) {

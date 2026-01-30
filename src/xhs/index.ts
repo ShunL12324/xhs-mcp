@@ -139,6 +139,16 @@ export class XhsClient {
     return await this.browserClient.replyComment(noteId, xsecToken, commentId, content);
   }
 
+  // Like comment
+  async likeComment(
+    noteId: string,
+    xsecToken: string,
+    commentId: string,
+    unlike: boolean = false
+  ): Promise<InteractionResult> {
+    return await this.browserClient.likeComment(noteId, xsecToken, commentId, unlike);
+  }
+
   // Cookie management
   async deleteCookies(): Promise<{ success: boolean; error?: string }> {
     return await this.browserClient.deleteCookies();
@@ -147,6 +157,28 @@ export class XhsClient {
   // Creator center methods
   async getMyPublishedNotes(tab?: number, limit?: number, timeout?: number): Promise<any[]> {
     return await this.browserClient.getMyPublishedNotes(tab, limit, timeout);
+  }
+
+  // Notification methods
+  async getNotifications(
+    type?: 'mentions' | 'likes' | 'connections' | 'all',
+    limit?: number
+  ): Promise<any> {
+    return await this.browserClient.getNotifications(type, limit);
+  }
+
+  // Explore methods
+  async explore(params?: {
+    duration?: number;
+    interests?: string[];
+    openRate?: number;
+    likeRate?: number;
+    commentRate?: number;
+  }): Promise<any> {
+    if (!this.options.accountId) {
+      throw new Error('accountId is required for explore');
+    }
+    return await this.browserClient.explore(this.options.accountId, params);
   }
 
   async close() {

@@ -9,6 +9,7 @@ import path from 'path';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import type { Page } from 'playwright';
+import { paths } from '../../core/config.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -212,4 +213,249 @@ export async function humanScrollToBottom(
   }
 
   return false;
+}
+
+/**
+ * 页面不可访问的错误关键词
+ */
+const PAGE_INACCESSIBLE_KEYWORDS = [
+  '当前笔记暂时无法浏览',
+  '该内容因违规已被删除',
+  '该笔记已被删除',
+  '内容不存在',
+  '笔记不存在',
+  '已失效',
+  '私密笔记',
+  '仅作者可见',
+  '因用户设置，你无法查看',
+  '因违规无法查看',
+  '你访问的页面不见了',
+];
+
+/**
+ * 错误容器的选择器
+ */
+const ERROR_CONTAINER_SELECTORS = '.access-wrapper, .error-wrapper, .not-found-wrapper, .blocked-wrapper';
+
+/**
+ * 检查页面是否可访问
+ * 参考 reference project 的 checkPageAccessible 实现
+ *
+ * @param page - Playwright page instance
+ * @returns null if accessible, error message if not
+ */
+export async function checkPageAccessible(page: Page): Promise<string | null> {
+  await sleep(500);
+
+  // 方法1：检查 URL 是否包含 /404，并解析 error_msg
+  const url = page.url();
+  if (url.includes('/404')) {
+    // 尝试从 URL 解析 error_msg 参数
+    try {
+      const urlObj = new URL(url);
+      const errorMsg = urlObj.searchParams.get('error_msg');
+      const errorCode = urlObj.searchParams.get('error_code');
+      if (errorMsg) {
+        const decodedMsg = decodeURIComponent(errorMsg);
+        return `笔记不可访问: ${decodedMsg}${errorCode ? ` (错误码: ${errorCode})` : ''}`;
+      }
+    } catch {
+      // URL 解析失败，使用通用错误消息
+    }
+    return '页面已跳转到404，笔记不可访问';
+  }
+
+  // 方法2：检查页面标题
+  const title = await page.title();
+  if (title.includes('你访问的页面不见了')) {
+    return '笔记不可访问：页面不存在';
+  }
+
+  // 方法3：查找错误容器
+  const wrapperEl = await page.$(ERROR_CONTAINER_SELECTORS);
+  if (!wrapperEl) {
+    // 未找到错误容器，页面可访问
+    return null;
+  }
+
+  // 获取文本内容
+  const text = await wrapperEl.textContent();
+  if (!text) {
+    return null;
+  }
+
+  // 检查关键词
+  for (const keyword of PAGE_INACCESSIBLE_KEYWORDS) {
+    if (text.includes(keyword)) {
+      return `笔记不可访问: ${keyword}`;
+    }
+  }
+
+  // 如果有错误容器但不匹配关键词，返回未知错误
+  const trimmedText = text.trim();
+  if (trimmedText) {
+    return `笔记不可访问: ${trimmedText.substring(0, 100)}`;
+  }
+
+  return null;
+}
+
+/**
+ * 带重试机制的页面导航和访问检测
+ * 如果页面不可访问，会重试最多 maxRetries 次
+ *
+ * @param page - Playwright page instance
+ * @param url - 要访问的 URL
+ * @param maxRetries - 最大重试次数 (默认 3)
+ * @param retryDelay - 重试间隔范围 [min, max] 毫秒 (默认 [3000, 5000])
+ * @returns null if accessible, error message if all retries failed
+ */
+export async function navigateWithRetry(
+  page: Page,
+  url: string,
+  maxRetries: number = 3,
+  retryDelay: [number, number] = [3000, 5000]
+): Promise<string | null> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    await page.goto(url, { waitUntil: 'domcontentloaded' });
+    // 等待 DOM 稳定，最多 3 秒（类似 reference project 的 MustWaitDOMStable）
+    await page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => {});
+    await sleep(500);
+
+    const accessError = await checkPageAccessible(page);
+    if (!accessError) {
+      // 页面可访问
+      return null;
+    }
+
+    // 如果是最后一次尝试，返回错误
+    if (attempt === maxRetries) {
+      return `${accessError} (重试 ${maxRetries} 次后仍然失败)`;
+    }
+
+    // 等待随机时间后重试
+    const delay = retryDelay[0] + Math.random() * (retryDelay[1] - retryDelay[0]);
+    await sleep(delay);
+  }
+
+  return null;
+}
+
+/**
+ * 检查路径是否为 HTTP/HTTPS URL
+ * @param imagePath - 图片路径或 URL
+ * @returns 是否为 HTTP URL
+ */
+export function isHttpUrl(imagePath: string): boolean {
+  const lower = imagePath.toLowerCase();
+  return lower.startsWith('http://') || lower.startsWith('https://');
+}
+
+/**
+ * 从 URL 下载图片到本地临时目录
+ * 参考 reference project 的 pkg/downloader/images.go
+ *
+ * @param imageUrl - 图片 URL
+ * @returns 本地文件路径
+ * @throws 如果下载失败
+ */
+export async function downloadImageFromUrl(imageUrl: string): Promise<string> {
+  // 确保临时目录存在
+  await fs.ensureDir(paths.tempImages);
+
+  // 使用 URL 的 SHA256 哈希作为文件名，确保唯一性
+  const hash = crypto.createHash('sha256').update(imageUrl).digest('hex');
+  const shortHash = hash.substring(0, 16);
+  const timestamp = Date.now();
+
+  // 下载图片
+  const response = await fetch(imageUrl);
+  if (!response.ok) {
+    throw new Error(`下载图片失败: HTTP ${response.status}`);
+  }
+
+  const buffer = Buffer.from(await response.arrayBuffer());
+
+  // 检测文件类型（通过魔数判断）
+  const extension = detectImageExtension(buffer);
+  if (!extension) {
+    throw new Error('下载的文件不是有效的图片格式');
+  }
+
+  // 生成文件名
+  const fileName = `img_${shortHash}_${timestamp}.${extension}`;
+  const filePath = path.join(paths.tempImages, fileName);
+
+  // 如果文件已存在（基于哈希），直接返回
+  const existingFiles = await fs.readdir(paths.tempImages);
+  const existingFile = existingFiles.find(f => f.includes(shortHash));
+  if (existingFile) {
+    return path.join(paths.tempImages, existingFile);
+  }
+
+  // 保存文件
+  await fs.writeFile(filePath, buffer);
+
+  return filePath;
+}
+
+/**
+ * 通过文件魔数检测图片格式
+ * @param buffer - 文件内容
+ * @returns 文件扩展名，如果不是图片则返回 null
+ */
+function detectImageExtension(buffer: Buffer): string | null {
+  if (buffer.length < 4) return null;
+
+  // JPEG: FF D8 FF
+  if (buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) {
+    return 'jpg';
+  }
+
+  // PNG: 89 50 4E 47 0D 0A 1A 0A
+  if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) {
+    return 'png';
+  }
+
+  // GIF: 47 49 46 38
+  if (buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x38) {
+    return 'gif';
+  }
+
+  // WebP: 52 49 46 46 ... 57 45 42 50
+  if (buffer.length >= 12 &&
+      buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 &&
+      buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50) {
+    return 'webp';
+  }
+
+  // BMP: 42 4D
+  if (buffer[0] === 0x42 && buffer[1] === 0x4D) {
+    return 'bmp';
+  }
+
+  return null;
+}
+
+/**
+ * 处理图片路径列表，将 HTTP URL 下载到本地
+ *
+ * @param imagePaths - 图片路径或 URL 列表
+ * @returns 本地文件路径列表
+ */
+export async function resolveImagePaths(imagePaths: string[]): Promise<string[]> {
+  const resolvedPaths: string[] = [];
+
+  for (const imgPath of imagePaths) {
+    if (isHttpUrl(imgPath)) {
+      // 下载 HTTP 图片
+      const localPath = await downloadImageFromUrl(imgPath);
+      resolvedPaths.push(localPath);
+    } else {
+      // 本地路径，直接使用
+      resolvedPaths.push(imgPath);
+    }
+  }
+
+  return resolvedPaths;
 }

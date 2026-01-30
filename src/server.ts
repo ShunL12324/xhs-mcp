@@ -23,6 +23,8 @@ import { statsTools, handleStatsTools } from './tools/stats.js';
 import { downloadTools, handleDownloadTools } from './tools/download.js';
 import { draftTools, handleDraftTools } from './tools/draft.js';
 import { creatorTools, handleCreatorTools } from './tools/creator.js';
+import { notificationTools, handleNotificationTools } from './tools/notification.js';
+import { exploreTools, handleExploreTools } from './tools/explore.js';
 
 /**
  * Create and configure the MCP server.
@@ -56,6 +58,8 @@ export function createMcpServer(pool: AccountPool, db: XhsDatabase): Server {
     ...downloadTools,
     ...draftTools,
     ...creatorTools,
+    ...notificationTools,
+    ...exploreTools,
   ];
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -103,6 +107,14 @@ export function createMcpServer(pool: AccountPool, db: XhsDatabase): Server {
 
       if (creatorTools.some((t) => t.name === name)) {
         return await handleCreatorTools(name, args, pool, db);
+      }
+
+      if (notificationTools.some((t) => t.name === name)) {
+        return await handleNotificationTools(name, args, pool, db);
+      }
+
+      if (exploreTools.some((t) => t.name === name)) {
+        return await handleExploreTools(name, args, pool, db);
       }
 
       throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);

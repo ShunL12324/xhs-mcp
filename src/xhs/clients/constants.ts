@@ -183,6 +183,29 @@ export const SEARCH_FILTER_MAP = {
   },
 };
 
+/**
+ * Explore 页面 CSS 选择器
+ * 用于自动浏览首页时定位元素
+ */
+export const EXPLORE_SELECTORS = {
+  /** 笔记卡片封面（可点击） */
+  noteCover: 'section.note-item a.cover',
+  /** 笔记详情 modal 容器 */
+  noteContainer: '#noteContainer',
+  /** modal 内点赞按钮 */
+  likeWrapper: '#noteContainer .like-wrapper',
+  /** 已点赞状态类名 */
+  likeActiveClass: 'like-active',
+  /** modal 内评论输入区域 */
+  commentInputArea: '#noteContainer div.input-box div.content-edit',
+  /** modal 内评论输入框 */
+  commentInput: '#noteContainer div.input-box div.content-edit p.content-input',
+  /** modal 内评论提交按钮 */
+  commentSubmit: '#noteContainer div.bottom button.submit',
+  /** modal 关闭按钮 */
+  closeButton: 'div.note-detail-mask > div.close-circle',
+} as const;
+
 // QR code selector for login (matching Go project: .login-container .qrcode-img)
 export const QR_CODE_SELECTOR = '.login-container .qrcode-img, #app > div:nth-child(1) > div > div.login-container > div.left > div.code-area > div.qrcode.force-light > img';
 

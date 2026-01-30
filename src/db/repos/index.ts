@@ -11,3 +11,4 @@ export { InteractionRepository } from './interactions.js';
 export { DownloadRepository } from './downloads.js';
 export { ConfigRepository } from './config.js';
 export { MyNotesRepository, MyPublishedNote, MyNotesFilter } from './my-notes.js';
+export { ExploreRepository, ExploreConfig, ExploreLogEntry, ExploreSessionStats, ExploreSessionResult } from './explore.js';
