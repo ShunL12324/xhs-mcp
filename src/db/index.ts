@@ -18,12 +18,14 @@ import {
   InteractionRepository,
   DownloadRepository,
   ConfigRepository,
+  MyNotesRepository,
 } from './repos/index.js';
 
 // Re-export domain models
 export type { Account } from './repos/accounts.js';
 export type { AccountProfile } from './repos/profiles.js';
 export type { OperationLog, AccountStats } from './repos/operations.js';
+export type { MyPublishedNote, MyNotesFilter } from './repos/my-notes.js';
 
 // Re-export schema types
 export type {
@@ -35,6 +37,7 @@ export type {
   DownloadRow,
   ConfigRow,
   NoteDraftRow,
+  MyPublishedNoteRow,
 } from './schema.js';
 
 /**
@@ -53,6 +56,7 @@ export class XhsDatabase {
   readonly interactions: InteractionRepository;
   readonly downloads: DownloadRepository;
   readonly config: ConfigRepository;
+  readonly myNotes: MyNotesRepository;
 
   /**
    * Create a new database instance.
@@ -73,6 +77,7 @@ export class XhsDatabase {
     this.interactions = new InteractionRepository(this.db);
     this.downloads = new DownloadRepository(this.db);
     this.config = new ConfigRepository(this.db);
+    this.myNotes = new MyNotesRepository(this.db);
   }
 
   /**
@@ -81,6 +86,34 @@ export class XhsDatabase {
   async init(): Promise<void> {
     await ensureDirectories();
     this.db.exec(SCHEMA_SQL);
+
+    // 数据库迁移：添加新列到 account_profiles 表
+    this.migrateAccountProfiles();
+  }
+
+  /**
+   * 迁移 account_profiles 表，添加新字段
+   * SQLite 不支持 IF NOT EXISTS，所以需要捕获错误
+   */
+  private migrateAccountProfiles(): void {
+    const migrations = [
+      'ALTER TABLE account_profiles ADD COLUMN ip_location TEXT',
+      'ALTER TABLE account_profiles ADD COLUMN like_and_collect INTEGER',
+      'ALTER TABLE account_profiles ADD COLUMN is_banned BOOLEAN DEFAULT FALSE',
+      'ALTER TABLE account_profiles ADD COLUMN ban_code INTEGER',
+      'ALTER TABLE account_profiles ADD COLUMN ban_reason TEXT',
+    ];
+
+    for (const sql of migrations) {
+      try {
+        this.db.exec(sql);
+      } catch (e: any) {
+        // 忽略 "duplicate column name" 错误
+        if (!e.message?.includes('duplicate column name')) {
+          throw e;
+        }
+      }
+    }
   }
 
   /**

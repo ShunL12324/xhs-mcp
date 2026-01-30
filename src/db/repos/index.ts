@@ -10,3 +10,4 @@ export { PublishedRepository } from './published.js';
 export { InteractionRepository } from './interactions.js';
 export { DownloadRepository } from './downloads.js';
 export { ConfigRepository } from './config.js';
+export { MyNotesRepository, MyPublishedNote, MyNotesFilter } from './my-notes.js';

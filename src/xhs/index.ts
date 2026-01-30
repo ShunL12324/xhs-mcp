@@ -16,6 +16,7 @@ import {
   InteractionResult,
   CommentResult,
   LoginUserInfo,
+  FullUserProfile,
 } from './types.js';
 
 /**
@@ -80,6 +81,7 @@ export class XhsClient {
     loggedIn: boolean;
     message: string;
     userInfo?: LoginUserInfo;
+    fullProfile?: FullUserProfile;
   }> {
     return await this.browserClient.checkLoginStatus();
   }
@@ -140,6 +142,11 @@ export class XhsClient {
   // Cookie management
   async deleteCookies(): Promise<{ success: boolean; error?: string }> {
     return await this.browserClient.deleteCookies();
+  }
+
+  // Creator center methods
+  async getMyPublishedNotes(tab?: number, limit?: number, timeout?: number): Promise<any[]> {
+    return await this.browserClient.getMyPublishedNotes(tab, limit, timeout);
   }
 
   async close() {

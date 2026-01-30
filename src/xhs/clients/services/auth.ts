@@ -5,7 +5,7 @@
  */
 
 import { chromium } from 'playwright';
-import { LoginResult, LoginUserInfo } from '../../types.js';
+import { LoginResult, LoginUserInfo, FullUserProfile } from '../../types.js';
 import { getStealthScript, sleep, generateWebId } from '../../utils/index.js';
 import { saveAndOpenQrCode } from '../../../core/qrcode-utils.js';
 import { config } from '../../../core/config.js';
@@ -202,18 +202,25 @@ export class AuthService {
    * 通过检测页面上的登录按钮来判断是否已登录。
    * 如果已登录，会从 __INITIAL_STATE__ 中提取用户信息。
    *
+   * 当 DEBUG=1 或 DEBUG=true 时：
+   * - 使用非 headless 模式（显示浏览器窗口）
+   * - 操作完成后不关闭页面，方便调试
+   *
    * @returns 登录状态、消息和用户信息（如果已登录）
    */
   async checkLoginStatus(): Promise<{
     loggedIn: boolean;
     message: string;
     userInfo?: LoginUserInfo;
+    fullProfile?: FullUserProfile;
   }> {
-    log.info('Checking login status...');
+    const isDebug = config.debug.enabled;
+    log.info('Checking login status...', { debug: isDebug });
 
     // 通过浏览器检查 - 比检查 cookies 更可靠
+    // DEBUG 模式下使用非 headless，否则使用 headless
     if (!this.ctx.context) {
-      await this.ctx.init(false);
+      await this.ctx.init(!isDebug);
     }
 
     const page = await this.ctx.context!.newPage();
@@ -232,10 +239,18 @@ export class AuthService {
       if (isLoggedIn) {
         log.info('User is logged in');
         const userInfo = await this.ctx.extractUserInfo(page);
+
+        // 如果获取到 userId，进一步获取完整用户资料
+        let fullProfile: FullUserProfile | undefined;
+        if (userInfo?.userId) {
+          fullProfile = await this.ctx.extractFullUserProfile(userInfo.userId) || undefined;
+        }
+
         return {
           loggedIn: true,
           message: 'Logged in (user element found)',
-          userInfo: userInfo || undefined
+          userInfo: userInfo || undefined,
+          fullProfile
         };
       }
 
@@ -250,17 +265,30 @@ export class AuthService {
       // 没有登录按钮，尝试提取用户信息确认登录状态
       log.info('User is logged in (login button not found)');
       const userInfo = await this.ctx.extractUserInfo(page);
+
+      // 如果获取到 userId，进一步获取完整用户资料
+      let fullProfile: FullUserProfile | undefined;
+      if (userInfo?.userId) {
+        fullProfile = await this.ctx.extractFullUserProfile(userInfo.userId) || undefined;
+      }
+
       return {
         loggedIn: true,
         message: 'Logged in (login button not found)',
-        userInfo: userInfo || undefined
+        userInfo: userInfo || undefined,
+        fullProfile
       };
 
     } catch (e) {
       log.error('checkLoginStatus error', { error: e });
       return { loggedIn: false, message: 'Check failed - please try xhs_add_account' };
     } finally {
-      await page.close();
+      // DEBUG 模式下不关闭页面，方便调试
+      if (!isDebug) {
+        await page.close();
+      } else {
+        log.info('DEBUG mode: keeping browser open for debugging');
+      }
     }
   }
 }

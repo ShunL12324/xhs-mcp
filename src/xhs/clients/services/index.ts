@@ -8,3 +8,4 @@ export { SearchService } from './search.js';
 export { ContentService } from './content.js';
 export { PublishService } from './publish.js';
 export { InteractService } from './interact.js';
+export { CreatorService } from './creator.js';

@@ -319,7 +319,7 @@ export async function handleAccountTools(
 
         // If login successful, create account in database
         if (session.status === 'success' && session.userInfo && session.state) {
-          const { state, userInfo } = await sessionManager.completeSession(params.sessionId);
+          const { state, userInfo, fullProfile } = await sessionManager.completeSession(params.sessionId);
 
           // Create or update account
           const accountName = session.accountName || userInfo.nickname;
@@ -329,24 +329,60 @@ export async function handleAccountTools(
             session.proxy
           );
 
-          // Save user profile
-          db.profiles.upsert({
-            accountId: account.id,
-            userId: userInfo.userId,
-            redId: userInfo.redId,
-            nickname: userInfo.nickname,
-            avatar: userInfo.avatar,
-            description: userInfo.desc,
-            gender: userInfo.gender,
-          });
+          // Save user profile（优先使用完整资料）
+          if (fullProfile) {
+            db.profiles.upsert({
+              accountId: account.id,
+              userId: fullProfile.userId,
+              redId: fullProfile.redId,
+              nickname: fullProfile.nickname,
+              avatar: fullProfile.avatar,
+              description: fullProfile.description,
+              gender: fullProfile.gender,
+              ipLocation: fullProfile.ipLocation,
+              followers: fullProfile.followers,
+              following: fullProfile.following,
+              likeAndCollect: fullProfile.likeAndCollect,
+              isBanned: fullProfile.isBanned,
+              banCode: fullProfile.banCode,
+              banReason: fullProfile.banReason,
+            });
+          } else {
+            db.profiles.upsert({
+              accountId: account.id,
+              userId: userInfo.userId,
+              redId: userInfo.redId,
+              nickname: userInfo.nickname,
+              avatar: userInfo.avatar,
+              description: userInfo.desc,
+              gender: userInfo.gender,
+            });
+          }
 
           // Log operation
           db.operations.log({
             accountId: account.id,
             action: 'login',
             success: true,
-            result: { method: 'qr_code', userInfo },
+            result: { method: 'qr_code', userInfo, fullProfile },
           });
+
+          // 构建返回的用户信息
+          const returnUserInfo = fullProfile
+            ? {
+                userId: fullProfile.userId,
+                redId: fullProfile.redId,
+                nickname: fullProfile.nickname,
+                followers: fullProfile.followers,
+                following: fullProfile.following,
+                likeAndCollect: fullProfile.likeAndCollect,
+                isBanned: fullProfile.isBanned,
+              }
+            : {
+                userId: userInfo.userId,
+                redId: userInfo.redId,
+                nickname: userInfo.nickname,
+              };
 
           return {
             content: [
@@ -361,11 +397,7 @@ export async function handleAccountTools(
                       name: account.name,
                       status: account.status,
                     },
-                    userInfo: {
-                      userId: userInfo.userId,
-                      redId: userInfo.redId,
-                      nickname: userInfo.nickname,
-                    },
+                    userInfo: returnUserInfo,
                     message: 'Login successful. Account created.',
                     nextAction: null,
                   },
@@ -419,7 +451,7 @@ export async function handleAccountTools(
 
         // If login successful, create account in database
         if (session.status === 'success' && session.userInfo && session.state) {
-          const { state, userInfo } = await sessionManager.completeSession(params.sessionId);
+          const { state, userInfo, fullProfile } = await sessionManager.completeSession(params.sessionId);
 
           // Create or update account
           const accountName = session.accountName || userInfo.nickname;
@@ -429,24 +461,60 @@ export async function handleAccountTools(
             session.proxy
           );
 
-          // Save user profile
-          db.profiles.upsert({
-            accountId: account.id,
-            userId: userInfo.userId,
-            redId: userInfo.redId,
-            nickname: userInfo.nickname,
-            avatar: userInfo.avatar,
-            description: userInfo.desc,
-            gender: userInfo.gender,
-          });
+          // Save user profile（优先使用完整资料）
+          if (fullProfile) {
+            db.profiles.upsert({
+              accountId: account.id,
+              userId: fullProfile.userId,
+              redId: fullProfile.redId,
+              nickname: fullProfile.nickname,
+              avatar: fullProfile.avatar,
+              description: fullProfile.description,
+              gender: fullProfile.gender,
+              ipLocation: fullProfile.ipLocation,
+              followers: fullProfile.followers,
+              following: fullProfile.following,
+              likeAndCollect: fullProfile.likeAndCollect,
+              isBanned: fullProfile.isBanned,
+              banCode: fullProfile.banCode,
+              banReason: fullProfile.banReason,
+            });
+          } else {
+            db.profiles.upsert({
+              accountId: account.id,
+              userId: userInfo.userId,
+              redId: userInfo.redId,
+              nickname: userInfo.nickname,
+              avatar: userInfo.avatar,
+              description: userInfo.desc,
+              gender: userInfo.gender,
+            });
+          }
 
           // Log operation
           db.operations.log({
             accountId: account.id,
             action: 'login',
             success: true,
-            result: { method: 'qr_code_with_verification', userInfo },
+            result: { method: 'qr_code_with_verification', userInfo, fullProfile },
           });
+
+          // 构建返回的用户信息
+          const returnUserInfo = fullProfile
+            ? {
+                userId: fullProfile.userId,
+                redId: fullProfile.redId,
+                nickname: fullProfile.nickname,
+                followers: fullProfile.followers,
+                following: fullProfile.following,
+                likeAndCollect: fullProfile.likeAndCollect,
+                isBanned: fullProfile.isBanned,
+              }
+            : {
+                userId: userInfo.userId,
+                redId: userInfo.redId,
+                nickname: userInfo.nickname,
+              };
 
           return {
             content: [
@@ -461,11 +529,7 @@ export async function handleAccountTools(
                       name: account.name,
                       status: account.status,
                     },
-                    userInfo: {
-                      userId: userInfo.userId,
-                      redId: userInfo.redId,
-                      nickname: userInfo.nickname,
-                    },
+                    userInfo: returnUserInfo,
                     message: 'Verification successful. Account created.',
                     nextAction: null,
                   },

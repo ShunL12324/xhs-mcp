@@ -49,6 +49,14 @@ function parseLogLevel(value: string | undefined, defaultValue: LogLevelName): L
  */
 export const config = {
   /**
+   * 调试配置
+   */
+  debug: {
+    /** 调试模式 (DEBUG)：启用后 check_auth_status 使用非 headless 模式，且不自动关闭浏览器 */
+    enabled: parseBoolean(process.env.DEBUG, false),
+  },
+
+  /**
    * 服务器配置
    */
   server: {
@@ -164,6 +172,7 @@ export function getVideoDownloadPath(noteId: string): string {
  */
 export function printConfig(): void {
   console.error('=== XHS-MCP Configuration ===');
+  console.error(`  Debug Mode: ${config.debug.enabled}`);
   console.error(`  Server Port: ${config.server.port}`);
   console.error(`  Data Directory: ${config.data.dir}`);
   console.error(`  Log Level: ${config.log.level}`);

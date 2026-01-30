@@ -38,11 +38,13 @@ import { SearchService } from './services/search.js';
 import { ContentService } from './services/content.js';
 import { PublishService } from './services/publish.js';
 import { InteractService } from './services/interact.js';
+import { CreatorService } from './services/creator.js';
 
 // Import types for method signatures
 import {
   LoginResult,
   LoginUserInfo,
+  FullUserProfile,
   XhsSearchItem,
   XhsSearchFilters,
   XhsNote,
@@ -80,6 +82,7 @@ export class BrowserClient {
   private contentService: ContentService;
   private publishService: PublishService;
   private interactService: InteractService;
+  private creatorService: CreatorService;
 
   constructor(options: BrowserClientOptions = {}) {
     this.ctx = new BrowserContextManager(options);
@@ -88,6 +91,7 @@ export class BrowserClient {
     this.contentService = new ContentService(this.ctx);
     this.publishService = new PublishService(this.ctx);
     this.interactService = new InteractService(this.ctx);
+    this.creatorService = new CreatorService(this.ctx);
   }
 
   // ============ Context Methods ============
@@ -136,6 +140,7 @@ export class BrowserClient {
     loggedIn: boolean;
     message: string;
     userInfo?: LoginUserInfo;
+    fullProfile?: FullUserProfile;
   }> {
     return this.authService.checkLoginStatus();
   }
@@ -226,5 +231,14 @@ export class BrowserClient {
     content: string
   ): Promise<CommentResult> {
     return this.interactService.replyComment(noteId, xsecToken, commentId, content);
+  }
+
+  // ============ Creator Methods ============
+
+  /**
+   * Get list of published notes from creator center
+   */
+  async getMyPublishedNotes(tab?: number, limit?: number, timeout?: number): Promise<any[]> {
+    return this.creatorService.getMyPublishedNotes(tab, limit, timeout);
   }
 }

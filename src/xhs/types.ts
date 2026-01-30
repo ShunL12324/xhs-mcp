@@ -183,6 +183,39 @@ export interface LoginUserInfo {
 }
 
 /**
+ * 完整的用户资料信息，从用户主页获取
+ * 包括基础信息、统计数据、封禁状态
+ */
+export interface FullUserProfile {
+  /** Xiaohongshu user ID */
+  userId: string;
+  /** Xiaohongshu Red ID (numeric string shown in profile) */
+  redId: string;
+  /** User's display name */
+  nickname: string;
+  /** Avatar URL */
+  avatar: string;
+  /** User's bio/description */
+  description: string;
+  /** Gender (0 = not specified, 1 = male, 2 = female) */
+  gender: number;
+  /** IP location (e.g., "浙江") */
+  ipLocation: string;
+  /** Number of followers (粉丝) */
+  followers: number;
+  /** Number of users being followed (关注) */
+  following: number;
+  /** Total likes and collects received (获赞与收藏) */
+  likeAndCollect: number;
+  /** Whether account is banned by platform */
+  isBanned: boolean;
+  /** Ban code from platform */
+  banCode: number;
+  /** Ban reason from platform */
+  banReason: string;
+}
+
+/**
  * Result of a login operation.
  */
 export interface LoginResult {

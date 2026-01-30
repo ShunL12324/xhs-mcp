@@ -31,9 +31,14 @@ CREATE TABLE IF NOT EXISTS account_profiles (
   avatar TEXT,
   description TEXT,
   gender INTEGER,
+  ip_location TEXT,
   followers INTEGER,
   following INTEGER,
+  like_and_collect INTEGER,
   notes_count INTEGER,
+  is_banned BOOLEAN DEFAULT FALSE,
+  ban_code INTEGER,
+  ban_reason TEXT,
   updated_at DATETIME,
   FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
 );
@@ -108,6 +113,30 @@ CREATE TABLE IF NOT EXISTS note_drafts (
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- My published notes: cached notes from creator center for each account
+CREATE TABLE IF NOT EXISTS my_published_notes (
+  id TEXT PRIMARY KEY,
+  account_id TEXT NOT NULL,
+  type TEXT DEFAULT 'normal' CHECK(type IN ('normal', 'video')),
+  title TEXT NOT NULL,
+  publish_time TEXT,
+  images JSON,
+  likes INTEGER DEFAULT 0,
+  collected_count INTEGER DEFAULT 0,
+  comments_count INTEGER DEFAULT 0,
+  shared_count INTEGER DEFAULT 0,
+  view_count INTEGER DEFAULT 0,
+  sticky BOOLEAN DEFAULT FALSE,
+  level INTEGER DEFAULT 0,
+  permission_code INTEGER DEFAULT 0,
+  permission_msg TEXT,
+  schedule_post_time INTEGER DEFAULT 0,
+  xsec_token TEXT,
+  fetched_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+);
+
 -- Config table: key-value store for application configuration
 CREATE TABLE IF NOT EXISTS config (
   key TEXT PRIMARY KEY,
@@ -124,6 +153,14 @@ CREATE INDEX IF NOT EXISTS idx_interactions_account_id ON interactions(account_i
 CREATE INDEX IF NOT EXISTS idx_interactions_target_note_id ON interactions(target_note_id);
 CREATE INDEX IF NOT EXISTS idx_downloads_note_id ON downloads(note_id);
 CREATE INDEX IF NOT EXISTS idx_note_drafts_created_at ON note_drafts(created_at);
+CREATE INDEX IF NOT EXISTS idx_my_published_notes_account_id ON my_published_notes(account_id);
+CREATE INDEX IF NOT EXISTS idx_my_published_notes_publish_time ON my_published_notes(publish_time);
+CREATE INDEX IF NOT EXISTS idx_my_published_notes_level ON my_published_notes(level);
+CREATE INDEX IF NOT EXISTS idx_my_published_notes_permission_code ON my_published_notes(permission_code);
+
+-- Migration: Add new columns to account_profiles if they don't exist
+-- SQLite doesn't support IF NOT EXISTS for ALTER TABLE, so we use a workaround
+-- These statements will fail silently if columns already exist
 `;
 
 // ============================================================================
@@ -174,12 +211,22 @@ export interface AccountProfileRow {
   description: string | null;
   /** Gender (0 = not specified, 1 = male, 2 = female) */
   gender: number | null;
-  /** Number of followers */
+  /** IP location (e.g., "浙江") */
+  ip_location: string | null;
+  /** Number of followers (粉丝) */
   followers: number | null;
-  /** Number of users being followed */
+  /** Number of users being followed (关注) */
   following: number | null;
+  /** Total likes and collects received (获赞与收藏) */
+  like_and_collect: number | null;
   /** Number of published notes */
   notes_count: number | null;
+  /** Whether account is banned by platform */
+  is_banned: boolean | null;
+  /** Ban code from platform */
+  ban_code: number | null;
+  /** Ban reason from platform */
+  ban_reason: string | null;
   /** Last profile update timestamp */
   updated_at: string | null;
 }
@@ -322,6 +369,51 @@ export interface NoteDraftRow {
   published_at: string | null;
   /** Record creation timestamp */
   created_at: string;
+  /** Last update timestamp */
+  updated_at: string;
+}
+
+/**
+ * Raw database row for my published notes.
+ * Cached notes from creator center for each account.
+ */
+export interface MyPublishedNoteRow {
+  /** Note ID (primary key) */
+  id: string;
+  /** Foreign key to accounts.id */
+  account_id: string;
+  /** Note type: normal or video */
+  type: 'normal' | 'video';
+  /** Note title */
+  title: string;
+  /** Publish time string */
+  publish_time: string | null;
+  /** Cover images as JSON array */
+  images: string | null;
+  /** Number of likes */
+  likes: number;
+  /** Number of collects */
+  collected_count: number;
+  /** Number of comments */
+  comments_count: number;
+  /** Number of shares */
+  shared_count: number;
+  /** Number of views */
+  view_count: number;
+  /** Whether pinned to top */
+  sticky: boolean;
+  /** Note level (0=normal, 1=流量中, 2=待审核, 3=未通过, 4=仅自己可见) */
+  level: number;
+  /** Permission code */
+  permission_code: number;
+  /** Permission message */
+  permission_msg: string | null;
+  /** Scheduled post time (0 = not scheduled) */
+  schedule_post_time: number;
+  /** Security token for accessing the note */
+  xsec_token: string | null;
+  /** When this record was fetched from API */
+  fetched_at: string;
   /** Last update timestamp */
   updated_at: string;
 }

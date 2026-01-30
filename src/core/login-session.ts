@@ -5,7 +5,7 @@
  */
 
 import { chromium, Browser, BrowserContext, Page } from 'playwright';
-import { LoginUserInfo } from '../xhs/types.js';
+import { LoginUserInfo, FullUserProfile } from '../xhs/types.js';
 import { getStealthScript, sleep, generateWebId } from '../xhs/utils/index.js';
 import { createLogger } from './logger.js';
 import { config } from './config.js';
@@ -136,6 +136,7 @@ export interface LoginSession {
 
   // Results
   userInfo?: LoginUserInfo;
+  fullProfile?: FullUserProfile;
   state?: any;
   verificationPhone?: string;
   error?: string;
@@ -483,6 +484,12 @@ export class LoginSessionManager {
       session.status = 'success';
       session.userInfo = await this.extractUserInfo(session.page) || undefined;
       session.state = await session.context.storageState();
+
+      // 获取完整用户资料（粉丝数、关注数等）
+      if (session.userInfo?.userId) {
+        session.fullProfile = await this.extractFullUserProfile(session.page, session.userInfo.userId) || undefined;
+      }
+
       log.info('Login successful', { sessionId, userId: session.userInfo?.userId });
     } else if (pageStatus === 'verification_required') {
       if (session.status !== 'verification_required') {
@@ -592,6 +599,102 @@ export class LoginSessionManager {
   }
 
   /**
+   * 访问用户主页获取完整用户资料（粉丝数、关注数、获赞与收藏、封禁状态等）
+   */
+  private async extractFullUserProfile(page: Page, userId: string): Promise<FullUserProfile | null> {
+    try {
+      log.info('Fetching full user profile', { userId });
+
+      // 访问用户主页
+      const url = `https://www.xiaohongshu.com/user/profile/${userId}`;
+      await page.goto(url, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle').catch(() => {});
+
+      // 等待 __INITIAL_STATE__ 加载
+      await page.waitForFunction(() => (window as any).__INITIAL_STATE__ !== undefined, {
+        timeout: 30000
+      });
+
+      // 等待用户数据加载
+      await page.waitForFunction(() => {
+        const state = (window as any).__INITIAL_STATE__;
+        const userPageData = state?.user?.userPageData;
+        const basicInfo = userPageData?._rawValue?.basicInfo || userPageData?.basicInfo;
+        return basicInfo?.nickname;
+      }, { timeout: 10000 }).catch(() => {});
+
+      // 提取完整用户信息
+      const result = await page.evaluate((uid: string) => {
+        const state = (window as any).__INITIAL_STATE__;
+        if (!state?.user) return null;
+
+        const user = state.user;
+        const userPageData = user.userPageData;
+        const bannedInfo = user.bannedInfo;
+
+        // 处理 Vue 响应式对象
+        const extract = (obj: any) => {
+          if (!obj) return null;
+          if (obj._rawValue !== undefined) return obj._rawValue;
+          if (obj._value !== undefined) return obj._value;
+          return obj;
+        };
+
+        const pageData = extract(userPageData);
+        const banned = extract(bannedInfo);
+
+        if (!pageData?.basicInfo) return null;
+
+        const basicInfo = pageData.basicInfo;
+        const interactions = pageData.interactions || [];
+
+        // 解析 interactions 数组
+        const statsMap: Record<string, string> = {};
+        for (const item of interactions) {
+          if (item?.type) {
+            statsMap[item.type] = item.count || '0';
+          }
+        }
+
+        return {
+          // 基础信息
+          userId: uid,
+          redId: basicInfo.redId || '',
+          nickname: basicInfo.nickname || '',
+          avatar: basicInfo.images || basicInfo.image || '',
+          description: basicInfo.desc || '',
+          gender: basicInfo.gender || 0,
+          ipLocation: basicInfo.ipLocation || '',
+
+          // 统计数据
+          followers: parseInt(statsMap['fans'] || '0', 10),
+          following: parseInt(statsMap['follows'] || '0', 10),
+          likeAndCollect: parseInt(statsMap['interaction'] || '0', 10),
+
+          // 封禁状态
+          isBanned: banned?.serverBanned || false,
+          banCode: banned?.code || 0,
+          banReason: banned?.reason || '',
+        };
+      }, userId);
+
+      if (result) {
+        log.info('Extracted full user profile', {
+          userId: result.userId,
+          nickname: result.nickname,
+          followers: result.followers,
+          isBanned: result.isBanned
+        });
+      }
+
+      return result;
+    } catch (e) {
+      log.error('Failed to extract full user profile', { userId, error: e });
+      return null;
+    }
+  }
+
+  /**
    * Submit verification code
    */
   async submitVerification(sessionId: string, code: string): Promise<LoginSession> {
@@ -663,6 +766,12 @@ export class LoginSessionManager {
         session.status = 'success';
         session.userInfo = await this.extractUserInfo(page) || undefined;
         session.state = await session.context.storageState();
+
+        // 获取完整用户资料
+        if (session.userInfo?.userId) {
+          session.fullProfile = await this.extractFullUserProfile(page, session.userInfo.userId) || undefined;
+        }
+
         log.info('Verification successful', { sessionId });
       } else if (pageStatus === 'verification_required') {
         // Still on verification page - code was probably wrong
@@ -677,6 +786,12 @@ export class LoginSessionManager {
           session.status = 'success';
           session.userInfo = await this.extractUserInfo(page) || undefined;
           session.state = await session.context.storageState();
+
+          // 获取完整用户资料
+          if (session.userInfo?.userId) {
+            session.fullProfile = await this.extractFullUserProfile(page, session.userInfo.userId) || undefined;
+          }
+
           log.info('Verification successful (delayed)', { sessionId });
         } else {
           session.status = 'failed';
@@ -695,7 +810,7 @@ export class LoginSessionManager {
   /**
    * 完成会话并清理浏览器
    */
-  async completeSession(sessionId: string): Promise<{ state: any; userInfo: LoginUserInfo }> {
+  async completeSession(sessionId: string): Promise<{ state: any; userInfo: LoginUserInfo; fullProfile?: FullUserProfile }> {
     const session = this.sessions.get(sessionId);
     if (!session) {
       throw new Error('Session not found');
@@ -712,6 +827,7 @@ export class LoginSessionManager {
     const result = {
       state: session.state,
       userInfo: session.userInfo,
+      fullProfile: session.fullProfile,
     };
 
     // 清理会话资源

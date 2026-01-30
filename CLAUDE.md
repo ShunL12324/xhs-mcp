@@ -48,7 +48,8 @@ src/
 │       ├── published.ts      # PublishedRepository - 发布记录
 │       ├── interactions.ts   # InteractionRepository - 互动记录
 │       ├── downloads.ts      # DownloadRepository - 下载记录
-│       └── config.ts         # ConfigRepository - 配置键值对
+│       ├── config.ts         # ConfigRepository - 配置键值对
+│       └── my-notes.ts       # MyNotesRepository - 我的已发布笔记缓存
 ├── tools/
 │   ├── account.ts            # xhs_list_accounts, xhs_add_account, xhs_check_login_session, xhs_remove_account, xhs_set_account_config
 │   ├── auth.ts               # xhs_check_auth_status (+account parameter, syncs profile)
@@ -57,7 +58,8 @@ src/
 │   ├── interaction.ts        # xhs_like_feed, xhs_favorite_feed, xhs_post_comment, xhs_reply_comment, xhs_delete_cookies (+account/accounts)
 │   ├── stats.ts              # xhs_get_account_stats, xhs_get_operation_logs
 │   ├── download.ts           # xhs_download_images, xhs_download_video
-│   └── draft.ts              # xhs_create_draft, xhs_list_drafts, xhs_publish_draft, etc.
+│   ├── draft.ts              # xhs_create_draft, xhs_list_drafts, xhs_publish_draft, etc.
+│   └── creator.ts            # xhs_get_my_notes, xhs_query_my_notes
 └── xhs/
     ├── index.ts              # XhsClient facade class (supports account options)
     ├── types.ts              # TypeScript interfaces
@@ -161,6 +163,12 @@ QR code is generated via api.qrserver.com - works remotely without local file ac
 | `xhs_delete_draft` | Delete a draft and its associated images |
 | `xhs_publish_draft` | Publish a draft to one or multiple accounts |
 
+### Creator Center (New in v2.2)
+| Tool | Description |
+|------|-------------|
+| `xhs_get_my_notes` | Fetch published notes from creator center and cache to database |
+| `xhs_query_my_notes` | Query cached notes from database with multi-field filter support |
+
 ## Multi-Account Usage
 
 All operation tools support `account` (single) or `accounts` (multiple) parameters:
@@ -184,6 +192,7 @@ All configuration can be controlled via environment variables:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
+| `DEBUG` | `false` | 调试模式：`xhs_check_auth_status` 使用非 headless 模式且不关闭浏览器 |
 | `XHS_MCP_PORT` | `18060` | HTTP server port |
 | `XHS_MCP_DATA_DIR` | `~/.xhs-mcp` | Data directory path |
 | `XHS_MCP_LOG_LEVEL` | `debug` | Log level: debug, info, warn, error |
@@ -253,6 +262,7 @@ Key tables (通过 Repository 类访问):
 - `interactions` - Like/favorite/comment history → `db.interactions.*`
 - `downloads` - Download records → `db.downloads.*`
 - `config` - Key-value configuration → `db.config.*`
+- `my_published_notes` - Cached notes from creator center → `db.myNotes.*`
 
 ## Architecture Notes
 
@@ -278,6 +288,19 @@ Key tables (通过 Repository 类访问):
 10. **Dual Transport**: Supports both stdio (default) and HTTP transport modes
 11. **Configurable Constants**: Timeouts, delays, and limits defined in constant objects (`TIMEOUTS`, `SEARCH_DEFAULTS`, `SCROLL_CONFIG`, `DELAYS`)
 12. **Environment Configuration**: All major settings controllable via environment variables (see `core/config.ts`)
+
+## AI Image Generation Style Reference
+
+**默认风格：Jean Jullien**
+
+生成图片时默认使用 Jean Jullien 风格，在 prompt 开头加上 "Illustration by Jean Jullien"。
+
+风格特点：
+- 粗黑笔刷描边
+- 扁平色块，配色简单（黑白 + 1-2个点缀色）
+- 笨拙呆萌的角色造型（不要强调"可爱"）
+- deadpan 表情的幽默感
+- 简单但有表现力
 
 ## Development Guidelines
 

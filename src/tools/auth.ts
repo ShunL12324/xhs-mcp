@@ -132,16 +132,68 @@ export async function handleAuthTools(
       let accountNameUpdated = false;
       let newAccountName: string | undefined;
 
-      // 如果已登录且获取到了用户信息，同步到数据库
-      if (loginResult.loggedIn && loginResult.userInfo) {
+      // 如果已登录且获取到了完整用户资料，同步到数据库
+      if (loginResult.loggedIn && loginResult.fullProfile) {
+        const profile = loginResult.fullProfile;
+        log.info('Syncing full user profile', {
+          accountId: accountObj.id,
+          userId: profile.userId,
+          nickname: profile.nickname,
+          followers: profile.followers,
+          isBanned: profile.isBanned,
+        });
+
+        // 更新 account_profiles 表（使用完整信息）
+        db.profiles.upsert({
+          accountId: accountObj.id,
+          userId: profile.userId,
+          redId: profile.redId,
+          nickname: profile.nickname,
+          avatar: profile.avatar,
+          description: profile.description,
+          gender: profile.gender,
+          ipLocation: profile.ipLocation,
+          followers: profile.followers,
+          following: profile.following,
+          likeAndCollect: profile.likeAndCollect,
+          isBanned: profile.isBanned,
+          banCode: profile.banCode,
+          banReason: profile.banReason,
+        });
+        profileSynced = true;
+
+        // 如果账户名是默认名称（如 manual-import），更新为 nickname
+        const currentName = accountObj.name;
+        const isDefaultName =
+          currentName.startsWith('manual') ||
+          currentName.startsWith('acc_') ||
+          currentName.includes('import');
+
+        if (isDefaultName && profile.nickname) {
+          try {
+            await pool.updateAccountConfig(accountObj.id, {
+              name: profile.nickname,
+            });
+            accountNameUpdated = true;
+            newAccountName = profile.nickname;
+            log.info('Updated account name', {
+              from: currentName,
+              to: profile.nickname,
+            });
+          } catch (e) {
+            // 名称可能已存在，忽略错误
+            log.debug('Could not update account name', { error: e });
+          }
+        }
+      } else if (loginResult.loggedIn && loginResult.userInfo) {
+        // 如果没有完整资料但有基础用户信息，使用基础信息
         const userInfo = loginResult.userInfo;
-        log.info('Syncing user profile', {
+        log.info('Syncing basic user profile (full profile unavailable)', {
           accountId: accountObj.id,
           userId: userInfo.userId,
           nickname: userInfo.nickname,
         });
 
-        // 更新 account_profiles 表
         db.profiles.upsert({
           accountId: accountObj.id,
           userId: userInfo.userId,
@@ -153,7 +205,7 @@ export async function handleAuthTools(
         });
         profileSynced = true;
 
-        // 如果账户名是默认名称（如 manual-import），更新为 nickname
+        // 如果账户名是默认名称，更新为 nickname
         const currentName = accountObj.name;
         const isDefaultName =
           currentName.startsWith('manual') ||
@@ -172,11 +224,36 @@ export async function handleAuthTools(
               to: userInfo.nickname,
             });
           } catch (e) {
-            // 名称可能已存在，忽略错误
             log.debug('Could not update account name', { error: e });
           }
         }
       }
+
+      // 构建返回的用户信息（优先使用完整资料）
+      const fullProfile = loginResult.fullProfile;
+      const returnUserInfo = fullProfile
+        ? {
+            userId: fullProfile.userId,
+            redId: fullProfile.redId,
+            nickname: fullProfile.nickname,
+            avatar: fullProfile.avatar,
+            description: fullProfile.description,
+            gender: fullProfile.gender,
+            ipLocation: fullProfile.ipLocation,
+            followers: fullProfile.followers,
+            following: fullProfile.following,
+            likeAndCollect: fullProfile.likeAndCollect,
+            isBanned: fullProfile.isBanned,
+            banCode: fullProfile.banCode,
+            banReason: fullProfile.banReason,
+          }
+        : loginResult.userInfo
+          ? {
+              userId: loginResult.userInfo.userId,
+              redId: loginResult.userInfo.redId,
+              nickname: loginResult.userInfo.nickname,
+            }
+          : undefined;
 
       return {
         content: [
@@ -187,13 +264,7 @@ export async function handleAuthTools(
                 account: accountNameUpdated ? newAccountName : result.account,
                 loggedIn: loginResult.loggedIn,
                 message: loginResult.message,
-                userInfo: loginResult.userInfo
-                  ? {
-                      userId: loginResult.userInfo.userId,
-                      redId: loginResult.userInfo.redId,
-                      nickname: loginResult.userInfo.nickname,
-                    }
-                  : undefined,
+                userInfo: returnUserInfo,
                 profileSynced,
                 accountNameUpdated,
                 hint: loginResult.loggedIn
