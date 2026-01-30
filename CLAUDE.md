@@ -36,7 +36,10 @@ src/
 │   ├── account-pool.ts       # Multi-account client pool (池化管理)
 │   ├── account-lock.ts       # Concurrent access prevention (互斥锁)
 │   ├── multi-account.ts      # Multi-account operation helpers (并行/串行执行)
-│   └── login-session.ts      # Multi-step login session manager
+│   ├── login-session.ts      # Multi-step login session manager
+│   ├── gemini.ts             # Gemini AI integration (image generation, etc.)
+│   ├── image-upload.ts       # Image upload utilities
+│   └── qrcode-utils.ts       # QR code generation and display utilities
 ├── db/
 │   ├── index.ts              # XhsDatabase class (组合所有 Repository)
 │   ├── schema.ts             # Table definitions
@@ -73,7 +76,8 @@ src/
     │       ├── search.ts     # SearchService - 搜索功能
     │       ├── content.ts    # ContentService - 内容获取
     │       ├── publish.ts    # PublishService - 发布功能
-    │       └── interact.ts   # InteractService - 互动功能
+    │       ├── interact.ts   # InteractService - 互动功能
+    │       └── creator.ts    # CreatorService - 创作者中心
     └── utils/
         ├── index.ts          # Utilities (sleep, humanScroll, generateWebId)
         └── stealth.js        # Browser automation script
@@ -237,7 +241,8 @@ bun run start
 HTTP transport for web-based clients and custom integrations.
 
 ```bash
-bun run start:http              # Default port 18060
+bun run start:http              # Default port 18060 (uses node runtime)
+bun run start:bun:http          # Use bun runtime for HTTP mode
 bun run start:http --port 8080  # Custom port
 ```
 
@@ -262,6 +267,7 @@ Key tables (通过 Repository 类访问):
 - `interactions` - Like/favorite/comment history → `db.interactions.*`
 - `downloads` - Download records → `db.downloads.*`
 - `config` - Key-value configuration → `db.config.*`
+- `note_drafts` - AI-generated drafts for publishing → accessed via `src/tools/draft.ts`
 - `my_published_notes` - Cached notes from creator center → `db.myNotes.*`
 
 ## Architecture Notes
@@ -291,9 +297,9 @@ Key tables (通过 Repository 类访问):
 
 ## AI Image Generation Style Reference
 
-**默认风格：Jean Jullien**
+**推荐风格：Jean Jullien**
 
-生成图片时默认使用 Jean Jullien 风格，在 prompt 开头加上 "Illustration by Jean Jullien"。
+如需使用 Jean Jullien 风格，请在 prompt 开头手动加上 "Illustration by Jean Jullien"（代码不会自动添加）。
 
 风格特点：
 - 粗黑笔刷描边
