@@ -9,6 +9,10 @@ XHS-MCP is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) se
 - **Content Operations**: Search notes, fetch details, get user profiles, browse feeds
 - **Publishing**: Post image/text and video notes with scheduling support
 - **Interactions**: Like, favorite, comment, and reply across accounts
+- **AI Creation**: Gemini AI image generation, draft management
+- **Creator Center**: Fetch and manage published notes
+- **Notifications**: Get mentions, likes, and connection notifications
+- **Explore**: AI-powered automated browsing with probability-based interactions
 - **Statistics**: Track operations and view account analytics
 
 ## Architecture

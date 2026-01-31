@@ -67,6 +67,27 @@ xhs_reply_comment({
 })
 ```
 
+### Like a Comment
+
+```
+xhs_like_comment({
+  noteId: "note-id",
+  xsecToken: "token-from-search",
+  commentId: "comment-id"
+})
+```
+
+### Unlike a Comment
+
+```
+xhs_like_comment({
+  noteId: "note-id",
+  xsecToken: "token-from-search",
+  commentId: "comment-id",
+  unlike: true
+})
+```
+
 ## Multi-Account Interactions
 
 Run interactions across multiple accounts:

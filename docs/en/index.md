@@ -29,6 +29,15 @@ features:
   - icon: ❤️
     title: Interactions
     details: Like, favorite, comment, reply with multi-account support
+  - icon: 🎨
+    title: AI Creation
+    details: Gemini AI image generation, draft management
+  - icon: 🔔
+    title: Notifications & Creator Center
+    details: Get notifications, manage published notes
+  - icon: 🤖
+    title: Explore
+    details: AI-powered automated browsing with probability-based interactions
   - icon: 📊
     title: Statistics
     details: Operation logs, success rate tracking

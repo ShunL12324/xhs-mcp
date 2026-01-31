@@ -41,6 +41,7 @@ XHS-MCP provides a comprehensive set of MCP tools for interacting with Xiaohongs
 - `xhs_favorite_feed` - Favorite/unfavorite a note
 - `xhs_post_comment` - Post a comment
 - `xhs_reply_comment` - Reply to a comment
+- `xhs_like_comment` - Like/unlike a comment
 
 ### Downloads
 - `xhs_download_images` - Download note images
@@ -54,6 +55,16 @@ XHS-MCP provides a comprehensive set of MCP tools for interacting with Xiaohongs
 - `xhs_update_draft` - Update a draft
 - `xhs_delete_draft` - Delete a draft
 - `xhs_publish_draft` - Publish a draft
+
+### Creator Center
+- `xhs_get_my_notes` - Fetch published notes from creator center and cache to database
+- `xhs_query_my_notes` - Query cached notes with multi-field filtering
+
+### Notifications
+- `xhs_get_notifications` - Get notifications (mentions, likes, connections)
+
+### Explore
+- `xhs_explore` - Automated browsing with AI note selection, probability-based liking/commenting
 
 ### Statistics
 - `xhs_get_account_stats` - Get account statistics

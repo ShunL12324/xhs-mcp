@@ -39,6 +39,7 @@
 | [xhs_favorite_feed](/api/xhs_favorite_feed) | 收藏/取消收藏 |
 | [xhs_post_comment](/api/xhs_post_comment) | 发表评论 |
 | [xhs_reply_comment](/api/xhs_reply_comment) | 回复评论 |
+| [xhs_like_comment](/api/xhs_like_comment) | 点赞/取消点赞评论 |
 
 ## 数据统计
 
@@ -65,3 +66,22 @@
 | [xhs_update_draft](/api/xhs_update_draft) | 更新草稿 |
 | [xhs_delete_draft](/api/xhs_delete_draft) | 删除草稿 |
 | [xhs_publish_draft](/api/xhs_publish_draft) | 发布草稿 |
+
+## 创作者中心
+
+| 工具 | 说明 |
+|------|------|
+| [xhs_get_my_notes](/api/xhs_get_my_notes) | 获取已发布笔记列表（从创作者中心获取并缓存） |
+| [xhs_query_my_notes](/api/xhs_query_my_notes) | 查询已缓存的笔记（支持多条件过滤） |
+
+## 通知
+
+| 工具 | 说明 |
+|------|------|
+| [xhs_get_notifications](/api/xhs_get_notifications) | 获取通知（提及、点赞、关注） |
+
+## 自动浏览
+
+| 工具 | 说明 |
+|------|------|
+| [xhs_explore](/api/xhs_explore) | 自动浏览探索页（AI 选择笔记、概率点赞评论） |

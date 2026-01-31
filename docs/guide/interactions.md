@@ -71,6 +71,27 @@ xhs_reply_comment({
 评论 ID 可以从 `xhs_get_note` 返回的评论列表中获取。
 :::
 
+### 点赞评论
+
+```
+xhs_like_comment({
+  noteId: "xxx",
+  xsecToken: "yyy",
+  commentId: "comment-id"
+})
+```
+
+### 取消评论点赞
+
+```
+xhs_like_comment({
+  noteId: "xxx",
+  xsecToken: "yyy",
+  commentId: "comment-id",
+  unlike: true
+})
+```
+
 ## 多账号互动
 
 所有互动工具都支持 `accounts` 参数：
