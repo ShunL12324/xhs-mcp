@@ -21,6 +21,11 @@ A Model Context Protocol (MCP) server that provides tools for interacting with X
 ├── data.db                   # SQLite database (accounts, logs, etc.)
 ├── logs/                     # Log files
 │   └── xhs-mcp.log           # Application log
+├── prompts/                  # Account prompt files (new in v2.5)
+│   └── {accountName}_{accountId}/
+│       ├── persona.txt       # Character definition
+│       ├── select.txt        # Note selection prompt
+│       └── comment.txt       # Comment generation prompt
 ├── temp/                     # Temporary files
 │   └── images/               # Downloaded HTTP images for publishing
 └── downloads/
@@ -41,10 +46,11 @@ src/
 │   ├── login-session.ts      # Multi-step login session manager
 │   ├── gemini.ts             # Gemini AI integration (image generation, etc.)
 │   ├── explore-ai.ts         # AI decision module for explore (note selection, comment generation)
+│   ├── prompt-manager.ts     # Prompt file management (read/write/render with LiquidJS)
 │   ├── image-upload.ts       # Image upload utilities
 │   ├── qrcode-utils.ts       # QR code generation and display utilities
 │   └── prompts/              # AI prompt templates
-│       └── explore.ts        # Explore prompts (note selection, comment generation)
+│       └── defaults.ts       # Default prompt templates (persona, select, comment)
 ├── db/
 │   ├── index.ts              # XhsDatabase class (组合所有 Repository)
 │   ├── schema.ts             # Table definitions
@@ -60,7 +66,7 @@ src/
 │       ├── my-notes.ts       # MyNotesRepository - 我的已发布笔记缓存
 │       └── explore.ts        # ExploreRepository - 探索会话和日志
 ├── tools/
-│   ├── account.ts            # xhs_list_accounts, xhs_add_account, xhs_check_login_session, xhs_remove_account, xhs_set_account_config
+│   ├── account.ts            # xhs_list_accounts, xhs_add_account, xhs_check_login_session, xhs_remove_account, xhs_set_account_config, xhs_get/set_account_prompt
 │   ├── auth.ts               # xhs_check_auth_status (+account parameter, syncs profile)
 │   ├── content.ts            # xhs_search, xhs_get_note, xhs_user_profile, xhs_list_feeds (+account parameter)
 │   ├── publish.ts            # xhs_publish_content, xhs_publish_video (+account/accounts parameter)
@@ -105,6 +111,8 @@ src/
 | `xhs_submit_verification` | Submit SMS verification code (if required) |
 | `xhs_remove_account` | Remove an account and its data |
 | `xhs_set_account_config` | Update proxy or status for an account |
+| `xhs_get_account_prompt` | Get prompt file (persona/select/comment) for an account |
+| `xhs_set_account_prompt` | Update prompt file for an account |
 
 ### Multi-Step Login Flow
 
@@ -194,6 +202,15 @@ QR code is generated via api.qrserver.com - works remotely without local file ac
 |------|-------------|
 | `xhs_explore` | Automated browsing with AI note selection, probability-based liking/commenting |
 
+### Prompt System (New in v2.5)
+
+Each account has customizable prompts stored in `~/.xhs-mcp/prompts/{accountName}_{accountId}/`:
+- `persona.txt` - Character/style definition (e.g., "美食博主，喜欢探店")
+- `select.txt` - AI note selection prompt template (uses `{{ persona }}`, `{{ notes }}`)
+- `comment.txt` - AI comment generation template (uses `{{ persona }}`, `{{ title }}`, `{{ content }}`)
+
+Prompts are auto-initialized with defaults on first explore. Use LiquidJS (Jinja2-style) templating.
+
 ## Multi-Account Usage
 
 All operation tools support `account` (single) or `accounts` (multiple) parameters:
@@ -217,11 +234,11 @@ All configuration can be controlled via environment variables:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `DEBUG` | `false` | 调试模式：`xhs_check_auth_status` 使用非 headless 模式且不关闭浏览器 |
 | `XHS_MCP_PORT` | `18060` | HTTP server port |
 | `XHS_MCP_DATA_DIR` | `~/.xhs-mcp` | Data directory path |
 | `XHS_MCP_LOG_LEVEL` | `debug` | Log level: debug, info, warn, error |
-| `XHS_MCP_HEADLESS` | `true` | Browser headless mode (set `false` for debugging) |
+| `XHS_MCP_HEADLESS` | `true` | 浏览器无头模式，设为 `false` 显示浏览器窗口 |
+| `XHS_MCP_KEEP_OPEN` | `false` | 操作完成后保持浏览器打开，用于调试 |
 | `XHS_MCP_REQUEST_INTERVAL` | `2000` | Request interval in ms (rate limiting) |
 | `XHS_MCP_TIMEOUT_PAGE_LOAD` | `30000` | Page load timeout in ms |
 | `XHS_MCP_TIMEOUT_VIDEO_UPLOAD` | `300000` | Video upload timeout in ms (5 min) |

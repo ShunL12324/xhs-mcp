@@ -70,6 +70,7 @@ export class AccountPool {
     // Create new client
     const client = new XhsClient({
       accountId: account.id,
+      accountName: account.name,
       state: account.state,
       proxy: account.proxy,
       onStateChange: async (state) => {

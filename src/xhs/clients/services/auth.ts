@@ -202,9 +202,9 @@ export class AuthService {
    * 通过检测页面上的登录按钮来判断是否已登录。
    * 如果已登录，会从 __INITIAL_STATE__ 中提取用户信息。
    *
-   * 当 DEBUG=1 或 DEBUG=true 时：
-   * - 使用非 headless 模式（显示浏览器窗口）
-   * - 操作完成后不关闭页面，方便调试
+   * 环境变量控制：
+   * - XHS_MCP_HEADLESS=false：显示浏览器窗口
+   * - XHS_MCP_KEEP_OPEN=true：操作完成后不关闭页面
    *
    * @returns 登录状态、消息和用户信息（如果已登录）
    */
@@ -214,13 +214,12 @@ export class AuthService {
     userInfo?: LoginUserInfo;
     fullProfile?: FullUserProfile;
   }> {
-    const isDebug = config.debug.enabled;
-    log.info('Checking login status...', { debug: isDebug });
+    const keepOpen = config.browser.keepOpen;
+    log.info('Checking login status...', { headless: config.browser.headless, keepOpen });
 
     // 通过浏览器检查 - 比检查 cookies 更可靠
-    // DEBUG 模式下使用非 headless，否则使用 headless
     if (!this.ctx.context) {
-      await this.ctx.init(!isDebug);
+      await this.ctx.init(config.browser.headless);
     }
 
     const page = await this.ctx.context!.newPage();
@@ -283,11 +282,11 @@ export class AuthService {
       log.error('checkLoginStatus error', { error: e });
       return { loggedIn: false, message: 'Check failed - please try xhs_add_account' };
     } finally {
-      // DEBUG 模式下不关闭页面，方便调试
-      if (!isDebug) {
+      // keepOpen 模式下不关闭页面，方便调试
+      if (!keepOpen) {
         await page.close();
       } else {
-        log.info('DEBUG mode: keeping browser open for debugging');
+        log.info('Keep open mode: browser stays open for debugging');
       }
     }
   }

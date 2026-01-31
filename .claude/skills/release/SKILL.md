@@ -38,9 +38,11 @@ Analyze changes since the last tag to determine version bump:
 2. **Analyze changes** since last tag using git log and diff
 3. **Auto-detect version bump** based on commit messages and file changes
 4. **Bump version** in package.json
-5. **Commit** with release message
-6. **Create git tag** with v prefix
-7. **Push** commits and tags to trigger GitHub Actions
+5. **Update package-lock.json** with `npm install`
+6. **Commit** with release message (include both package.json and package-lock.json)
+7. **Create git tag** with v prefix
+8. **Push** commits and tags
+9. **Create GitHub Release** to trigger npm publish workflow
 
 ## Instructions
 
@@ -68,35 +70,44 @@ When the user invokes `/release`:
 
 5. Update package.json using Edit tool
 
-6. Commit and tag:
+6. **Sync package-lock.json** (IMPORTANT - prevents CI failures):
    ```bash
-   git add package.json
-   git commit -m "chore: release v{NEW_VERSION}"
+   npm install
+   ```
+
+7. Commit and tag:
+   ```bash
+   git add package.json package-lock.json
+   git commit -m "chore: release v{NEW_VERSION}
+
+   Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
    git tag v{NEW_VERSION}
    ```
 
-7. Push:
+8. Push:
    ```bash
    git push && git push --tags
    ```
 
-8. Create GitHub Release (triggers npm publish workflow):
+9. Create GitHub Release (triggers npm publish workflow):
    ```bash
-   gh release create v{NEW_VERSION} --title "v{NEW_VERSION}" --notes "Release v{NEW_VERSION}"
+   gh release create v{NEW_VERSION} --title "v{NEW_VERSION}" --notes "{RELEASE_NOTES}"
    ```
 
-9. Report results:
-   ```
-   Changes detected: {summary}
-   Version bump: {type} ({old} → {new})
+10. Report results:
+    ```
+    Changes detected: {summary}
+    Version bump: {type} ({old} → {new})
 
-   Committed: chore: release v{new}
-   Tagged: v{new}
-   Pushed to remote.
-   GitHub Release created: v{new}
+    ✓ Updated package.json
+    ✓ Synced package-lock.json
+    ✓ Committed: chore: release v{new}
+    ✓ Tagged: v{new}
+    ✓ Pushed to remote
+    ✓ GitHub Release created
 
-   npm publish workflow triggered: https://github.com/ShunL12324/xhs-mcp/actions
-   ```
+    npm publish workflow triggered: https://github.com/ShunL12324/xhs-mcp/actions
+    ```
 
 ## Example
 
@@ -112,10 +123,25 @@ Detected: New feature added (feat:)
 Version bump: minor (1.0.0 → 1.1.0)
 
 ✓ Updated package.json
+✓ Synced package-lock.json
 ✓ Committed: chore: release v1.1.0
 ✓ Tagged: v1.1.0
 ✓ Pushed to remote
 ✓ GitHub Release created
 
 npm publish workflow triggered: https://github.com/ShunL12324/xhs-mcp/actions
+```
+
+## Troubleshooting
+
+### `npm ci` fails in GitHub Actions
+This happens when `package-lock.json` is out of sync with `package.json`. The workflow now includes `npm install` step to prevent this.
+
+### Release already exists
+If a release fails and needs to be retried:
+```bash
+gh release delete v{VERSION} --yes
+git tag -d v{VERSION}
+git push origin :refs/tags/v{VERSION}
+# Then re-run the release process
 ```

@@ -13,6 +13,8 @@
 | [xhs_submit_verification](/api/xhs_submit_verification) | 提交短信验证码 |
 | [xhs_remove_account](/api/xhs_remove_account) | 删除账号 |
 | [xhs_set_account_config](/api/xhs_set_account_config) | 修改账号配置 |
+| [xhs_get_account_prompt](/api/xhs_get_account_prompt) | 获取账号 Prompt（人设/选择/评论） |
+| [xhs_set_account_prompt](/api/xhs_set_account_prompt) | 更新账号 Prompt |
 | [xhs_delete_cookies](/api/xhs_delete_cookies) | 删除会话 |
 
 ## 内容查询

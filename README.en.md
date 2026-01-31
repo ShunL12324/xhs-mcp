@@ -33,6 +33,8 @@ Account pool management with multiple simultaneous logins. Session persistence a
 | `xhs_check_auth_status` | Check if account is logged in |
 | `xhs_remove_account` | Remove an account |
 | `xhs_set_account_config` | Update account config (name, proxy, status) |
+| `xhs_get_account_prompt` | Get account prompt (persona/select/comment) |
+| `xhs_set_account_prompt` | Update account prompt |
 | `xhs_delete_cookies` | Clear account session |
 
 ### Content Query
@@ -203,9 +205,9 @@ If only one account exists and no `account` parameter is specified, it will be u
 |----------|---------|-------------|
 | `GEMINI_API_KEY` | - | Gemini API key (required for AI image generation) |
 | `GEMINI_IMAGE_GENERATE_MODEL` | `gemini-3-pro-image` | Image generation model |
-| `DEBUG` | `false` | Debug mode, show browser window |
 | `XHS_MCP_DATA_DIR` | `~/.xhs-mcp` | Data storage directory |
 | `XHS_MCP_HEADLESS` | `true` | Use headless browser |
+| `XHS_MCP_KEEP_OPEN` | `false` | Keep browser open after operation |
 | `XHS_MCP_REQUEST_INTERVAL` | `2000` | Request interval (ms) |
 
 ---

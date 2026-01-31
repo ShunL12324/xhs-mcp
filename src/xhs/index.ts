@@ -25,6 +25,8 @@ import {
 export interface XhsClientOptions {
   /** Account ID for this client instance */
   accountId?: string;
+  /** Account name for this client instance */
+  accountName?: string;
   /** Playwright storage state (cookies, localStorage) for session persistence */
   state?: any;
   /** Proxy server URL (e.g., "http://proxy:8080") */
@@ -178,7 +180,10 @@ export class XhsClient {
     if (!this.options.accountId) {
       throw new Error('accountId is required for explore');
     }
-    return await this.browserClient.explore(this.options.accountId, params);
+    if (!this.options.accountName) {
+      throw new Error('accountName is required for explore');
+    }
+    return await this.browserClient.explore(this.options.accountId, this.options.accountName, params);
   }
 
   async close() {

@@ -7,9 +7,17 @@
 import { GoogleGenAI } from '@google/genai';
 import { config } from './config.js';
 import { createLogger } from './logger.js';
-import { SELECT_NOTE_PROMPT, GENERATE_COMMENT_PROMPT, formatPrompt } from './prompts/explore.js';
+import { renderPrompt } from './prompt-manager.js';
 
 const log = createLogger('explore-ai');
+
+/**
+ * 账号信息（用于读取对应的 prompt）
+ */
+export interface AccountInfo {
+  name: string;
+  id: string;
+}
 
 /**
  * 笔记简要信息（用于 AI 选择）
@@ -86,8 +94,12 @@ function getAIClient(): GoogleGenAI {
 
 /**
  * 从笔记列表中选择一篇感兴趣的
+ * @param account 账号信息
+ * @param notes 笔记列表
+ * @param interests 感兴趣的关键词（可选）
  */
 export async function selectNoteToOpen(
+  account: AccountInfo,
   notes: NoteBrief[],
   interests: string[] = []
 ): Promise<SelectNoteResult> {
@@ -98,9 +110,10 @@ export async function selectNoteToOpen(
     `${i + 1}. [${n.id}] ${n.title} (${n.likes}赞, ${n.type === 'video' ? '视频' : '图文'})`
   ).join('\n');
 
-  const prompt = formatPrompt(SELECT_NOTE_PROMPT, {
+  // 使用 prompt-manager 渲染 prompt
+  const prompt = await renderPrompt(account.name, account.id, 'select', {
     notes: notesText,
-    interests: interests.length > 0 ? interests.join(', ') : '无特定偏好',
+    interests: interests.length > 0 ? interests.join(', ') : '',
   });
 
   log.debug('Calling AI to select note', { noteCount: notes.length });
@@ -130,6 +143,7 @@ export async function selectNoteToOpen(
  * 为笔记生成评论
  */
 export async function generateComment(
+  account: AccountInfo,
   title: string,
   content: string
 ): Promise<GenerateCommentResult> {
@@ -140,7 +154,8 @@ export async function generateComment(
     ? content.slice(0, 500) + '...'
     : content;
 
-  const prompt = formatPrompt(GENERATE_COMMENT_PROMPT, {
+  // 使用 prompt-manager 渲染 prompt
+  const prompt = await renderPrompt(account.name, account.id, 'comment', {
     title,
     content: truncatedContent,
   });

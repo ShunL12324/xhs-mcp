@@ -9,7 +9,7 @@ import { BrowserContextManager, log } from '../context.js';
 import { sleep } from '../../utils/index.js';
 import { config } from '../../../core/config.js';
 import { getDatabase, ExploreSessionResult } from '../../../db/index.js';
-import { selectNoteToOpen, generateComment, NoteBrief } from '../../../core/explore-ai.js';
+import { selectNoteToOpen, generateComment, NoteBrief, AccountInfo } from '../../../core/explore-ai.js';
 import { EXPLORE_SELECTORS } from '../constants.js';
 
 /**
@@ -26,6 +26,8 @@ export interface ExploreParams {
   likeRate?: number;
   /** 打开后评论概率，默认 0.1 */
   commentRate?: number;
+  /** 是否启用跨会话去重，默认 true */
+  deduplicate?: boolean;
 }
 
 /**
@@ -66,14 +68,18 @@ export class ExploreService {
    * 自动浏览首页
    * 模拟真人行为，根据概率打开笔记、点赞、评论
    */
-  async explore(accountId: string, params: ExploreParams = {}): Promise<ExploreSessionResult> {
+  async explore(accountId: string, accountName: string, params: ExploreParams = {}): Promise<ExploreSessionResult> {
     const {
       duration = 60,
       interests = [],
       openRate = 0.5,
       likeRate = 0.5,
       commentRate = 0.1,
+      deduplicate = true,
     } = params;
+
+    // 账号信息，用于读取 prompt
+    const accountInfo: AccountInfo = { id: accountId, name: accountName };
 
     await this.ctx.ensureContext();
     const page = await this.ctx.newPage();
@@ -117,20 +123,49 @@ export class ExploreService {
       });
 
       // 主循环
+      // 连续未打开计数（用于兜底逻辑）
+      let skippedRounds = 0;
+
       while (Date.now() < endTime) {
-        // 1. 滑动 1-2 次
-        const scrollCount = 1 + Math.floor(Math.random() * 2);
-        for (let i = 0; i < scrollCount; i++) {
-          await this.humanScroll(page);
-          // 每次滚动后短暂停顿
-          await sleep(500 + Math.random() * 500);
+        // === 随机行为模式 ===
+        const behaviorRoll = Math.random();
+
+        // 10% 概率：快速滑过模式（连续滑动，不停顿看）
+        if (behaviorRoll < 0.1) {
+          log.debug('Behavior: quick scroll mode');
+          const quickScrolls = 3 + Math.floor(Math.random() * 3); // 3-5 次
+          for (let i = 0; i < quickScrolls; i++) {
+            await this.humanScroll(page);
+            await sleep(200 + Math.random() * 300);
+          }
+          continue;
         }
 
-        // 2. 停顿阅读 4-8 秒
-        const readingDelay = 4000 + Math.random() * 4000;
+        // 5% 概率：倒回去看（往上滚一点）
+        if (behaviorRoll < 0.15) {
+          log.debug('Behavior: scroll back');
+          await page.mouse.wheel(0, -(200 + Math.random() * 200));
+          await sleep(1000 + Math.random() * 1000);
+        }
+
+        // 正常滑动 1-3 次
+        const scrollCount = 1 + Math.floor(Math.random() * 3);
+        for (let i = 0; i < scrollCount; i++) {
+          await this.humanScroll(page);
+          await sleep(400 + Math.random() * 400);
+        }
+
+        // 停顿阅读：正常 3-8 秒，10% 概率长时间停留 10-20 秒
+        const isLongPause = Math.random() < 0.1;
+        const readingDelay = isLongPause
+          ? 10000 + Math.random() * 10000
+          : 3000 + Math.random() * 5000;
+        if (isLongPause) {
+          log.debug('Behavior: long pause');
+        }
         await sleep(readingDelay);
 
-        // 3. 获取当前 feeds，过滤已看过的（用于统计）
+        // 获取当前 feeds，过滤已看过的（用于统计）
         const feeds = await this.getFeeds(page);
         const newFeeds = feeds.filter(f => {
           if (seenInSession.has(f.id)) return false;
@@ -155,41 +190,59 @@ export class ExploreService {
 
         log.debug('Feeds after scroll', { total: feeds.length, new: newFeeds.length });
 
-        // 4. 按概率决定是否打开笔记
-        if (Math.random() < openRate) {
-          // 获取当前 DOM 中可见的笔记 ID（虚拟滚动，只有可见的才有 DOM）
+        // === 决定是否打开笔记 ===
+        // 连续跳过多轮后概率递增（兜底逻辑）
+        const adjustedOpenRate = Math.min(openRate + skippedRounds * 0.1, 0.9);
+
+        if (Math.random() < adjustedOpenRate) {
+          // 获取当前 DOM 中可见的笔记 ID
           const visibleIds = await this.getVisibleNoteIds(page);
           log.debug('Visible notes in DOM', { count: visibleIds.size });
 
-          // 从所有可见笔记中选择（排除已打开过的和视频）
-          const visibleFeeds = feeds.filter(f =>
+          // 从可见笔记中筛选：排除会话内已打开、视频
+          let candidateFeeds = feeds.filter(f =>
             visibleIds.has(f.id) &&
             !openedInSession.has(f.id) &&
             f.noteCard.type !== 'video'
           );
-          log.debug('Visible unopened feeds', { count: visibleFeeds.length });
 
-          if (visibleFeeds.length === 0) {
-            log.debug('No visible unopened feeds to open');
+          // 跨会话去重：排除之前互动过的笔记
+          if (deduplicate && candidateFeeds.length > 0) {
+            const candidateIds = candidateFeeds.map(f => f.id);
+            const unexploredIds = db.explore.filterUnexploredNotes(accountId, candidateIds);
+            const unexploredSet = new Set(unexploredIds);
+            const beforeCount = candidateFeeds.length;
+            candidateFeeds = candidateFeeds.filter(f => unexploredSet.has(f.id));
+            if (beforeCount !== candidateFeeds.length) {
+              log.debug('Cross-session dedup', { before: beforeCount, after: candidateFeeds.length });
+            }
+          }
+
+          log.debug('Candidate feeds for opening', { count: candidateFeeds.length });
+
+          if (candidateFeeds.length === 0) {
+            log.debug('No candidate feeds to open');
+            skippedRounds++;
             continue;
           }
 
           // 调用 AI 选择一篇
-          const noteBriefs: NoteBrief[] = visibleFeeds.slice(0, 10).map(f => ({
+          const noteBriefs: NoteBrief[] = candidateFeeds.slice(0, 10).map(f => ({
             id: f.id,
             title: f.noteCard.displayTitle || f.noteCard.title || '',
             likes: f.noteCard.interactInfo?.likedCount || '0',
             type: f.noteCard.type,
           }));
 
-          const selection = await selectNoteToOpen(noteBriefs, interests);
+          const selection = await selectNoteToOpen(accountInfo, noteBriefs, interests);
 
           if (selection.noteId) {
-            const selectedFeed = visibleFeeds.find(f => f.id === selection.noteId);
+            skippedRounds = 0; // 重置跳过计数
+            const selectedFeed = candidateFeeds.find(f => f.id === selection.noteId);
             if (selectedFeed) {
               log.info('AI selected note', { noteId: selection.noteId, reason: selection.reason });
 
-              // 标记为已打开（避免重复打开）
+              // 标记为已打开
               openedInSession.add(selectedFeed.id);
 
               // 记录 opened
@@ -205,8 +258,23 @@ export class ExploreService {
               const opened = await this.openNoteModal(page, selectedFeed.id);
 
               if (opened) {
-                // 停顿阅读 3-8 秒
-                const modalReadDelay = 3000 + Math.random() * 5000;
+                // 15% 概率快速关掉（假装不感兴趣）
+                if (Math.random() < 0.15) {
+                  log.debug('Behavior: quick close (not interested)');
+                  await sleep(800 + Math.random() * 700);
+                  await this.closeModal(page);
+                  await sleep(500 + Math.random() * 500);
+                  continue;
+                }
+
+                // 正常阅读：3-8 秒，10% 概率长时间 10-20 秒
+                const isDeepRead = Math.random() < 0.1;
+                const modalReadDelay = isDeepRead
+                  ? 10000 + Math.random() * 10000
+                  : 3000 + Math.random() * 5000;
+                if (isDeepRead) {
+                  log.debug('Behavior: deep reading');
+                }
                 await sleep(modalReadDelay);
 
                 // 获取笔记详情
@@ -229,7 +297,7 @@ export class ExploreService {
 
                 // 按概率评论
                 if (Math.random() < commentRate && noteDetail) {
-                  const commentResult = await generateComment(noteDetail.title, noteDetail.desc);
+                  const commentResult = await generateComment(accountInfo, noteDetail.title, noteDetail.desc);
                   const commented = await this.commentInModal(page, commentResult.comment);
                   if (commented) {
                     db.explore.logAction(sessionId, {
@@ -244,14 +312,17 @@ export class ExploreService {
                   }
                 }
 
-                // 关闭 modal
+                // 关闭 modal，随机停顿
                 await this.closeModal(page);
-                await sleep(1000 + Math.random() * 2000);
+                await sleep(800 + Math.random() * 1500);
               }
             }
           } else {
             log.debug('AI chose not to open any note', { reason: selection.reason });
+            skippedRounds++;
           }
+        } else {
+          skippedRounds++;
         }
 
         // 更新统计
@@ -271,11 +342,11 @@ export class ExploreService {
       log.error('Explore error', { error });
       db.explore.endSession(sessionId, 'stopped');
     } finally {
-      // DEBUG 模式下保持浏览器打开
+      // keepOpen 模式下保持浏览器打开
       if (!config.browser.keepOpen) {
         await page.close();
       } else {
-        log.info('DEBUG mode: keeping browser open');
+        log.info('Keep open mode: browser stays open');
       }
     }
 

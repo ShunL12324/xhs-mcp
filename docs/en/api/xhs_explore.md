@@ -12,6 +12,7 @@ AI-driven explore page auto-browsing with human-like behavior.
 | `openRate` | number | No | Probability of opening a note (0-1, default: 0.5) |
 | `likeRate` | number | No | Probability of liking (0-1, default: 0.5) |
 | `commentRate` | number | No | Probability of commenting (0-1, default: 0.1) |
+| `deduplicate` | boolean | No | Cross-session deduplication (default: true), excludes previously interacted notes |
 
 ## Response
 
@@ -79,12 +80,25 @@ xhs_explore({
 
 ## Features
 
-- **Smart scrolling**: Simulates human scrolling (2-3 scrolls then pause)
-- **AI selection**: Selects notes based on interest keywords
+- **Smart scrolling**: Simulates human scrolling (1-3 scrolls then pause)
+- **Random behavior**: 10% quick scroll, 5% scroll back, 15% quick close
+- **AI selection**: Selects notes based on interest keywords and account persona
 - **Probability interactions**: Decides to like/comment based on set probabilities
-- **AI comments**: Generates natural comment content
-- **Deduplication**: Won't view the same note twice
+- **AI comments**: Uses account's comment prompt to generate natural comments
+- **Cross-session deduplication**: Excludes previously interacted notes by default
 - **Full logging**: All actions logged to database
+
+## Prompt Customization
+
+Explore uses account prompt files to control AI behavior:
+
+| Prompt | Description |
+|--------|-------------|
+| `persona` | Defines user traits and comment style |
+| `select` | Controls how notes are selected |
+| `comment` | Controls how comments are generated |
+
+Use [xhs_get_account_prompt](/en/api/xhs_get_account_prompt) and [xhs_set_account_prompt](/en/api/xhs_set_account_prompt) to manage prompts.
 
 ## Notes
 

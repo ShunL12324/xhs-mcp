@@ -279,7 +279,7 @@ export class BrowserClient {
    * Automatically browse the explore page
    * Simulates human behavior, opening notes, liking, and commenting based on probability
    */
-  async explore(accountId: string, params?: ExploreParams): Promise<ExploreSessionResult> {
-    return this.exploreService.explore(accountId, params);
+  async explore(accountId: string, accountName: string, params?: ExploreParams): Promise<ExploreSessionResult> {
+    return this.exploreService.explore(accountId, accountName, params);
   }
 }

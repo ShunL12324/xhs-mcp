@@ -1,6 +1,6 @@
 {
   "name": "@sillyl12324/xhs-mcp",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "type": "module",
   "description": "MCP server for Xiaohongshu (小红书/RedNote) - search, publish, and interact with content",
   "main": "dist/index.js",
@@ -62,6 +62,7 @@
     "fs-extra": "^11.3.2",
     "hono": "^4.7.0",
     "jsqr": "^1.4.0",
+    "liquidjs": "^10.24.0",
     "playwright": "^1.57.0",
     "pngjs": "^7.0.0",
     "qrcode": "^1.5.4",

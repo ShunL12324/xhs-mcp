@@ -51,7 +51,7 @@ export class BrowserContextManager {
 
   /**
    * Initialize browser with optional headless mode
-   * Defaults to config.browser.headless (which respects DEBUG env)
+   * Defaults to config.browser.headless (controlled by XHS_MCP_HEADLESS env)
    */
   async init(headless = config.browser.headless): Promise<void> {
     const launchOptions: any = {

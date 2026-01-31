@@ -22,6 +22,8 @@ XHS-MCP provides a comprehensive set of MCP tools for interacting with Xiaohongs
 - `xhs_submit_verification` - Submit SMS verification code
 - `xhs_remove_account` - Remove an account
 - `xhs_set_account_config` - Update account name, proxy, or status
+- `xhs_get_account_prompt` - Get account prompt (persona/select/comment)
+- `xhs_set_account_prompt` - Update account prompt
 
 ### Authentication
 - `xhs_delete_cookies` - Clear session

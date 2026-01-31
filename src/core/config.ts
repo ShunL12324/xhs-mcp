@@ -49,14 +49,6 @@ function parseLogLevel(value: string | undefined, defaultValue: LogLevelName): L
  */
 export const config = {
   /**
-   * 调试配置
-   */
-  debug: {
-    /** 调试模式 (DEBUG)：启用后 check_auth_status 使用非 headless 模式，且不自动关闭浏览器 */
-    enabled: parseBoolean(process.env.DEBUG, false),
-  },
-
-  /**
    * 服务器配置
    */
   server: {
@@ -84,12 +76,12 @@ export const config = {
    * 浏览器配置
    */
   browser: {
-    /** 是否使用无头模式 (XHS_MCP_HEADLESS)，DEBUG 模式下默认 false，否则默认 true */
-    headless: parseBoolean(process.env.XHS_MCP_HEADLESS, !parseBoolean(process.env.DEBUG, false)),
+    /** 是否使用无头模式 (XHS_MCP_HEADLESS)，默认 true */
+    headless: parseBoolean(process.env.XHS_MCP_HEADLESS, true),
     /** 请求间隔（毫秒）(XHS_MCP_REQUEST_INTERVAL)，用于速率限制 */
     requestInterval: parseInteger(process.env.XHS_MCP_REQUEST_INTERVAL, 2000),
-    /** DEBUG 模式下是否保持浏览器打开不自动关闭 */
-    keepOpen: parseBoolean(process.env.DEBUG, false),
+    /** 操作完成后是否保持浏览器打开 (XHS_MCP_KEEP_OPEN)，默认 false */
+    keepOpen: parseBoolean(process.env.XHS_MCP_KEEP_OPEN, false),
   },
 
   /**
@@ -145,6 +137,10 @@ export const paths = {
   get qrcode() {
     return path.join(config.data.dir, 'qrcode');
   },
+  /** Prompt 模板目录 */
+  get prompts() {
+    return path.join(config.data.dir, 'prompts');
+  },
   /** 日志目录 */
   get logs() {
     return path.join(config.data.dir, 'logs');
@@ -182,12 +178,11 @@ export function getVideoDownloadPath(noteId: string): string {
  */
 export function printConfig(): void {
   console.error('=== XHS-MCP Configuration ===');
-  console.error(`  Debug Mode: ${config.debug.enabled}`);
   console.error(`  Server Port: ${config.server.port}`);
   console.error(`  Data Directory: ${config.data.dir}`);
   console.error(`  Log Level: ${config.log.level}`);
   console.error(`  Headless Mode: ${config.browser.headless}`);
-  console.error(`  Keep Browser Open (DEBUG): ${config.browser.keepOpen}`);
+  console.error(`  Keep Browser Open: ${config.browser.keepOpen}`);
   console.error(`  Request Interval: ${config.browser.requestInterval}ms`);
   console.error(`  Page Load Timeout: ${config.timeout.pageLoad}ms`);
   console.error(`  Video Upload Timeout: ${config.timeout.videoUpload}ms`);

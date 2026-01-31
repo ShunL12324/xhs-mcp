@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { AccountPool } from '../core/account-pool.js';
 import { XhsDatabase } from '../db/index.js';
 import { getLoginSessionManager, LoginSession } from '../core/login-session.js';
+import { getPrompt, setPrompt, PromptType, deleteAccountPrompts } from '../core/prompt-manager.js';
 
 /**
  * Account management tool definitions for MCP.
@@ -132,6 +133,48 @@ Verification code expires in 1 minute.`,
         },
       },
       required: ['account'],
+    },
+  },
+  {
+    name: 'xhs_get_account_prompt',
+    description: 'Get the prompt file content for an account. Prompts control AI behavior during explore (note selection and comment generation).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        account: {
+          type: 'string',
+          description: 'Account name or ID',
+        },
+        type: {
+          type: 'string',
+          enum: ['persona', 'select', 'comment'],
+          description: 'Type of prompt to get: persona (base character), select (note selection), comment (comment generation)',
+        },
+      },
+      required: ['account', 'type'],
+    },
+  },
+  {
+    name: 'xhs_set_account_prompt',
+    description: 'Update the prompt file content for an account. Use this to customize AI behavior during explore.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        account: {
+          type: 'string',
+          description: 'Account name or ID',
+        },
+        type: {
+          type: 'string',
+          enum: ['persona', 'select', 'comment'],
+          description: 'Type of prompt to update',
+        },
+        content: {
+          type: 'string',
+          description: 'New prompt content. For select/comment, use {{ persona }} to reference the persona.',
+        },
+      },
+      required: ['account', 'type', 'content'],
     },
   },
 ];
@@ -592,6 +635,9 @@ export async function handleAccountTools(
         };
       }
 
+      // 删除账号的 prompt 目录
+      deleteAccountPrompts(account.name, account.id);
+
       const removed = await pool.removeAccount(params.account);
 
       return {
@@ -667,6 +713,90 @@ export async function handleAccountTools(
                       proxy: updatedAccount.proxy || null,
                     }
                   : null,
+              },
+              null,
+              2
+            ),
+          },
+        ],
+      };
+    }
+
+    case 'xhs_get_account_prompt': {
+      const params = z
+        .object({
+          account: z.string(),
+          type: z.enum(['persona', 'select', 'comment']),
+        })
+        .parse(args);
+
+      const account = pool.getAccount(params.account);
+      if (!account) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Account not found: ${params.account}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      const content = getPrompt(account.name, account.id, params.type as PromptType);
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                account: account.name,
+                promptType: params.type,
+                content,
+              },
+              null,
+              2
+            ),
+          },
+        ],
+      };
+    }
+
+    case 'xhs_set_account_prompt': {
+      const params = z
+        .object({
+          account: z.string(),
+          type: z.enum(['persona', 'select', 'comment']),
+          content: z.string().min(1),
+        })
+        .parse(args);
+
+      const account = pool.getAccount(params.account);
+      if (!account) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Account not found: ${params.account}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      setPrompt(account.name, account.id, params.type as PromptType, params.content);
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                success: true,
+                account: account.name,
+                promptType: params.type,
+                message: `Prompt "${params.type}" updated successfully.`,
               },
               null,
               2

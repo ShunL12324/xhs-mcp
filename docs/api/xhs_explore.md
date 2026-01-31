@@ -12,6 +12,7 @@ AI 驱动的探索页自动浏览，模拟真实用户行为。
 | `openRate` | number | 否 | 打开笔记的概率（0-1，默认 0.5） |
 | `likeRate` | number | 否 | 点赞概率（0-1，默认 0.5） |
 | `commentRate` | number | 否 | 评论概率（0-1，默认 0.1） |
+| `deduplicate` | boolean | 否 | 跨会话去重（默认 true），排除之前互动过的笔记 |
 
 ## 返回值
 
@@ -79,12 +80,25 @@ xhs_explore({
 
 ## 功能说明
 
-- **智能滚动**：模拟人类滚动行为（2-3 次滚动后暂停阅读）
-- **AI 选择**：根据 interests 关键词智能选择感兴趣的笔记
+- **智能滚动**：模拟人类滚动行为（1-3 次滚动后暂停阅读）
+- **随机行为**：10% 概率快速滑过、5% 概率倒回查看、15% 概率快速关闭笔记
+- **AI 选择**：根据 interests 关键词和账号 persona 智能选择笔记
 - **概率互动**：基于设定概率决定是否点赞、评论
-- **AI 评论**：自动生成自然的评论内容
-- **去重机制**：同一笔记不会重复查看
+- **AI 评论**：使用账号的 comment prompt 生成自然评论
+- **跨会话去重**：默认排除之前已互动过的笔记
 - **完整日志**：所有操作记录到数据库
+
+## Prompt 自定义
+
+explore 使用账号的 Prompt 文件控制 AI 行为：
+
+| Prompt | 说明 |
+|--------|------|
+| `persona` | 定义用户特征和评论风格 |
+| `select` | 控制如何选择笔记 |
+| `comment` | 控制如何生成评论 |
+
+使用 [xhs_get_account_prompt](/api/xhs_get_account_prompt) 和 [xhs_set_account_prompt](/api/xhs_set_account_prompt) 管理 Prompt。
 
 ## 注意事项
 
