@@ -18,47 +18,104 @@
 
 ---
 
-## 功能特性
+## 功能概览
 
 ### 多账号管理
-- 账号池管理，支持同时登录多个账号
-- 会话持久化，重启后无需重新登录
-- 并发保护，防止同一账号同时操作冲突
-- 账号状态追踪和健康监控
+
+账号池管理，支持同时登录多个账号。会话持久化存储，重启后无需重新登录。内置并发保护，防止同一账号同时操作冲突。
+
+| 工具 | 说明 |
+|------|------|
+| `xhs_add_account` | 开始登录流程，返回二维码 URL |
+| `xhs_check_login_session` | 检查登录状态（扫码后调用） |
+| `xhs_submit_verification` | 提交短信验证码 |
+| `xhs_list_accounts` | 列出所有账号及状态 |
+| `xhs_check_auth_status` | 检查账号是否已登录 |
+| `xhs_remove_account` | 删除账号 |
+| `xhs_set_account_config` | 修改账号配置（名称、代理、状态） |
+| `xhs_delete_cookies` | 清除账号会话 |
 
 ### 内容查询
-- 关键词搜索，支持多种排序和筛选条件
-- 获取笔记详情，包括图片、评论、互动数据
-- 查看用户资料和发布的笔记列表
-- 获取首页推荐内容
+
+关键词搜索，支持多种排序和筛选条件。获取笔记详情，包括图片、评论、互动数据。查看用户资料和发布的笔记列表。
+
+| 工具 | 说明 |
+|------|------|
+| `xhs_search` | 搜索笔记，支持排序和筛选 |
+| `xhs_get_note` | 获取笔记详情和评论 |
+| `xhs_user_profile` | 获取用户资料和笔记列表 |
+| `xhs_list_feeds` | 获取首页推荐 |
 
 ### 内容发布
-- 发布图文笔记，支持多图和话题标签
-- 发布视频笔记，支持封面设置
-- 定时发布功能
-- 多账号批量发布
+
+发布图文/视频笔记，支持多图、话题标签、封面设置。支持定时发布和多账号批量发布。
+
+| 工具 | 说明 |
+|------|------|
+| `xhs_publish_content` | 发布图文笔记 |
+| `xhs_publish_video` | 发布视频笔记 |
 
 ### 互动功能
-- 点赞/取消点赞笔记和评论
-- 收藏/取消收藏笔记
-- 发表评论和回复
-- 多账号批量互动
+
+点赞、收藏、评论、回复，支持多账号批量互动。
+
+| 工具 | 说明 |
+|------|------|
+| `xhs_like_feed` | 点赞/取消点赞笔记 |
+| `xhs_favorite_feed` | 收藏/取消收藏笔记 |
+| `xhs_post_comment` | 发表评论 |
+| `xhs_reply_comment` | 回复评论 |
+| `xhs_like_comment` | 点赞/取消点赞评论 |
 
 ### AI 创作
-- Gemini AI 图片生成，支持多种风格
-- 草稿管理系统，保存和编辑创作内容
-- 图片风格参数：构图、光线、色调、氛围
+
+Gemini AI 图片生成，支持多种风格参数（构图、光线、色调、氛围）。草稿管理系统，保存和编辑创作内容。
+
+| 工具 | 说明 |
+|------|------|
+| `xhs_generate_image` | AI 生成图片（Gemini） |
+| `xhs_create_draft` | 创建笔记草稿 |
+| `xhs_list_drafts` | 列出所有草稿 |
+| `xhs_get_draft` | 获取草稿详情 |
+| `xhs_update_draft` | 更新草稿内容 |
+| `xhs_delete_draft` | 删除草稿 |
+| `xhs_publish_draft` | 发布草稿到小红书 |
 
 ### 创作者工具
-- 获取已发布笔记的数据统计（浏览、点赞、收藏、评论）
-- 通知管理：评论提醒、点赞通知、新增关注
-- 操作日志查询和成功率分析
+
+获取已发布笔记的数据统计（浏览、点赞、收藏、评论）。通知管理：评论提醒、点赞通知、新增关注。
+
+| 工具 | 说明 |
+|------|------|
+| `xhs_get_my_notes` | 获取已发布笔记列表和数据 |
+| `xhs_query_my_notes` | 查询已缓存的笔记（支持多条件筛选） |
+| `xhs_get_notifications` | 获取通知（评论、点赞、关注） |
 
 ### 自动浏览
-- AI 驱动的探索页自动浏览
-- 根据兴趣关键词智能选择笔记
-- 概率控制的点赞和评论行为
-- 完整的会话记录和行为日志
+
+AI 驱动的探索页自动浏览，根据兴趣关键词智能选择笔记，概率控制的点赞和评论行为。
+
+| 工具 | 说明 |
+|------|------|
+| `xhs_explore` | AI 驱动的自动浏览探索页 |
+
+### 数据统计
+
+操作日志查询和成功率分析。
+
+| 工具 | 说明 |
+|------|------|
+| `xhs_get_account_stats` | 获取账号操作统计 |
+| `xhs_get_operation_logs` | 查询操作历史日志 |
+
+### 下载
+
+| 工具 | 说明 |
+|------|------|
+| `xhs_download_images` | 下载笔记图片 |
+| `xhs_download_video` | 下载笔记视频 |
+
+> 详细 API 文档请访问 [完整文档](https://shunl12324.github.io/xhs-mcp/api/)
 
 ---
 
@@ -118,91 +175,6 @@ claude mcp add xhs -- npx -y @sillyl12324/xhs-mcp@latest
 4. 如需短信验证，调用 xhs_submit_verification({ sessionId, code })
 5. 完成！会话自动保存到本地数据库
 ```
-
----
-
-## 可用工具
-
-### 账号管理
-
-| 工具 | 说明 |
-|------|------|
-| `xhs_add_account` | 开始登录流程，返回二维码 URL |
-| `xhs_check_login_session` | 检查登录状态（扫码后调用） |
-| `xhs_submit_verification` | 提交短信验证码 |
-| `xhs_list_accounts` | 列出所有账号及状态 |
-| `xhs_check_auth_status` | 检查账号是否已登录 |
-| `xhs_remove_account` | 删除账号 |
-| `xhs_set_account_config` | 修改账号配置（名称、代理、状态） |
-| `xhs_delete_cookies` | 清除账号会话 |
-
-### 内容查询
-
-| 工具 | 说明 |
-|------|------|
-| `xhs_search` | 搜索笔记，支持排序和筛选 |
-| `xhs_get_note` | 获取笔记详情和评论 |
-| `xhs_user_profile` | 获取用户资料和笔记列表 |
-| `xhs_list_feeds` | 获取首页推荐 |
-
-### 内容发布
-
-| 工具 | 说明 |
-|------|------|
-| `xhs_publish_content` | 发布图文笔记 |
-| `xhs_publish_video` | 发布视频笔记 |
-
-### 互动功能
-
-| 工具 | 说明 |
-|------|------|
-| `xhs_like_feed` | 点赞/取消点赞笔记 |
-| `xhs_favorite_feed` | 收藏/取消收藏笔记 |
-| `xhs_post_comment` | 发表评论 |
-| `xhs_reply_comment` | 回复评论 |
-| `xhs_like_comment` | 点赞/取消点赞评论 |
-
-### AI 创作
-
-| 工具 | 说明 |
-|------|------|
-| `xhs_generate_image` | AI 生成图片（Gemini） |
-| `xhs_create_draft` | 创建笔记草稿 |
-| `xhs_list_drafts` | 列出所有草稿 |
-| `xhs_get_draft` | 获取草稿详情 |
-| `xhs_update_draft` | 更新草稿内容 |
-| `xhs_delete_draft` | 删除草稿 |
-| `xhs_publish_draft` | 发布草稿到小红书 |
-
-### 创作者工具
-
-| 工具 | 说明 |
-|------|------|
-| `xhs_get_my_notes` | 获取已发布笔记列表和数据 |
-| `xhs_query_my_notes` | 查询已缓存的笔记（支持多条件筛选） |
-| `xhs_get_notifications` | 获取通知（评论、点赞、关注） |
-
-### 自动化
-
-| 工具 | 说明 |
-|------|------|
-| `xhs_explore` | AI 驱动的自动浏览探索页 |
-
-### 数据统计
-
-| 工具 | 说明 |
-|------|------|
-| `xhs_get_account_stats` | 获取账号操作统计 |
-| `xhs_get_operation_logs` | 查询操作历史日志 |
-
-### 下载
-
-| 工具 | 说明 |
-|------|------|
-| `xhs_download_images` | 下载笔记图片 |
-| `xhs_download_video` | 下载笔记视频 |
-
-> 详细 API 文档请访问 [完整文档](https://shunl12324.github.io/xhs-mcp/api/)
 
 ---
 

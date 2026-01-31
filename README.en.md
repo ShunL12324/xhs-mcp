@@ -21,44 +21,101 @@
 ## Features
 
 ### Multi-Account Management
-- Account pool management with multiple simultaneous logins
-- Session persistence across restarts
-- Concurrent operation protection
-- Account health monitoring and status tracking
+
+Account pool management with multiple simultaneous logins. Session persistence across restarts. Built-in concurrent operation protection.
+
+| Tool | Description |
+|------|-------------|
+| `xhs_add_account` | Start login flow, returns QR code URL |
+| `xhs_check_login_session` | Check login status (call after QR scan) |
+| `xhs_submit_verification` | Submit SMS verification code |
+| `xhs_list_accounts` | List all accounts with status |
+| `xhs_check_auth_status` | Check if account is logged in |
+| `xhs_remove_account` | Remove an account |
+| `xhs_set_account_config` | Update account config (name, proxy, status) |
+| `xhs_delete_cookies` | Clear account session |
 
 ### Content Query
-- Keyword search with sorting and filtering options
-- Note details including images, comments, and engagement data
-- User profiles and published notes
-- Homepage feed recommendations
+
+Keyword search with sorting and filtering options. Get note details including images, comments, and engagement data. View user profiles and published notes.
+
+| Tool | Description |
+|------|-------------|
+| `xhs_search` | Search notes with sorting and filters |
+| `xhs_get_note` | Get note details and comments |
+| `xhs_user_profile` | Get user profile and notes |
+| `xhs_list_feeds` | Get homepage recommendations |
 
 ### Publishing
-- Image/text notes with multiple images and topic tags
-- Video notes with cover image support
-- Scheduled publishing
-- Multi-account batch publishing
+
+Publish image/video notes with multiple images, topic tags, and cover settings. Supports scheduled publishing and multi-account batch publishing.
+
+| Tool | Description |
+|------|-------------|
+| `xhs_publish_content` | Publish image/text note |
+| `xhs_publish_video` | Publish video note |
 
 ### Interactions
-- Like/unlike notes and comments
-- Favorite/unfavorite notes
-- Post comments and replies
-- Multi-account batch interactions
+
+Like, favorite, comment, and reply. Supports multi-account batch interactions.
+
+| Tool | Description |
+|------|-------------|
+| `xhs_like_feed` | Like/unlike a note |
+| `xhs_favorite_feed` | Favorite/unfavorite a note |
+| `xhs_post_comment` | Post a comment |
+| `xhs_reply_comment` | Reply to a comment |
+| `xhs_like_comment` | Like/unlike a comment |
 
 ### AI Creation
-- Gemini AI image generation with multiple styles
-- Draft management system
-- Image style parameters: composition, lighting, color, mood
+
+Gemini AI image generation with style parameters (composition, lighting, color, mood). Draft management system for saving and editing content.
+
+| Tool | Description |
+|------|-------------|
+| `xhs_generate_image` | Generate image with AI (Gemini) |
+| `xhs_create_draft` | Create a note draft |
+| `xhs_list_drafts` | List all drafts |
+| `xhs_get_draft` | Get draft details |
+| `xhs_update_draft` | Update draft content |
+| `xhs_delete_draft` | Delete a draft |
+| `xhs_publish_draft` | Publish draft to Xiaohongshu |
 
 ### Creator Tools
-- Published notes analytics (views, likes, favorites, comments)
-- Notification management: comment alerts, likes, new followers
-- Operation logs and success rate analysis
+
+Get published notes analytics (views, likes, favorites, comments). Notification management: comment alerts, likes, new followers.
+
+| Tool | Description |
+|------|-------------|
+| `xhs_get_my_notes` | Get published notes list with analytics |
+| `xhs_query_my_notes` | Query cached notes (multi-field filtering) |
+| `xhs_get_notifications` | Get notifications (comments, likes, follows) |
 
 ### Auto Browse
-- AI-driven explore page browsing
-- Interest-based note selection
-- Probability-controlled liking and commenting
-- Complete session recording and behavior logs
+
+AI-driven explore page browsing. Interest-based note selection with probability-controlled liking and commenting.
+
+| Tool | Description |
+|------|-------------|
+| `xhs_explore` | AI-driven auto browse explore page |
+
+### Statistics
+
+Operation logs and success rate analysis.
+
+| Tool | Description |
+|------|-------------|
+| `xhs_get_account_stats` | Get account operation statistics |
+| `xhs_get_operation_logs` | Query operation history |
+
+### Download
+
+| Tool | Description |
+|------|-------------|
+| `xhs_download_images` | Download note images |
+| `xhs_download_video` | Download note video |
+
+> Full API documentation at [Documentation](https://shunl12324.github.io/xhs-mcp/en/api/)
 
 ---
 
@@ -118,91 +175,6 @@ Add the same configuration to MCP settings:
 4. If SMS verification needed, call xhs_submit_verification({ sessionId, code })
 5. Done! Session is saved to local database
 ```
-
----
-
-## Available Tools
-
-### Account Management
-
-| Tool | Description |
-|------|-------------|
-| `xhs_add_account` | Start login flow, returns QR code URL |
-| `xhs_check_login_session` | Check login status (call after QR scan) |
-| `xhs_submit_verification` | Submit SMS verification code |
-| `xhs_list_accounts` | List all accounts with status |
-| `xhs_check_auth_status` | Check if account is logged in |
-| `xhs_remove_account` | Remove an account |
-| `xhs_set_account_config` | Update account config (name, proxy, status) |
-| `xhs_delete_cookies` | Clear account session |
-
-### Content Query
-
-| Tool | Description |
-|------|-------------|
-| `xhs_search` | Search notes with sorting and filters |
-| `xhs_get_note` | Get note details and comments |
-| `xhs_user_profile` | Get user profile and notes |
-| `xhs_list_feeds` | Get homepage recommendations |
-
-### Publishing
-
-| Tool | Description |
-|------|-------------|
-| `xhs_publish_content` | Publish image/text note |
-| `xhs_publish_video` | Publish video note |
-
-### Interactions
-
-| Tool | Description |
-|------|-------------|
-| `xhs_like_feed` | Like/unlike a note |
-| `xhs_favorite_feed` | Favorite/unfavorite a note |
-| `xhs_post_comment` | Post a comment |
-| `xhs_reply_comment` | Reply to a comment |
-| `xhs_like_comment` | Like/unlike a comment |
-
-### AI Creation
-
-| Tool | Description |
-|------|-------------|
-| `xhs_generate_image` | Generate image with AI (Gemini) |
-| `xhs_create_draft` | Create a note draft |
-| `xhs_list_drafts` | List all drafts |
-| `xhs_get_draft` | Get draft details |
-| `xhs_update_draft` | Update draft content |
-| `xhs_delete_draft` | Delete a draft |
-| `xhs_publish_draft` | Publish draft to Xiaohongshu |
-
-### Creator Tools
-
-| Tool | Description |
-|------|-------------|
-| `xhs_get_my_notes` | Get published notes list with analytics |
-| `xhs_query_my_notes` | Query cached notes (multi-field filtering) |
-| `xhs_get_notifications` | Get notifications (comments, likes, follows) |
-
-### Automation
-
-| Tool | Description |
-|------|-------------|
-| `xhs_explore` | AI-driven auto browse explore page |
-
-### Statistics
-
-| Tool | Description |
-|------|-------------|
-| `xhs_get_account_stats` | Get account operation statistics |
-| `xhs_get_operation_logs` | Query operation history |
-
-### Download
-
-| Tool | Description |
-|------|-------------|
-| `xhs_download_images` | Download note images |
-| `xhs_download_video` | Download note video |
-
-> Full API documentation at [Documentation](https://shunl12324.github.io/xhs-mcp/en/api/)
 
 ---
 
