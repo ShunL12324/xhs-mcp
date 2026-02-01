@@ -84,6 +84,7 @@ xhs_explore({
 - **Random behavior**: 10% quick scroll, 5% scroll back, 15% quick close
 - **AI selection**: Selects notes based on interest keywords and account persona
 - **Probability interactions**: Decides to like/comment based on set probabilities
+- **Smart liking**: AI chooses whether to like the post or a comment (customizable via like-target prompt)
 - **AI comments**: Uses account's comment prompt to generate natural comments
 - **Cross-session deduplication**: Excludes previously interacted notes by default
 - **Full logging**: All actions logged to database
@@ -97,6 +98,7 @@ Explore uses account prompt files to control AI behavior:
 | `persona` | Defines user traits and comment style |
 | `select` | Controls how notes are selected |
 | `comment` | Controls how comments are generated |
+| `like-target` | Controls like target selection (post/comment/skip) |
 
 Use [xhs_get_account_prompt](/en/api/xhs_get_account_prompt) and [xhs_set_account_prompt](/en/api/xhs_set_account_prompt) to manage prompts.
 

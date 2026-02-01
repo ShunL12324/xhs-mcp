@@ -50,8 +50,7 @@ XHS-MCP provides a comprehensive set of MCP tools for interacting with Xiaohongs
 - `xhs_download_video` - Download note video
 
 ### AI Creation & Drafts
-- `xhs_generate_image` - Generate image using Gemini AI
-- `xhs_create_draft` - Create a note draft
+- `xhs_create_draft` - Create a note draft (AI auto-processes screenshots)
 - `xhs_list_drafts` - List all drafts
 - `xhs_get_draft` - Get draft details
 - `xhs_update_draft` - Update a draft

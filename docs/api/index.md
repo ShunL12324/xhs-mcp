@@ -61,8 +61,7 @@
 
 | 工具 | 说明 |
 |------|------|
-| [xhs_generate_image](/api/xhs_generate_image) | 使用 Gemini AI 生成图片 |
-| [xhs_create_draft](/api/xhs_create_draft) | 创建笔记草稿 |
+| [xhs_create_draft](/api/xhs_create_draft) | 创建笔记草稿（AI 自动处理截图生成配图） |
 | [xhs_list_drafts](/api/xhs_list_drafts) | 列出所有草稿 |
 | [xhs_get_draft](/api/xhs_get_draft) | 获取草稿详情 |
 | [xhs_update_draft](/api/xhs_update_draft) | 更新草稿 |

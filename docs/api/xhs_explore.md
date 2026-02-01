@@ -84,6 +84,7 @@ xhs_explore({
 - **随机行为**：10% 概率快速滑过、5% 概率倒回查看、15% 概率快速关闭笔记
 - **AI 选择**：根据 interests 关键词和账号 persona 智能选择笔记
 - **概率互动**：基于设定概率决定是否点赞、评论
+- **智能点赞**：AI 选择点赞帖子本身还是某条评论（可自定义 like-target prompt）
 - **AI 评论**：使用账号的 comment prompt 生成自然评论
 - **跨会话去重**：默认排除之前已互动过的笔记
 - **完整日志**：所有操作记录到数据库
@@ -97,6 +98,7 @@ explore 使用账号的 Prompt 文件控制 AI 行为：
 | `persona` | 定义用户特征和评论风格 |
 | `select` | 控制如何选择笔记 |
 | `comment` | 控制如何生成评论 |
+| `like-target` | 控制点赞目标选择（帖子/评论/不点赞） |
 
 使用 [xhs_get_account_prompt](/api/xhs_get_account_prompt) 和 [xhs_set_account_prompt](/api/xhs_set_account_prompt) 管理 Prompt。
 
