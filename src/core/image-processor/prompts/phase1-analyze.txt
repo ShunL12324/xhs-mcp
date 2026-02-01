@@ -1,0 +1,109 @@
+你是一位专业的小红书配图设计师。请分析以下笔记内容和截图，为制作小红书笔记配图提供规划。
+
+## 笔记内容（Markdown）
+
+```markdown
+{{ content }}
+```
+
+## 截图信息
+
+共 {{ screenshot_count }} 张截图：
+{% for dim in dimensions %}
+- 截图 {{ dim.index }}: {{ dim.width }} × {{ dim.height }} px
+{% endfor %}
+
+{% if requirements %}
+## 特殊要求
+{{ requirements }}
+{% endif %}
+
+## 任务
+
+1. **解析笔记结构**：将 Markdown 内容拆分为多个内容块（步骤、要点、介绍、总结等）
+2. **分析截图内容**：理解每张截图展示的内容和关键元素
+3. **智能匹配**：判断每张截图对应哪个内容块
+4. **规划图片需求**：决定哪些内容块需要配图（截图图或纯文字图）
+
+## 返回 JSON 格式
+
+```json
+{
+  "contentBlocks": [
+    {
+      "type": "intro",
+      "title": "开篇引入",
+      "text": "这篇内容主要讲述...",
+      "screenshotIndex": null,
+      "needsImage": true
+    },
+    {
+      "type": "step",
+      "title": "Step 1",
+      "text": "找到配置文件",
+      "screenshotIndex": 0,
+      "needsImage": true
+    },
+    {
+      "type": "tip",
+      "title": "注意事项",
+      "text": "修改前请备份",
+      "screenshotIndex": null,
+      "needsImage": false
+    }
+  ],
+  "screenshots": [
+    {
+      "index": 0,
+      "content": "Chrome 用户数据目录截图",
+      "keyElements": ["Local State 文件", "文件路径"],
+      "matchedBlockIndex": 1
+    }
+  ],
+  "contentType": "tutorial",
+  "theme": "tech",
+  "suggestedStyle": "dark"
+}
+```
+
+## 字段说明
+
+### contentBlocks（内容块列表）
+- `type`: 块类型
+  - `intro`: 开篇介绍
+  - `step`: 教程步骤（教程类内容）
+  - `point`: 要点/观点（分享类内容）
+  - `tip`: 小贴士/提示
+  - `warning`: 注意事项/警告
+  - `conclusion`: 总结/结尾
+- `title`: 块标题（可选，如 "Step 1"）
+- `text`: 块的核心内容（简洁概括）
+- `screenshotIndex`: 关联的截图索引，null 表示没有匹配的截图
+- `needsImage`: 是否需要为此块生成配图
+  - true: 需要生成图片（截图图或纯文字图）
+  - false: 内容可以合并到其他图或不需要单独图片
+
+### screenshots（截图分析）
+- `index`: 截图索引
+- `content`: 截图主要内容
+- `keyElements`: 需要标注的关键元素
+- `matchedBlockIndex`: 匹配的 contentBlock 索引
+
+### 其他字段
+- `contentType`: 内容类型 - tutorial / sharing / review / list / story
+- `theme`: 主题风格 - tech / lifestyle / food / beauty / travel / finance
+- `suggestedStyle`: 建议视觉风格 - minimal / colorful / dark / light
+
+## 匹配规则
+
+1. **每张截图最多匹配一个内容块**
+2. **一个内容块最多关联一张截图**
+3. **没有截图的内容块**：如果内容重要，设置 `needsImage: true` 生成纯文字图
+4. **小内容可合并**：tip、warning 等小内容如果不重要，可设置 `needsImage: false`
+
+## 生成图片数量建议
+
+- 封面图（通常需要）+ 内容图 + 总结图（可选）
+- 教程类：每个步骤一张图
+- 分享类：根据要点数量决定，可以多个要点合并一张
+

@@ -1,6 +1,6 @@
 /**
- * @fileoverview MCP tool definitions and handlers for note drafts.
- * Provides tools for creating, managing, and publishing AI-generated note drafts.
+ * @fileoverview 笔记草稿相关的 MCP 工具定义和处理器
+ * 提供创建、管理和发布 AI 生成的笔记草稿的工具
  * @module tools/draft
  */
 
@@ -11,69 +11,36 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { AccountPool } from '../core/account-pool.js';
 import { XhsDatabase } from '../db/index.js';
-import { generateImage, type ImageStyle, type ShotType, type AspectRatio } from '../core/gemini.js';
 import { paths } from '../core/config.js';
 import { executeWithMultipleAccounts, MultiAccountParams } from '../core/multi-account.js';
 import { createLogger } from '../core/logger.js';
+import { runGraph } from '../core/image-processor/graph/index.js';
 
 const log = createLogger('draft');
 
 /**
- * Draft tool definitions for MCP.
+ * 数据库行转换为草稿对象
+ */
+function rowToDraft(row: any) {
+  return {
+    id: row.id,
+    title: row.title,
+    content: row.content,
+    tags: JSON.parse(row.tags || '[]'),
+    images: JSON.parse(row.images || '[]'),
+    publishedAt: row.published_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+/**
+ * 草稿工具定义
  */
 export const draftTools: Tool[] = [
   {
-    name: 'xhs_generate_image',
-    description: 'Generate a single image using AI. Returns the local file path. Use this before xhs_create_draft to prepare images.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        prompt: {
-          type: 'string',
-          description: 'Image generation prompt describing the desired image',
-        },
-        style: {
-          type: 'string',
-          enum: ['photo', 'illustration', 'product', 'minimalist', 'sticker'],
-          description: 'Image style: photo (photorealistic), illustration (artistic), product (commercial photography), minimalist (negative space), sticker (cute icon)',
-        },
-        subject: {
-          type: 'string',
-          description: 'Main subject of the image (e.g., "a cup of latte coffee", "a young woman in summer dress")',
-        },
-        environment: {
-          type: 'string',
-          description: 'Scene environment or background (e.g., "cozy cafe interior", "outdoor garden")',
-        },
-        lighting: {
-          type: 'string',
-          description: 'Lighting description (e.g., "soft natural light", "warm golden hour", "studio softbox")',
-        },
-        mood: {
-          type: 'string',
-          description: 'Atmosphere or mood (e.g., "cozy and warm", "fresh and vibrant", "elegant and luxurious")',
-        },
-        shotType: {
-          type: 'string',
-          enum: ['close-up', 'medium shot', 'wide shot', 'macro', 'aerial', 'low-angle', 'high-angle'],
-          description: 'Camera shot type',
-        },
-        colorPalette: {
-          type: 'string',
-          description: 'Color scheme (e.g., "warm earth tones", "pastel colors", "monochrome")',
-        },
-        aspectRatio: {
-          type: 'string',
-          enum: ['3:4', '1:1', '4:3'],
-          description: 'Image aspect ratio. 3:4 (portrait, default for Xiaohongshu), 1:1 (square), 4:3 (landscape)',
-        },
-      },
-      required: ['prompt'],
-    },
-  },
-  {
     name: 'xhs_create_draft',
-    description: 'Create a note draft with title, content, tags, and image paths. Use xhs_generate_image first to create images.',
+    description: 'Create a note draft from Markdown content and screenshots. AI will automatically generate beautiful Xiaohongshu-style images (cover, screenshot annotations, text slides).',
     inputSchema: {
       type: 'object',
       properties: {
@@ -83,20 +50,25 @@ export const draftTools: Tool[] = [
         },
         content: {
           type: 'string',
-          description: 'Note content/description',
+          description: 'Markdown content of the note (tutorial steps, tips, etc.)',
+        },
+        screenshots: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Array of screenshot file paths to be processed and annotated',
         },
         tags: {
           type: 'array',
           items: { type: 'string' },
           description: 'Optional tags/topics for the note',
         },
-        images: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Array of local image file paths (from xhs_generate_image)',
+        style: {
+          type: 'string',
+          enum: ['minimal', 'colorful', 'dark', 'light'],
+          description: 'Visual style preset (default: minimal)',
         },
       },
-      required: ['title', 'content', 'images'],
+      required: ['title', 'content', 'screenshots'],
     },
   },
   {
@@ -202,21 +174,7 @@ export const draftTools: Tool[] = [
 ];
 
 /**
- * Draft domain model
- */
-interface NoteDraft {
-  id: string;
-  title: string;
-  content: string;
-  tags: string[];
-  images: string[];
-  publishedAt: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-/**
- * Handle draft tool calls.
+ * 处理草稿工具调用
  */
 export async function handleDraftTools(
   name: string,
@@ -225,70 +183,22 @@ export async function handleDraftTools(
   db: XhsDatabase
 ) {
   switch (name) {
-    case 'xhs_generate_image': {
-      const params = z
-        .object({
-          prompt: z.string(),
-          style: z.enum(['photo', 'illustration', 'product', 'minimalist', 'sticker']).optional(),
-          subject: z.string().optional(),
-          environment: z.string().optional(),
-          lighting: z.string().optional(),
-          mood: z.string().optional(),
-          shotType: z.enum(['close-up', 'medium shot', 'wide shot', 'macro', 'aerial', 'low-angle', 'high-angle']).optional(),
-          colorPalette: z.string().optional(),
-          aspectRatio: z.enum(['3:4', '1:1', '4:3']).optional(),
-        })
-        .parse(args);
-
-      // 构建结构化参数
-      const structuredParams = {
-        prompt: params.prompt,
-        style: params.style as ImageStyle | undefined,
-        subject: params.subject,
-        environment: params.environment,
-        lighting: params.lighting,
-        mood: params.mood,
-        shotType: params.shotType as ShotType | undefined,
-        colorPalette: params.colorPalette,
-      };
-
-      const result = await generateImage({
-        prompt: structuredParams,
-        aspectRatio: params.aspectRatio as AspectRatio | undefined,
-      });
-
-      if (!result.success) {
-        return {
-          content: [{ type: 'text', text: `Image generation failed: ${result.error}` }],
-          isError: true,
-        };
-      }
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({ success: true, path: result.path }, null, 2),
-          },
-        ],
-      };
-    }
-
     case 'xhs_create_draft': {
       const params = z
         .object({
           title: z.string(),
           content: z.string(),
+          screenshots: z.array(z.string()),
           tags: z.array(z.string()).optional().default([]),
-          images: z.array(z.string()),
+          style: z.enum(['minimal', 'colorful', 'dark', 'light']).optional(),
         })
         .parse(args);
 
-      // 验证图片路径
-      for (const imagePath of params.images) {
-        if (!fs.existsSync(imagePath)) {
+      // 验证截图路径
+      for (const screenshotPath of params.screenshots) {
+        if (!fs.existsSync(screenshotPath)) {
           return {
-            content: [{ type: 'text', text: `Image not found: ${imagePath}` }],
+            content: [{ type: 'text', text: `Screenshot not found: ${screenshotPath}` }],
             isError: true,
           };
         }
@@ -297,53 +207,82 @@ export async function handleDraftTools(
       const draftId = randomUUID();
       const now = new Date().toISOString();
 
-      // 复制图片到 drafts 目录
-      const draftDir = path.join(paths.dataDir, 'drafts', draftId);
+      // 创建草稿目录
+      const draftDir = paths.getDraftOutputPath(draftId);
       fs.mkdirSync(draftDir, { recursive: true });
 
-      const newImagePaths: string[] = [];
-      for (let i = 0; i < params.images.length; i++) {
-        const srcPath = params.images[i];
-        const ext = path.extname(srcPath) || '.jpg';
-        const destPath = path.join(draftDir, `${i}${ext}`);
-        fs.copyFileSync(srcPath, destPath);
-        newImagePaths.push(destPath);
+      log.info('使用 AI 处理截图', { draftId, screenshotCount: params.screenshots.length });
+
+      try {
+        // 调用 image processor 生成配图，直接输出到草稿目录
+        const result = await runGraph({
+          content: params.content,
+          screenshots: params.screenshots,
+          style: params.style,
+          outputDir: draftDir,  // 直接输出到草稿目录，避免复制
+        });
+
+        if (!result.success) {
+          // 失败时 runGraph 已清理目录
+          return {
+            content: [{ type: 'text', text: `Image processing failed: ${result.qualityReport?.summary || 'Unknown error'}` }],
+            isError: true,
+          };
+        }
+
+        // 图片已经在 draftDir 中，无需复制
+        const finalImagePaths = result.images;
+
+        // 插入数据库
+        db.run(
+          `INSERT INTO note_drafts (id, title, content, tags, images, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [
+            draftId,
+            params.title,
+            params.content,
+            JSON.stringify(params.tags),
+            JSON.stringify(finalImagePaths),
+            now,
+            now,
+          ]
+        );
+
+        log.info('草稿创建成功', { draftId, title: params.title, imageCount: finalImagePaths.length });
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(
+                {
+                  success: true,
+                  draftId,
+                  title: params.title,
+                  imageCount: finalImagePaths.length,
+                  images: finalImagePaths,
+                },
+                null,
+                2
+              ),
+            },
+          ],
+        };
+      } catch (error: any) {
+        // 确保失败时清理目录
+        if (fs.existsSync(draftDir)) {
+          try {
+            fs.rmSync(draftDir, { recursive: true });
+          } catch (e) {
+            log.warn('清理草稿目录失败', { draftDir, error: e });
+          }
+        }
+
+        return {
+          content: [{ type: 'text', text: `Image processing failed: ${error.message}` }],
+          isError: true,
+        };
       }
-
-      // 插入数据库
-      db.run(
-        `INSERT INTO note_drafts (id, title, content, tags, images, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          draftId,
-          params.title,
-          params.content,
-          JSON.stringify(params.tags),
-          JSON.stringify(newImagePaths),
-          now,
-          now,
-        ]
-      );
-
-      log.info('Draft created', { draftId, title: params.title });
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(
-              {
-                success: true,
-                draftId,
-                title: params.title,
-                images: newImagePaths,
-              },
-              null,
-              2
-            ),
-          },
-        ],
-      };
     }
 
     case 'xhs_list_drafts': {
@@ -360,16 +299,7 @@ export async function handleDraftTools(
       sql += ' ORDER BY created_at DESC';
 
       const rows = db.all(sql);
-      const drafts = rows.map((row: any) => ({
-        id: row.id,
-        title: row.title,
-        content: row.content,
-        tags: JSON.parse(row.tags || '[]'),
-        images: JSON.parse(row.images || '[]'),
-        publishedAt: row.published_at,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-      }));
+      const drafts = rows.map((row: any) => rowToDraft(row));
 
       return {
         content: [
@@ -397,16 +327,7 @@ export async function handleDraftTools(
         };
       }
 
-      const draft = {
-        id: row.id,
-        title: row.title,
-        content: row.content,
-        tags: JSON.parse(row.tags || '[]'),
-        images: JSON.parse(row.images || '[]'),
-        publishedAt: row.published_at,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-      };
+      const draft = rowToDraft(row);
 
       return {
         content: [{ type: 'text', text: JSON.stringify(draft, null, 2) }],
@@ -495,7 +416,7 @@ export async function handleDraftTools(
         values
       );
 
-      log.info('Draft updated', { draftId: params.draftId });
+      log.info('草稿已更新', { draftId: params.draftId });
 
       return {
         content: [
@@ -532,7 +453,7 @@ export async function handleDraftTools(
       // 删除数据库记录
       db.run('DELETE FROM note_drafts WHERE id = ?', [params.draftId]);
 
-      log.info('Draft deleted', { draftId: params.draftId });
+      log.info('草稿已删除', { draftId: params.draftId });
 
       return {
         content: [

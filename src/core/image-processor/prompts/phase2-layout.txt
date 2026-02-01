@@ -1,0 +1,200 @@
+你是一位专业的小红书配图设计师。请根据内容分析结果，为每张配图规划详细的布局方案。
+
+## 内容块列表
+
+```json
+{{ content_blocks | json }}
+```
+
+## 截图分析
+
+```json
+{{ screenshots | json }}
+```
+
+## 内容类型
+{{ content_type }}
+
+## 主题风格
+{{ theme }}
+
+## 设计风格
+{{ style }}
+
+## 配色方案
+{{ palette | json }}
+
+## 可用画布尺寸
+{{ canvas_sizes | json }}
+
+## 请返回 JSON 格式的布局规划
+
+```json
+{
+  "canvas": {
+    "ratio": "3:4",
+    "width": 1080,
+    "height": 1440
+  },
+  "slides": [
+    {
+      "index": 0,
+      "type": "cover",
+      "backgroundColor": "#0f172a",
+      "placement": { "source": "generate" },
+      "textLayers": [
+        {
+          "content": "4步解锁",
+          "position": "top",
+          "style": "title",
+          "color": "#ffffff"
+        },
+        {
+          "content": "Chrome 内置 Gemini",
+          "position": "center",
+          "style": "subtitle",
+          "color": "#a855f7"
+        }
+      ],
+      "annotations": [],
+      "contentBlockIndex": null
+    },
+    {
+      "index": 1,
+      "type": "screenshot",
+      "backgroundColor": "#f8fafc",
+      "placement": { "source": 0 },
+      "textLayers": [
+        {
+          "content": "Step 1",
+          "position": "top-left",
+          "style": "badge",
+          "color": "#ffffff",
+          "backgroundColor": "#6366f1"
+        },
+        {
+          "content": "找到配置文件",
+          "position": "bottom",
+          "style": "caption",
+          "color": "#334155"
+        }
+      ],
+      "annotations": [
+        {
+          "type": "circle",
+          "target": { "type": "text-match", "text": "Local State" },
+          "color": "#ef4444",
+          "label": "这个文件"
+        }
+      ],
+      "contentBlockIndex": 1
+    },
+    {
+      "index": 2,
+      "type": "text-only",
+      "backgroundColor": "#1e1b4b",
+      "placement": { "source": "generate" },
+      "textLayers": [
+        {
+          "content": "注意事项",
+          "position": "top",
+          "style": "title",
+          "color": "#ffffff"
+        },
+        {
+          "content": "修改前请备份原文件",
+          "position": "center",
+          "style": "body",
+          "color": "#e2e8f0"
+        }
+      ],
+      "annotations": [],
+      "contentBlockIndex": 3
+    }
+  ],
+  "colorPalette": {
+    "primary": "#6366f1",
+    "secondary": "#8b5cf6",
+    "background": "#f8fafc",
+    "text": "#1e1b4b",
+    "accent": "#f43f5e"
+  }
+}
+```
+
+## 配置选项详解
+
+### slides[].type（图片类型）
+- `cover`: 封面图 - 纯背景 + 大标题，吸引点击
+- `screenshot`: 截图图 - 展示截图内容
+- `text-only`: 纯文字图 - 用于没有截图的内容块
+- `summary`: 总结图 - 回顾要点或行动号召
+
+### placement（截图放置）
+- `source`: 使用哪张截图（**这是唯一需要输出的字段**）
+  - 数字索引 (0, 1, 2...): 使用对应截图
+  - `"generate"`: 不放截图，纯背景
+
+其他参数（mode, position, padding, borderRadius, shadow）已由系统固定，无需输出。
+
+### textLayers（文字层）
+- `style`: title / subtitle / body / badge / step-number / caption / bullet
+- `position`: 同上
+- `color`: 文字颜色
+- `backgroundColor`: 徽章背景色（仅 badge 样式需要）
+
+### 字体风格（重要）
+**所有文字必须使用手写体风格**，包括：
+- 标题、副标题
+- 步骤编号、徽章
+- 说明文字、正文
+
+手写体特点：有亲和力、活泼、不拘谨，符合小红书的轻松氛围。
+
+### contentBlockIndex
+- 关联的内容块索引，用于追踪
+
+## 设计原则
+
+### 根据 contentType 调整
+
+**教程类 (tutorial)**：
+- 使用 Step 1, Step 2... 步骤编号
+- 每张截图图配 badge 样式的步骤编号
+- 标注精准，指向关键操作位置
+
+**分享类 (sharing)**：
+- 不需要步骤编号
+- 注重文字的阅读体验
+- 多用 text-only 图片表达观点
+
+**其他类型**：根据内容特点灵活调整
+
+### 图片数量规划
+
+1. **封面图**（通常需要）：吸引点击
+2. **内容图**：每个 `needsImage: true` 的内容块一张
+   - 有截图 → screenshot 类型
+   - 无截图 → text-only 类型
+3. **总结图**（可选）：如有 conclusion 类型内容块
+
+### 文字内容原则
+
+1. **文字要简洁有力**：每个 textLayer 的 content 应该简短精炼
+2. **不要添加解释性文字**：避免"此步骤可能不适用于所有用户"等说明
+3. **不要添加免责声明**
+4. **caption 说明要简短**：一句话概括
+
+**错误示例**：
+- [错] "修改配置文件（请自行判断是否适用）"
+- [错] "注意：请确保已备份原文件后再进行操作"
+
+**正确示例**：
+- [对] "修改配置文件"
+- [对] "备份后再操作"
+
+### 确保覆盖
+
+- 每个 `needsImage: true` 的内容块都要有对应的 slide
+- 每张截图都要被使用（如果有匹配的内容块）
+

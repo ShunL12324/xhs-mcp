@@ -106,6 +106,51 @@ export const config = {
     imageGenerateModel: process.env.GEMINI_IMAGE_GENERATE_MODEL || 'gemini-3-pro-image',
     /** 通用模型 (GEMINI_MODEL) */
     model: process.env.GEMINI_MODEL || 'gemini-3-flash',
+    /** 分析模型 (GEMINI_ANALYSIS_MODEL) - 用于内容分析、布局规划 */
+    analysisModel: process.env.GEMINI_ANALYSIS_MODEL || 'gemini-3-pro-high',
+  },
+
+  /**
+   * 图片处理配置
+   */
+  imageProcessor: {
+    /** 画布预设尺寸 */
+    canvasSizes: {
+      '1:1': { width: 1080, height: 1080 },
+      '3:4': { width: 1080, height: 1440 },
+      '4:3': { width: 1440, height: 1080 },
+    },
+    /** 颜色预设 */
+    colorPalettes: {
+      minimal: {
+        primary: '#1a1a1a',
+        secondary: '#666666',
+        background: '#ffffff',
+        text: '#1a1a1a',
+        accent: '#0066ff',
+      },
+      colorful: {
+        primary: '#6366f1',
+        secondary: '#8b5cf6',
+        background: '#faf5ff',
+        text: '#1e1b4b',
+        accent: '#f43f5e',
+      },
+      dark: {
+        primary: '#e2e8f0',
+        secondary: '#94a3b8',
+        background: '#0f172a',
+        text: '#f8fafc',
+        accent: '#38bdf8',
+      },
+      light: {
+        primary: '#334155',
+        secondary: '#64748b',
+        background: '#f8fafc',
+        text: '#0f172a',
+        accent: '#0ea5e9',
+      },
+    },
   },
 } as const;
 
@@ -157,6 +202,14 @@ export const paths = {
   get tempImages() {
     return path.join(config.data.dir, 'temp', 'images');
   },
+  /** 草稿目录 */
+  get drafts() {
+    return path.join(config.data.dir, 'drafts');
+  },
+  /** 草稿输出目录（生成的配图） */
+  getDraftOutputPath(draftId: string) {
+    return path.join(config.data.dir, 'drafts', draftId);
+  },
 };
 
 /**
@@ -192,3 +245,17 @@ export function printConfig(): void {
   console.error(`  Gemini Model: ${config.gemini.model}`);
   console.error('=============================');
 }
+
+// ============ Image Processor 导出 ============
+// 为 image-processor 模块提供兼容的导出名
+
+export const GEMINI_CONFIG = {
+  baseUrl: config.gemini.baseUrl,
+  apiKey: config.gemini.apiKey,
+  analysisModel: config.gemini.analysisModel,
+  imageModel: config.gemini.imageGenerateModel,
+} as const;
+
+export const CANVAS_SIZES = config.imageProcessor.canvasSizes;
+export const COLOR_PALETTES = config.imageProcessor.colorPalettes;
+export const OUTPUT_DIR = paths.drafts;
