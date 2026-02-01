@@ -45,6 +45,25 @@ export interface GenerateCommentResult {
 }
 
 /**
+ * 评论简要信息（用于 AI 选择点赞目标）
+ */
+export interface CommentBrief {
+  id: string;
+  content: string;
+  likeCount: string;
+  liked: boolean;
+}
+
+/**
+ * AI 选择点赞目标的结果
+ */
+export interface SelectLikeTargetResult {
+  /** 点赞目标：'post' 点赞帖子，'comment:{id}' 点赞评论，'none' 不点赞 */
+  target: string;
+  reason: string;
+}
+
+/**
  * 安全解析 JSON，处理 markdown 代码块和格式问题
  */
 function safeParseJson<T>(text: string): T | null {
@@ -181,5 +200,66 @@ export async function generateComment(
   } catch (error) {
     log.error('AI generate comment failed', { error });
     return { comment: '很棒的分享！' };
+  }
+}
+
+/**
+ * 选择点赞目标：帖子本身、某条评论、或不点赞
+ * @param account 账号信息
+ * @param noteTitle 帖子标题
+ * @param noteDesc 帖子描述
+ * @param comments 评论列表
+ */
+export async function selectLikeTarget(
+  account: AccountInfo,
+  noteTitle: string,
+  noteDesc: string,
+  comments: CommentBrief[]
+): Promise<SelectLikeTargetResult> {
+  const ai = getAIClient();
+
+  // 过滤已点赞的评论
+  const availableComments = comments.filter(c => !c.liked);
+
+  // 格式化评论列表
+  const commentsText = availableComments.length > 0
+    ? availableComments.map((c, i) =>
+        `${i + 1}. [${c.id}] ${c.content.slice(0, 50)}${c.content.length > 50 ? '...' : ''} (${c.likeCount}赞)`
+      ).join('\n')
+    : '（暂无评论）';
+
+  // 截断过长的内容
+  const truncatedContent = noteDesc.length > 200
+    ? noteDesc.slice(0, 200) + '...'
+    : noteDesc;
+
+  // 使用 prompt-manager 渲染 prompt
+  const prompt = await renderPrompt(account.name, account.id, 'like-target', {
+    title: noteTitle,
+    content: truncatedContent,
+    comments: commentsText,
+  });
+
+  log.debug('Calling AI to select like target', { commentCount: availableComments.length });
+
+  try {
+    const response = await ai.models.generateContent({
+      model: config.gemini.model,
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    });
+
+    const text = response.text || '';
+    log.debug('AI like target response', { text: text.slice(0, 200) });
+
+    const result = safeParseJson<SelectLikeTargetResult>(text);
+    if (result && result.target) {
+      return result;
+    }
+
+    // 默认点赞帖子
+    return { target: 'post', reason: 'AI 响应解析失败，默认点赞帖子' };
+  } catch (error) {
+    log.error('AI select like target failed', { error });
+    return { target: 'post', reason: `AI 调用失败: ${error}` };
   }
 }

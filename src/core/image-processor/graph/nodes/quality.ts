@@ -69,12 +69,14 @@ export async function qualityNode(state: GraphStateType): Promise<Partial<GraphS
     overallPassed: boolean
     issues: string[]
     summary: string
+    suggestedOrder?: number[]
   }>(response.text || '')
 
   const qualityReport: QualityReport = {
     overallPassed: result.overallPassed,
     issues: result.issues || [],
     summary: result.summary,
+    suggestedOrder: result.suggestedOrder,
   }
 
   log.info('质量评估完成', {

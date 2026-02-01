@@ -9,7 +9,7 @@ import path from 'path';
 import { Liquid } from 'liquidjs';
 import { paths } from './config.js';
 import { createLogger } from './logger.js';
-import { DEFAULT_PERSONA, DEFAULT_SELECT, DEFAULT_COMMENT } from './prompts/defaults.js';
+import { DEFAULT_PERSONA, DEFAULT_SELECT, DEFAULT_COMMENT, DEFAULT_LIKE_TARGET } from './prompts/defaults.js';
 
 const log = createLogger('prompt-manager');
 const liquid = new Liquid();
@@ -17,7 +17,7 @@ const liquid = new Liquid();
 /**
  * Prompt 类型
  */
-export type PromptType = 'persona' | 'select' | 'comment';
+export type PromptType = 'persona' | 'select' | 'comment' | 'like-target';
 
 /**
  * 获取账号 prompt 目录名
@@ -75,6 +75,7 @@ export function initAccountPrompts(accountName: string, accountId: string): void
   fs.writeFileSync(path.join(dir, 'persona.txt'), DEFAULT_PERSONA, 'utf-8');
   fs.writeFileSync(path.join(dir, 'select.txt'), DEFAULT_SELECT, 'utf-8');
   fs.writeFileSync(path.join(dir, 'comment.txt'), DEFAULT_COMMENT, 'utf-8');
+  fs.writeFileSync(path.join(dir, 'like-target.txt'), DEFAULT_LIKE_TARGET, 'utf-8');
 
   log.info('Initialized account prompts', { accountName, accountId, dir });
 }
@@ -97,6 +98,7 @@ export function getPrompt(accountName: string, accountId: string, type: PromptTy
       case 'persona': return DEFAULT_PERSONA;
       case 'select': return DEFAULT_SELECT;
       case 'comment': return DEFAULT_COMMENT;
+      case 'like-target': return DEFAULT_LIKE_TARGET;
     }
   }
 
@@ -128,7 +130,7 @@ export function setPrompt(accountName: string, accountId: string, type: PromptTy
 export async function renderPrompt(
   accountName: string,
   accountId: string,
-  type: 'select' | 'comment',
+  type: 'select' | 'comment' | 'like-target',
   variables: Record<string, any> = {}
 ): Promise<string> {
   // 自动初始化（兼容老账号）

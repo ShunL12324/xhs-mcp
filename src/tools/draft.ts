@@ -50,7 +50,7 @@ export const draftTools: Tool[] = [
         },
         content: {
           type: 'string',
-          description: 'Markdown content of the note (tutorial steps, tips, etc.)',
+          description: 'Plain text content of the note (tutorial steps, tips, etc.). Do NOT use Markdown syntax - Xiaohongshu does not support it. Use plain text formatting only.',
         },
         screenshots: {
           type: 'array',

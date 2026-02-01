@@ -112,6 +112,7 @@ export interface QualityReport {
   overallPassed: boolean
   issues: string[]
   summary: string
+  suggestedOrder?: number[]  // 建议的图片顺序（0-based 索引），仅当顺序需要调整时返回
 }
 
 // ============ Graph 状态 ============

@@ -9,7 +9,7 @@ import { BrowserContextManager, log } from '../context.js';
 import { sleep } from '../../utils/index.js';
 import { config } from '../../../core/config.js';
 import { getDatabase, ExploreSessionResult } from '../../../db/index.js';
-import { selectNoteToOpen, generateComment, NoteBrief, AccountInfo } from '../../../core/explore-ai.js';
+import { selectNoteToOpen, generateComment, selectLikeTarget, NoteBrief, AccountInfo, CommentBrief } from '../../../core/explore-ai.js';
 import { EXPLORE_SELECTORS } from '../constants.js';
 
 /**
@@ -51,11 +51,22 @@ interface FeedItem {
 }
 
 /**
+ * 评论信息
+ */
+interface CommentInfo {
+  id: string;
+  content: string;
+  likeCount: string;
+  liked: boolean;
+}
+
+/**
  * Modal 内笔记详情
  */
 interface NoteDetail {
   title: string;
   desc: string;
+  comments: CommentInfo[];
 }
 
 /**
@@ -178,14 +189,14 @@ export class ExploreService {
           seenInSession.add(feed.id);
         }
 
-        // 记录到数据库
+        // 记录到数据库（仅用于日志，不标记为 explored）
+        // explored 标记只在真正互动（点赞/评论）后才设置，用于跨会话去重
         if (newFeeds.length > 0) {
           notesSeen += newFeeds.length;
           db.explore.logSeenNotes(sessionId, newFeeds.map(f => ({
             id: f.id,
             title: f.noteCard.displayTitle || f.noteCard.title || '',
           })));
-          db.explore.markNotesExplored(accountId, newFeeds.map(f => f.id));
         }
 
         log.debug('Feeds after scroll', { total: feeds.length, new: newFeeds.length });
@@ -277,21 +288,50 @@ export class ExploreService {
                 }
                 await sleep(modalReadDelay);
 
-                // 获取笔记详情
+                // 获取笔记详情（包含评论）
                 const noteDetail = await this.getNoteDetailFromModal(page, selectedFeed.id);
 
-                // 按概率点赞
-                if (Math.random() < likeRate) {
-                  const liked = await this.likeInModal(page);
-                  if (liked) {
-                    db.explore.logAction(sessionId, {
-                      noteId: selectedFeed.id,
-                      noteTitle: selectedFeed.noteCard.displayTitle,
-                      action: 'liked',
-                    });
-                    notesLiked++;
-                    db.explore.markNoteExplored(accountId, selectedFeed.id, true);
-                    log.info('Liked note', { noteId: selectedFeed.id });
+                // 按概率决定是否点赞（使用 AI 选择点赞帖子还是评论）
+                if (Math.random() < likeRate && noteDetail) {
+                  const likeTarget = await selectLikeTarget(
+                    accountInfo,
+                    noteDetail.title,
+                    noteDetail.desc,
+                    noteDetail.comments
+                  );
+
+                  if (likeTarget.target === 'post') {
+                    // 点赞帖子
+                    const liked = await this.likeInModal(page);
+                    if (liked) {
+                      db.explore.logAction(sessionId, {
+                        noteId: selectedFeed.id,
+                        noteTitle: selectedFeed.noteCard.displayTitle,
+                        action: 'liked',
+                        aiReason: likeTarget.reason,
+                      });
+                      notesLiked++;
+                      db.explore.markNoteExplored(accountId, selectedFeed.id, true);
+                      log.info('Liked note', { noteId: selectedFeed.id, reason: likeTarget.reason });
+                    }
+                  } else if (likeTarget.target.startsWith('comment:')) {
+                    // 点赞评论
+                    const commentId = likeTarget.target.replace('comment:', '');
+                    const liked = await this.likeCommentInModal(page, commentId);
+                    if (liked) {
+                      db.explore.logAction(sessionId, {
+                        noteId: selectedFeed.id,
+                        noteTitle: selectedFeed.noteCard.displayTitle,
+                        action: 'liked',
+                        content: `评论: ${commentId}`,
+                        aiReason: likeTarget.reason,
+                      });
+                      notesLiked++;
+                      db.explore.markNoteExplored(accountId, selectedFeed.id, true);
+                      log.info('Liked comment', { noteId: selectedFeed.id, commentId, reason: likeTarget.reason });
+                    }
+                  } else {
+                    log.debug('AI chose not to like', { reason: likeTarget.reason });
                   }
                 }
 
@@ -445,7 +485,7 @@ export class ExploreService {
   }
 
   /**
-   * 从 modal 获取笔记详情
+   * 从 modal 获取笔记详情（包含评论）
    */
   private async getNoteDetailFromModal(page: Page, noteId: string): Promise<NoteDetail | null> {
     try {
@@ -454,12 +494,23 @@ export class ExploreService {
         const noteMap = state?.note?.noteDetailMap;
         if (noteMap) {
           const mapData = noteMap.value !== undefined ? noteMap.value : noteMap._value || noteMap;
-          const detail = mapData[id];
+          // 找到正确的 key（跳过 undefined）
+          const actualId = Object.keys(mapData).find(k => k !== 'undefined' && k === id) || id;
+          const detail = mapData[actualId];
           if (detail) {
             const note = detail.note || detail;
+            // 提取评论列表（前 10 条）
+            const commentList = detail.comments?.list || [];
+            const comments = commentList.slice(0, 10).map((c: any) => ({
+              id: c.id || '',
+              content: c.content || '',
+              likeCount: c.likeCount || '0',
+              liked: !!c.liked,
+            }));
             return JSON.stringify({
               title: note.title || '',
               desc: note.desc || '',
+              comments,
             });
           }
         }
@@ -484,11 +535,13 @@ export class ExploreService {
         return false;
       }
 
-      // 检查是否已点赞
-      const isLiked = await likeBtn.evaluate(
-        (el, className) => el.classList.contains(className),
-        EXPLORE_SELECTORS.likeActiveClass
-      );
+      // 检查是否已点赞（通过 SVG use 的 xlink:href 判断，#like=未点赞，#liked=已点赞）
+      const isLiked = await likeBtn.evaluate((el: Element) => {
+        const useEl = el.querySelector('use');
+        if (!useEl) return false;
+        const href = useEl.getAttribute('xlink:href');
+        return href === '#liked';
+      });
       if (isLiked) {
         log.debug('Already liked');
         return false;
@@ -501,6 +554,51 @@ export class ExploreService {
 
     } catch (error) {
       log.warn('Failed to like in modal', { error });
+      return false;
+    }
+  }
+
+  /**
+   * 在 modal 内点赞评论
+   * @param commentId 评论 ID
+   */
+  private async likeCommentInModal(page: Page, commentId: string): Promise<boolean> {
+    try {
+      // 找到评论元素
+      const commentSelector = `#comment-${commentId}`;
+      const commentEl = await page.$(commentSelector);
+      if (!commentEl) {
+        log.warn('Comment not found', { commentId });
+        return false;
+      }
+
+      // 找到评论的点赞按钮
+      const likeBtn = await commentEl.$('.like-wrapper');
+      if (!likeBtn) {
+        log.warn('Comment like button not found', { commentId });
+        return false;
+      }
+
+      // 检查是否已点赞
+      const isLiked = await likeBtn.evaluate((el: Element) => {
+        const useEl = el.querySelector('use');
+        if (!useEl) return false;
+        const href = useEl.getAttribute('xlink:href');
+        return href === '#liked';
+      });
+      if (isLiked) {
+        log.debug('Comment already liked', { commentId });
+        return false;
+      }
+
+      // 点赞
+      await likeBtn.click();
+      await sleep(500);
+      log.debug('Liked comment', { commentId });
+      return true;
+
+    } catch (error) {
+      log.warn('Failed to like comment', { commentId, error });
       return false;
     }
   }

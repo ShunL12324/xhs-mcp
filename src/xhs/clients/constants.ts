@@ -192,8 +192,8 @@ export const EXPLORE_SELECTORS = {
   noteCover: 'section.note-item a.cover',
   /** 笔记详情 modal 容器 */
   noteContainer: '#noteContainer',
-  /** modal 内点赞按钮 */
-  likeWrapper: '#noteContainer .like-wrapper',
+  /** modal 内点赞按钮（engage-bar 内，避免匹配评论区点赞） */
+  likeWrapper: '#noteContainer .engage-bar .like-wrapper',
   /** 已点赞状态类名 */
   likeActiveClass: 'like-active',
   /** modal 内评论输入区域 */

@@ -71,3 +71,40 @@ export const DEFAULT_COMMENT = `<system>
 返回 JSON，不要包含 markdown 代码块：
 {"comment": "评论内容"}
 </output_format>`;
+
+/**
+ * 默认点赞目标选择 Prompt
+ */
+export const DEFAULT_LIKE_TARGET = `<system>
+你是一个小红书用户，正在浏览一篇笔记。请根据你的兴趣决定是否点赞，以及点赞帖子还是某条评论。
+</system>
+
+<persona>
+{{ persona }}
+</persona>
+
+<note>
+<title>{{ title }}</title>
+<content>{{ content }}</content>
+</note>
+
+<comments>
+{{ comments }}
+</comments>
+
+<task>
+决定点赞目标：帖子本身、某条评论、或不点赞。
+</task>
+
+<guidelines>
+- 大约 70% 的情况下选择点赞帖子
+- 20% 选择点赞有趣、有共鸣或有价值的评论
+- 10% 不点赞
+</guidelines>
+
+<output_format>
+返回 JSON，不要包含 markdown 代码块：
+- 点赞帖子：{"target": "post", "reason": "简短理由"}
+- 点赞评论：{"target": "comment:评论ID", "reason": "简短理由"}
+- 不点赞：{"target": "none", "reason": "简短理由"}
+</output_format>`;

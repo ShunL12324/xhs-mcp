@@ -138,7 +138,17 @@ export async function runGraph(input: ProcessInput): Promise<ProcessOutput> {
     // 运行图
     const result = await graph.invoke(initialState)
 
-    const images = result.beautifiedSlides?.map((s: any) => s.path) || []
+    let images = result.beautifiedSlides?.map((s: any) => s.path) || []
+
+    // 如果有建议的顺序，重新排序图片
+    if (result.qualityReport?.suggestedOrder && result.qualityReport.suggestedOrder.length === images.length) {
+      const reordered = result.qualityReport.suggestedOrder.map((idx: number) => images[idx])
+      log.info('根据建议顺序重新排序图片', {
+        original: images.map((_, i) => i),
+        suggested: result.qualityReport.suggestedOrder,
+      })
+      images = reordered
+    }
 
     // 清理临时文件
     cleanupTempFiles(outputDir)
