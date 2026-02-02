@@ -71,12 +71,11 @@ Like, favorite, comment, and reply. Supports multi-account batch interactions.
 
 ### AI Creation
 
-Gemini AI image generation with style parameters (composition, lighting, color, mood). Draft management system for saving and editing content.
+AI-powered image generation pipeline that automatically creates Xiaohongshu-style images from screenshots (covers, annotated screenshots, text slides). Draft management system for saving and editing content.
 
 | Tool | Description |
 |------|-------------|
-| `xhs_generate_image` | Generate image with AI (Gemini) |
-| `xhs_create_draft` | Create a note draft |
+| `xhs_create_draft` | Create a note draft (AI auto-processes screenshots) |
 | `xhs_list_drafts` | List all drafts |
 | `xhs_get_draft` | Get draft details |
 | `xhs_update_draft` | Update draft content |
@@ -95,7 +94,7 @@ Get published notes analytics (views, likes, favorites, comments). Notification 
 
 ### Auto Browse
 
-AI-driven explore page browsing. Interest-based note selection with probability-controlled liking and commenting.
+AI-driven explore page browsing. Interest-based note selection with smart like targeting (post vs comment) and probability-controlled commenting.
 
 | Tool | Description |
 |------|-------------|
