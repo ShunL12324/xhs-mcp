@@ -86,3 +86,4 @@
 | 工具 | 说明 |
 |------|------|
 | [xhs_explore](/api/xhs_explore) | 自动浏览探索页（AI 选择笔记、概率点赞评论） |
+| [xhs_stop_explore](/api/xhs_stop_explore) | 停止正在运行的 explore 会话 |

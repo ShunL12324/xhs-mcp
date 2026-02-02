@@ -66,6 +66,7 @@ XHS-MCP provides a comprehensive set of MCP tools for interacting with Xiaohongs
 
 ### Explore
 - `xhs_explore` - Automated browsing with AI note selection, probability-based liking/commenting
+- `xhs_stop_explore` - Stop a running explore session
 
 ### Statistics
 - `xhs_get_account_stats` - Get account statistics

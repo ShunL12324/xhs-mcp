@@ -99,6 +99,7 @@ AI-driven explore page browsing. Interest-based note selection with smart like t
 | Tool | Description |
 |------|-------------|
 | `xhs_explore` | AI-driven auto browse explore page |
+| `xhs_stop_explore` | Stop a running explore session |
 
 ### Statistics
 
