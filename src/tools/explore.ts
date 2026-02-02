@@ -70,6 +70,29 @@ Returns a session report with all actions taken.`,
       },
     },
   },
+  {
+    name: 'xhs_stop_explore',
+    description: `Stop a running explore session.
+
+Use this to gracefully stop an ongoing explore session. The session will complete its current action and then stop.
+
+If no sessionId is provided, stops all active explore sessions for the account.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        account: {
+          type: 'string',
+          description:
+            'Account name or ID. If not specified and only one account exists, uses that.',
+        },
+        sessionId: {
+          type: 'string',
+          description:
+            'Specific session ID to stop. If not provided, stops all active sessions for the account.',
+        },
+      },
+    },
+  },
 ];
 
 /**
@@ -178,6 +201,90 @@ export async function handleExploreTools(
           {
             type: 'text',
             text: JSON.stringify(response, null, 2),
+          },
+        ],
+      };
+    }
+
+    case 'xhs_stop_explore': {
+      const params = z
+        .object({
+          account: z.string().optional(),
+          sessionId: z.string().optional(),
+        })
+        .parse(args);
+
+      const resolved = resolveAccount(pool, params);
+      if (!resolved.account) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(
+                {
+                  success: false,
+                  error: resolved.error,
+                },
+                null,
+                2
+              ),
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      log.info('Stopping explore', { account: resolved.account, sessionId: params.sessionId });
+
+      const result = await executeWithAccount(
+        pool,
+        db,
+        resolved.account,
+        'stop_explore',
+        async (ctx) => {
+          const stoppedSessions = ctx.client.stopExplore(params.sessionId);
+          return { stoppedSessions };
+        }
+      );
+
+      if (!result.success) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(
+                {
+                  account: result.account,
+                  success: false,
+                  error: result.error,
+                },
+                null,
+                2
+              ),
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      const stoppedSessions = result.result?.stoppedSessions || [];
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                account: result.account,
+                success: true,
+                stoppedSessions,
+                message: stoppedSessions.length > 0
+                  ? `Stopped ${stoppedSessions.length} explore session(s)`
+                  : 'No active explore sessions to stop',
+              },
+              null,
+              2
+            ),
           },
         ],
       };

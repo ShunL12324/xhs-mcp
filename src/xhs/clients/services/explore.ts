@@ -73,7 +73,46 @@ interface NoteDetail {
  * Explore service - 自动化浏览首页
  */
 export class ExploreService {
+  /** 存储每个 session 的 AbortController，用于中途停止 */
+  private abortControllers: Map<string, AbortController> = new Map();
+
   constructor(private ctx: BrowserContextManager) {}
+
+  /**
+   * 停止指定的 explore 会话
+   * @param sessionId 会话 ID，如果不指定则停止所有会话
+   * @returns 被停止的会话 ID 列表
+   */
+  stopExplore(sessionId?: string): string[] {
+    const stoppedSessions: string[] = [];
+
+    if (sessionId) {
+      const controller = this.abortControllers.get(sessionId);
+      if (controller) {
+        controller.abort();
+        this.abortControllers.delete(sessionId);
+        stoppedSessions.push(sessionId);
+        log.info('Explore session stopped', { sessionId });
+      }
+    } else {
+      // 停止所有会话
+      for (const [sid, controller] of this.abortControllers) {
+        controller.abort();
+        stoppedSessions.push(sid);
+        log.info('Explore session stopped', { sessionId: sid });
+      }
+      this.abortControllers.clear();
+    }
+
+    return stoppedSessions;
+  }
+
+  /**
+   * 获取当前正在运行的 explore 会话 ID 列表
+   */
+  getActiveSessions(): string[] {
+    return Array.from(this.abortControllers.keys());
+  }
 
   /**
    * 自动浏览首页
@@ -107,6 +146,10 @@ export class ExploreService {
 
     log.info('Starting explore session', { sessionId, duration, interests });
 
+    // 创建 AbortController 用于中途停止
+    const abortController = new AbortController();
+    this.abortControllers.set(sessionId, abortController);
+
     // 统计
     let notesSeen = 0;
     let notesOpened = 0;
@@ -138,6 +181,12 @@ export class ExploreService {
       let skippedRounds = 0;
 
       while (Date.now() < endTime) {
+        // 检查是否被中途停止
+        if (abortController.signal.aborted) {
+          log.info('Explore session aborted by user', { sessionId });
+          break;
+        }
+
         // === 随机行为模式 ===
         const behaviorRoll = Math.random();
 
@@ -375,13 +424,17 @@ export class ExploreService {
       }
 
       // 结束会话
-      db.explore.endSession(sessionId, 'completed');
-      log.info('Explore session completed', { notesSeen, notesOpened, notesLiked, notesCommented });
+      const endStatus = abortController.signal.aborted ? 'stopped' : 'completed';
+      db.explore.endSession(sessionId, endStatus);
+      log.info('Explore session ended', { status: endStatus, notesSeen, notesOpened, notesLiked, notesCommented });
 
     } catch (error) {
       log.error('Explore error', { error });
       db.explore.endSession(sessionId, 'stopped');
     } finally {
+      // 清理 AbortController
+      this.abortControllers.delete(sessionId);
+
       // keepOpen 模式下保持浏览器打开
       if (!config.browser.keepOpen) {
         await page.close();

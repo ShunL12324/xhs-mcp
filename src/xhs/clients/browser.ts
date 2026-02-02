@@ -282,4 +282,20 @@ export class BrowserClient {
   async explore(accountId: string, accountName: string, params?: ExploreParams): Promise<ExploreSessionResult> {
     return this.exploreService.explore(accountId, accountName, params);
   }
+
+  /**
+   * 停止 explore 会话
+   * @param sessionId 会话 ID，不指定则停止所有会话
+   * @returns 被停止的会话 ID 列表
+   */
+  stopExplore(sessionId?: string): string[] {
+    return this.exploreService.stopExplore(sessionId);
+  }
+
+  /**
+   * 获取当前正在运行的 explore 会话 ID 列表
+   */
+  getActiveExploreSessions(): string[] {
+    return this.exploreService.getActiveSessions();
+  }
 }
