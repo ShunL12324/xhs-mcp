@@ -103,11 +103,11 @@ export const config = {
     /** Gemini API Key (GEMINI_API_KEY) */
     apiKey: process.env.GEMINI_API_KEY || '',
     /** 图片生成模型 (GEMINI_IMAGE_GENERATE_MODEL) */
-    imageGenerateModel: process.env.GEMINI_IMAGE_GENERATE_MODEL || 'gemini-3-pro-image',
+    imageGenerateModel: process.env.GEMINI_IMAGE_GENERATE_MODEL || 'gemini-3-pro-image-preview',
     /** 通用模型 (GEMINI_MODEL) */
     model: process.env.GEMINI_MODEL || 'gemini-3-flash',
     /** 分析模型 (GEMINI_ANALYSIS_MODEL) - 用于内容分析、布局规划 */
-    analysisModel: process.env.GEMINI_ANALYSIS_MODEL || 'gemini-3-pro-high',
+    analysisModel: process.env.GEMINI_ANALYSIS_MODEL || 'gemini-3.1-pro-preview-high',
   },
 
   /**
