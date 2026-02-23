@@ -25,6 +25,7 @@ npm-debug.log*
 .env
 .env.local
 .claude/settings.local.json
+.mcp.json
 
 # Reference projects
 reference_projects/
