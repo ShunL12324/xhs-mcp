@@ -105,8 +105,20 @@ export class ProfileRepository {
   findByAccountId(accountId: string): AccountProfile | null {
     const stmt = this.db.prepare('SELECT * FROM account_profiles WHERE account_id = ?');
     const row = stmt.get(accountId) as AccountProfileRow | undefined;
-    if (!row) return null;
+    return row ? this.mapRow(row) : null;
+  }
 
+  /**
+   * 通过小红书 userId 查找关联的账户资料
+   * 用于登录时检测是否为已有账户的重新登录
+   */
+  findByUserId(userId: string): AccountProfile | null {
+    const stmt = this.db.prepare('SELECT * FROM account_profiles WHERE user_id = ?');
+    const row = stmt.get(userId) as AccountProfileRow | undefined;
+    return row ? this.mapRow(row) : null;
+  }
+
+  private mapRow(row: AccountProfileRow): AccountProfile {
     return {
       accountId: row.account_id,
       userId: row.user_id || undefined,

@@ -144,19 +144,32 @@ async function placeScreenshot(
       resizeOptions = { width: targetWidth, height: targetHeight, fit: 'inside' }
   }
 
+  // 先 resize
+  processedImage = processedImage.resize(resizeOptions)
+
+  // 获取 resize 后的实际尺寸
+  const resizedBuffer = await processedImage.png().toBuffer()
+  const resizedMeta = await sharp(resizedBuffer).metadata()
+  const actualWidth = resizedMeta.width || targetWidth
+  const actualHeight = resizedMeta.height || targetHeight
+
+  // 更新 targetWidth/targetHeight 为实际尺寸，用于后续位置计算
+  targetWidth = actualWidth
+  targetHeight = actualHeight
+
   // 应用圆角
+  let imageBuffer: Buffer
   if (borderRadius > 0) {
     const roundedCorners = Buffer.from(
-      `<svg><rect x="0" y="0" width="${targetWidth}" height="${targetHeight}" rx="${borderRadius}" ry="${borderRadius}"/></svg>`
+      `<svg><rect x="0" y="0" width="${actualWidth}" height="${actualHeight}" rx="${borderRadius}" ry="${borderRadius}"/></svg>`
     )
-    processedImage = processedImage
-      .resize(resizeOptions)
+    imageBuffer = await sharp(resizedBuffer)
       .composite([{ input: roundedCorners, blend: 'dest-in' }])
+      .png()
+      .toBuffer()
   } else {
-    processedImage = processedImage.resize(resizeOptions)
+    imageBuffer = resizedBuffer
   }
-
-  const imageBuffer = await processedImage.png().toBuffer()
 
   // 计算位置
   const { x, y } = calculatePosition(position, canvasWidth, canvasHeight, targetWidth, targetHeight, padding)

@@ -157,6 +157,7 @@ CREATE INDEX IF NOT EXISTS idx_my_published_notes_account_id ON my_published_not
 CREATE INDEX IF NOT EXISTS idx_my_published_notes_publish_time ON my_published_notes(publish_time);
 CREATE INDEX IF NOT EXISTS idx_my_published_notes_level ON my_published_notes(level);
 CREATE INDEX IF NOT EXISTS idx_my_published_notes_permission_code ON my_published_notes(permission_code);
+CREATE INDEX IF NOT EXISTS idx_account_profiles_user_id ON account_profiles(user_id);
 
 -- Explore sessions: tracks automated browsing sessions
 CREATE TABLE IF NOT EXISTS explore_sessions (

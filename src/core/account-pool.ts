@@ -167,41 +167,73 @@ export class AccountPool {
   }
 
   /**
-   * Create account after successful login with user info.
-   * This should be called after login completes successfully.
+   * 登录成功后创建或更新账户。
+   * 优先通过 userId 检测是否为已有账户的重新登录。
    */
   async createAccountAfterLogin(
     nickname: string,
     state: any,
-    proxy?: string
-  ): Promise<Account> {
-    // Check if nickname is already used
+    proxy?: string,
+    userId?: string
+  ): Promise<{ account: Account; isExisting: boolean }> {
+    // 通过 userId 检测已有账户（重新登录场景）
+    if (userId) {
+      const existingProfile = this.db.profiles.findByUserId(userId);
+      if (existingProfile) {
+        const existingAccount = this.db.accounts.findById(existingProfile.accountId);
+        if (existingAccount) {
+          // 关闭旧客户端
+          const oldClient = this.clients.get(existingAccount.id);
+          if (oldClient) {
+            await oldClient.close();
+            this.clients.delete(existingAccount.id);
+          }
+
+          // 更新 session state
+          this.db.accounts.updateState(existingAccount.id, state);
+          if (proxy !== undefined) {
+            this.db.accounts.updateConfig(existingAccount.id, { proxy });
+          }
+
+          // 创建新客户端
+          const client = new XhsClient({
+            accountId: existingAccount.id,
+            accountName: existingAccount.name,
+            state,
+            proxy: proxy ?? existingAccount.proxy,
+            onStateChange: async (newState) => {
+              this.db.accounts.updateState(existingAccount.id, newState);
+            },
+          });
+          this.clients.set(existingAccount.id, client);
+
+          return { account: existingAccount, isExisting: true };
+        }
+      }
+    }
+
+    // 新账户：检查名称冲突
     let accountName = nickname;
     const existing = this.db.accounts.findByName(nickname);
     if (existing) {
-      // Append timestamp to make it unique
       accountName = `${nickname}_${Date.now()}`;
     }
 
-    // Create new account in database
     const account = this.db.accounts.create(accountName, proxy);
-
-    // Save the login state
     this.db.accounts.updateState(account.id, state);
 
-    // Create client with the state
     const client = new XhsClient({
       accountId: account.id,
+      accountName: account.name,
       state,
       proxy: account.proxy,
       onStateChange: async (newState) => {
         this.db.accounts.updateState(account.id, newState);
       },
     });
-
     this.clients.set(account.id, client);
 
-    return account;
+    return { account, isExisting: false };
   }
 
   /**

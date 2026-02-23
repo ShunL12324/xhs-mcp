@@ -366,10 +366,11 @@ export async function handleAccountTools(
 
           // Create or update account
           const accountName = session.accountName || userInfo.nickname;
-          const account = await pool.createAccountAfterLogin(
+          const { account, isExisting } = await pool.createAccountAfterLogin(
             accountName,
             state,
-            session.proxy
+            session.proxy,
+            userInfo.userId
           );
 
           // Save user profile（优先使用完整资料）
@@ -441,7 +442,7 @@ export async function handleAccountTools(
                       status: account.status,
                     },
                     userInfo: returnUserInfo,
-                    message: 'Login successful. Account created.',
+                    message: isExisting ? 'Login successful. Existing account session updated.' : 'Login successful. Account created.',
                     nextAction: null,
                   },
                   null,
@@ -498,10 +499,11 @@ export async function handleAccountTools(
 
           // Create or update account
           const accountName = session.accountName || userInfo.nickname;
-          const account = await pool.createAccountAfterLogin(
+          const { account, isExisting } = await pool.createAccountAfterLogin(
             accountName,
             state,
-            session.proxy
+            session.proxy,
+            userInfo.userId
           );
 
           // Save user profile（优先使用完整资料）
@@ -573,7 +575,7 @@ export async function handleAccountTools(
                       status: account.status,
                     },
                     userInfo: returnUserInfo,
-                    message: 'Verification successful. Account created.',
+                    message: isExisting ? 'Verification successful. Existing account session updated.' : 'Verification successful. Account created.',
                     nextAction: null,
                   },
                   null,
