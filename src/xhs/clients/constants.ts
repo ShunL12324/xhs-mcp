@@ -18,6 +18,12 @@ export const BROWSER_ARGS = [
   '--disable-background-timer-throttling',
   '--disable-backgrounding-occluded-windows',
   '--disable-renderer-backgrounding',
+  '--disable-notifications',                         // 禁用通知弹窗
+  '--disable-features=ExternalProtocolDialog',       // 禁用"访问其他应用"对话框
+  '--disable-session-crashed-bubble',                // 禁用"意外关闭"恢复提示
+  '--hide-crash-restore-bubble',                     // 隐藏崩溃恢复气泡
+  '--noerrdialogs',                                  // 禁用错误对话框
+  '--deny-permission-prompts',                       // 拒绝所有权限请求（地理位置等）
 ];
 
 /**

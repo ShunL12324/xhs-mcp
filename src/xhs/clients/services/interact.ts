@@ -61,7 +61,7 @@ export class InteractService {
           return noteDetailMap[firstKey]?.note?.interactInfo?.liked || false;
         }
         return false;
-      });
+      }, null, false);
 
       // 根据当前状态和目标操作决定是否需要点击
       const shouldClick = (unlike && isLiked) || (!unlike && !isLiked);
@@ -137,7 +137,7 @@ export class InteractService {
           return noteDetailMap[firstKey]?.note?.interactInfo?.collected || false;
         }
         return false;
-      });
+      }, null, false);
 
       const shouldClick = (unfavorite && isCollected) || (!unfavorite && !isCollected);
 

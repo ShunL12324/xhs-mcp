@@ -4,7 +4,7 @@
  * @module xhs/clients/services/search
  */
 
-import { Page } from 'playwright';
+import { Page } from 'patchright';
 import { XhsSearchItem, XhsSearchFilters } from '../../types.js';
 import { sleep, humanScroll } from '../../utils/index.js';
 import { BrowserContextManager, log } from '../context.js';
@@ -88,7 +88,7 @@ export class SearchService {
             }
           }
           return '';
-        });
+        }, null, false);
         return result ? JSON.parse(result) : [];
       };
 

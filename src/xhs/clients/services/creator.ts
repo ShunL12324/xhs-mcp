@@ -4,7 +4,7 @@
  * @module xhs/clients/services/creator
  */
 
-import { Page, Response } from 'playwright';
+import { Page, Response } from 'patchright';
 import { PublishedNote } from '../../../tools/creator.js';
 import { sleep } from '../../utils/index.js';
 import { BrowserContextManager, log } from '../context.js';
