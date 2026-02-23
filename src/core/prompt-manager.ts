@@ -95,10 +95,14 @@ export function getPrompt(accountName: string, accountId: string, type: PromptTy
   if (!fs.existsSync(filePath)) {
     // 文件不存在，返回默认值（理论上不应该走到这里，因为上面已经初始化过）
     switch (type) {
-      case 'persona': return DEFAULT_PERSONA;
-      case 'select': return DEFAULT_SELECT;
-      case 'comment': return DEFAULT_COMMENT;
-      case 'like-target': return DEFAULT_LIKE_TARGET;
+      case 'persona':
+        return DEFAULT_PERSONA;
+      case 'select':
+        return DEFAULT_SELECT;
+      case 'comment':
+        return DEFAULT_COMMENT;
+      case 'like-target':
+        return DEFAULT_LIKE_TARGET;
     }
   }
 
@@ -131,7 +135,7 @@ export async function renderPrompt(
   accountName: string,
   accountId: string,
   type: 'select' | 'comment' | 'like-target',
-  variables: Record<string, any> = {}
+  variables: Record<string, any> = {},
 ): Promise<string> {
   // 自动初始化（兼容老账号）
   if (!hasPromptDir(accountName, accountId)) {

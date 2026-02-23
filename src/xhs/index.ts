@@ -92,7 +92,7 @@ export class XhsClient {
     keyword: string,
     count: number = 20,
     timeout: number = 60000,
-    filters?: XhsSearchFilters
+    filters?: XhsSearchFilters,
   ): Promise<XhsSearchItem[]> {
     return await this.browserClient.search(keyword, count, timeout, filters);
   }
@@ -132,12 +132,7 @@ export class XhsClient {
     return await this.browserClient.postComment(noteId, xsecToken, content);
   }
 
-  async replyComment(
-    noteId: string,
-    xsecToken: string,
-    commentId: string,
-    content: string
-  ): Promise<CommentResult> {
+  async replyComment(noteId: string, xsecToken: string, commentId: string, content: string): Promise<CommentResult> {
     return await this.browserClient.replyComment(noteId, xsecToken, commentId, content);
   }
 
@@ -146,7 +141,7 @@ export class XhsClient {
     noteId: string,
     xsecToken: string,
     commentId: string,
-    unlike: boolean = false
+    unlike: boolean = false,
   ): Promise<InteractionResult> {
     return await this.browserClient.likeComment(noteId, xsecToken, commentId, unlike);
   }
@@ -162,10 +157,7 @@ export class XhsClient {
   }
 
   // Notification methods
-  async getNotifications(
-    type?: 'mentions' | 'likes' | 'connections' | 'all',
-    limit?: number
-  ): Promise<any> {
+  async getNotifications(type?: 'mentions' | 'likes' | 'connections' | 'all', limit?: number): Promise<any> {
     return await this.browserClient.getNotifications(type, limit);
   }
 

@@ -122,7 +122,7 @@ export class MyNotesRepository {
       permissionMsg?: string;
       schedulePostTime?: number;
       xsecToken?: string;
-    }
+    },
   ): void {
     const sql = `
       INSERT INTO my_published_notes (
@@ -156,25 +156,27 @@ export class MyNotesRepository {
         updated_at = CURRENT_TIMESTAMP
     `;
 
-    this.db.prepare(sql).run(
-      note.id,
-      accountId,
-      note.type ?? 'normal',
-      note.title,
-      note.publishTime ?? null,
-      note.images ? JSON.stringify(note.images) : null,
-      note.likes ?? 0,
-      note.collectedCount ?? 0,
-      note.commentsCount ?? 0,
-      note.sharedCount ?? 0,
-      note.viewCount ?? 0,
-      note.sticky ? 1 : 0,
-      note.level ?? 0,
-      note.permissionCode ?? 0,
-      note.permissionMsg ?? null,
-      note.schedulePostTime ?? 0,
-      note.xsecToken ?? null
-    );
+    this.db
+      .prepare(sql)
+      .run(
+        note.id,
+        accountId,
+        note.type ?? 'normal',
+        note.title,
+        note.publishTime ?? null,
+        note.images ? JSON.stringify(note.images) : null,
+        note.likes ?? 0,
+        note.collectedCount ?? 0,
+        note.commentsCount ?? 0,
+        note.sharedCount ?? 0,
+        note.viewCount ?? 0,
+        note.sticky ? 1 : 0,
+        note.level ?? 0,
+        note.permissionCode ?? 0,
+        note.permissionMsg ?? null,
+        note.schedulePostTime ?? 0,
+        note.xsecToken ?? null,
+      );
   }
 
   /**
@@ -199,7 +201,7 @@ export class MyNotesRepository {
       permissionMsg?: string;
       schedulePostTime?: number;
       xsecToken?: string;
-    }>
+    }>,
   ): { inserted: number; updated: number } {
     let inserted = 0;
     let updated = 0;
@@ -207,9 +209,7 @@ export class MyNotesRepository {
     const transaction = this.db.transaction(() => {
       for (const note of notes) {
         // 检查是否已存在
-        const existing = this.db
-          .prepare('SELECT id FROM my_published_notes WHERE id = ?')
-          .get(note.id);
+        const existing = this.db.prepare('SELECT id FROM my_published_notes WHERE id = ?').get(note.id);
 
         this.upsert(accountId, note);
 
@@ -301,9 +301,9 @@ export class MyNotesRepository {
    * 根据ID查询单个笔记
    */
   findById(noteId: string): MyPublishedNote | null {
-    const row = this.db
-      .prepare('SELECT * FROM my_published_notes WHERE id = ?')
-      .get(noteId) as MyPublishedNoteRow | undefined;
+    const row = this.db.prepare('SELECT * FROM my_published_notes WHERE id = ?').get(noteId) as
+      | MyPublishedNoteRow
+      | undefined;
 
     return row ? this.toNote(row) : null;
   }
@@ -344,9 +344,7 @@ export class MyNotesRepository {
    */
   getLastFetchTime(accountId: string): Date | null {
     const row = this.db
-      .prepare(
-        'SELECT MAX(fetched_at) as last_fetched FROM my_published_notes WHERE account_id = ?'
-      )
+      .prepare('SELECT MAX(fetched_at) as last_fetched FROM my_published_notes WHERE account_id = ?')
       .get(accountId) as { last_fetched: string | null } | undefined;
 
     return row?.last_fetched ? new Date(row.last_fetched) : null;
@@ -356,9 +354,7 @@ export class MyNotesRepository {
    * 删除账户的所有笔记缓存
    */
   deleteByAccountId(accountId: string): number {
-    const result = this.db
-      .prepare('DELETE FROM my_published_notes WHERE account_id = ?')
-      .run(accountId);
+    const result = this.db.prepare('DELETE FROM my_published_notes WHERE account_id = ?').run(accountId);
     return result.changes;
   }
 
@@ -388,7 +384,7 @@ export class MyNotesRepository {
           COALESCE(SUM(comments_count), 0) as total_comments,
           COALESCE(SUM(view_count), 0) as total_views
         FROM my_published_notes WHERE account_id = ?
-      `
+      `,
       )
       .get(accountId) as {
       total_likes: number;
@@ -404,7 +400,7 @@ export class MyNotesRepository {
         FROM my_published_notes
         WHERE account_id = ?
         GROUP BY level
-      `
+      `,
       )
       .all(accountId) as { level: number; count: number }[];
 

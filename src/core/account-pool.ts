@@ -174,7 +174,7 @@ export class AccountPool {
     nickname: string,
     state: any,
     proxy?: string,
-    userId?: string
+    userId?: string,
   ): Promise<{ account: Account; isExisting: boolean }> {
     // 通过 userId 检测已有账户（重新登录场景）
     if (userId) {
@@ -287,7 +287,7 @@ export class AccountPool {
    */
   async updateAccountConfig(
     accountIdOrName: string,
-    updates: { name?: string; proxy?: string; status?: 'active' | 'suspended' | 'banned' }
+    updates: { name?: string; proxy?: string; status?: 'active' | 'suspended' | 'banned' },
   ): Promise<boolean> {
     const account = this.resolveAccount(accountIdOrName);
 

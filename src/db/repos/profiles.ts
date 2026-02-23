@@ -95,7 +95,7 @@ export class ProfileRepository {
       profile.isBanned !== undefined ? (profile.isBanned ? 1 : 0) : null,
       profile.banCode ?? null,
       profile.banReason || null,
-      now
+      now,
     );
   }
 

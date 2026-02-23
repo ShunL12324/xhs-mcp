@@ -10,14 +10,7 @@ import { sleep, generateWebId } from '../../utils/index.js';
 import { saveAndOpenQrCode } from '../../../core/qrcode-utils.js';
 import { config } from '../../../core/config.js';
 import { BrowserContextManager, log } from '../context.js';
-import {
-  USER_AGENT,
-  BROWSER_ARGS,
-  TIMEOUTS,
-  QR_CODE_SELECTOR,
-  LOGIN_STATUS_SELECTOR,
-  URLS,
-} from '../constants.js';
+import { USER_AGENT, BROWSER_ARGS, TIMEOUTS, QR_CODE_SELECTOR, LOGIN_STATUS_SELECTOR, URLS } from '../constants.js';
 
 /**
  * Authentication service - handles login and session management
@@ -42,7 +35,7 @@ export class AuthService {
     }
 
     const launchOptions: any = {
-      headless: config.browser.headless,  // 可通过 XHS_MCP_HEADLESS 控制
+      headless: config.browser.headless, // 可通过 XHS_MCP_HEADLESS 控制
       channel: 'chrome',
       args: BROWSER_ARGS,
     };
@@ -57,7 +50,7 @@ export class AuthService {
 
     this.ctx.context = await this.ctx.browser.newContext({
       userAgent: USER_AGENT,
-      viewport: { width: 1920, height: 1080 }
+      viewport: { width: 1920, height: 1080 },
     });
 
     // Add webId cookie to bypass slider verification
@@ -67,7 +60,7 @@ export class AuthService {
         value: generateWebId(),
         domain: '.xiaohongshu.com',
         path: '/',
-      }
+      },
     ]);
 
     const page = await this.ctx.context.newPage();
@@ -85,9 +78,11 @@ export class AuthService {
       log.info('Already logged in, extracting user info...');
 
       // Wait for __INITIAL_STATE__ to be available
-      await page.waitForFunction(() => (window as any).__INITIAL_STATE__ !== undefined, {
-        timeout: 10000
-      }).catch(() => {});
+      await page
+        .waitForFunction(() => (window as any).__INITIAL_STATE__ !== undefined, {
+          timeout: 10000,
+        })
+        .catch(() => {});
 
       const userInfo = await this.ctx.extractUserInfo(page);
       const state = await this.ctx.context.storageState();
@@ -112,7 +107,7 @@ export class AuthService {
       throw new Error('QR code element not found. Page may have changed.');
     }
 
-    await sleep(1000);  // Wait for QR code to fully render
+    await sleep(1000); // Wait for QR code to fully render
 
     // Get the base64 data from src attribute
     const src = await qrImg.getAttribute('src');
@@ -152,9 +147,11 @@ export class AuthService {
           await sleep(2000);
 
           // Wait for __INITIAL_STATE__ to be fully populated
-          await page.waitForFunction(() => (window as any).__INITIAL_STATE__?.user?.userInfo !== undefined, {
-            timeout: 10000
-          }).catch(() => {});
+          await page
+            .waitForFunction(() => (window as any).__INITIAL_STATE__?.user?.userInfo !== undefined, {
+              timeout: 10000,
+            })
+            .catch(() => {});
 
           // Extract user info
           const userInfo = await ctx.extractUserInfo(page);
@@ -180,13 +177,15 @@ export class AuthService {
           // Update internal state
           ctx.options.state = state;
 
-          log.info('Login successful', { userInfo: userInfo ? { userId: userInfo.userId, nickname: userInfo.nickname } : null });
+          log.info('Login successful', {
+            userInfo: userInfo ? { userId: userInfo.userId, nickname: userInfo.nickname } : null,
+          });
           return { state, userInfo };
         } catch (e) {
           log.error('Login timeout or failed', { error: e });
           throw e;
         }
-      }
+      },
     };
   }
 
@@ -221,7 +220,7 @@ export class AuthService {
     try {
       await page.goto(URLS.EXPLORE, {
         timeout: TIMEOUTS.LOGIN_CHECK,
-        waitUntil: 'domcontentloaded'
+        waitUntil: 'domcontentloaded',
       });
 
       await sleep(2000);
@@ -236,14 +235,14 @@ export class AuthService {
         // 如果获取到 userId，进一步获取完整用户资料
         let fullProfile: FullUserProfile | undefined;
         if (userInfo?.userId) {
-          fullProfile = await this.ctx.extractFullUserProfile(userInfo.userId) || undefined;
+          fullProfile = (await this.ctx.extractFullUserProfile(userInfo.userId)) || undefined;
         }
 
         return {
           loggedIn: true,
           message: 'Logged in (user element found)',
           userInfo: userInfo || undefined,
-          fullProfile
+          fullProfile,
         };
       }
 
@@ -262,16 +261,15 @@ export class AuthService {
       // 如果获取到 userId，进一步获取完整用户资料
       let fullProfile: FullUserProfile | undefined;
       if (userInfo?.userId) {
-        fullProfile = await this.ctx.extractFullUserProfile(userInfo.userId) || undefined;
+        fullProfile = (await this.ctx.extractFullUserProfile(userInfo.userId)) || undefined;
       }
 
       return {
         loggedIn: true,
         message: 'Logged in (login button not found)',
         userInfo: userInfo || undefined,
-        fullProfile
+        fullProfile,
       };
-
     } catch (e) {
       log.error('checkLoginStatus error', { error: e });
       return { loggedIn: false, message: 'Check failed - please try xhs_add_account' };

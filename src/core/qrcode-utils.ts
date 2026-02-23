@@ -29,11 +29,7 @@ export async function decodeQrCode(imageBuffer: Buffer): Promise<string> {
         return;
       }
 
-      const code = jsQR(
-        new Uint8ClampedArray(data.data),
-        data.width,
-        data.height
-      );
+      const code = jsQR(new Uint8ClampedArray(data.data), data.width, data.height);
 
       if (!code) {
         reject(new Error('Failed to decode QR code from image'));

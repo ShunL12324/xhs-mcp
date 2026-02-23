@@ -40,7 +40,8 @@ function rowToDraft(row: any) {
 export const draftTools: Tool[] = [
   {
     name: 'xhs_create_draft',
-    description: 'Create a note draft from Markdown content and screenshots. AI will automatically generate beautiful Xiaohongshu-style images (cover, screenshot annotations, text slides).',
+    description:
+      'Create a note draft from Markdown content and screenshots. AI will automatically generate beautiful Xiaohongshu-style images (cover, screenshot annotations, text slides).',
     inputSchema: {
       type: 'object',
       properties: {
@@ -50,7 +51,8 @@ export const draftTools: Tool[] = [
         },
         content: {
           type: 'string',
-          description: 'Plain text content of the note (tutorial steps, tips, etc.). Do NOT use Markdown syntax - Xiaohongshu does not support it. Use plain text formatting only.',
+          description:
+            'Plain text content of the note (tutorial steps, tips, etc.). Do NOT use Markdown syntax - Xiaohongshu does not support it. Use plain text formatting only.',
         },
         screenshots: {
           type: 'array',
@@ -176,12 +178,7 @@ export const draftTools: Tool[] = [
 /**
  * 处理草稿工具调用
  */
-export async function handleDraftTools(
-  name: string,
-  args: any,
-  pool: AccountPool,
-  db: XhsDatabase
-) {
+export async function handleDraftTools(name: string, args: any, pool: AccountPool, db: XhsDatabase) {
   switch (name) {
     case 'xhs_create_draft': {
       const params = z
@@ -219,13 +216,15 @@ export async function handleDraftTools(
           content: params.content,
           screenshots: params.screenshots,
           style: params.style,
-          outputDir: draftDir,  // 直接输出到草稿目录，避免复制
+          outputDir: draftDir, // 直接输出到草稿目录，避免复制
         });
 
         if (!result.success) {
           // 失败时 runGraph 已清理目录
           return {
-            content: [{ type: 'text', text: `Image processing failed: ${result.qualityReport?.summary || 'Unknown error'}` }],
+            content: [
+              { type: 'text', text: `Image processing failed: ${result.qualityReport?.summary || 'Unknown error'}` },
+            ],
             isError: true,
           };
         }
@@ -245,7 +244,7 @@ export async function handleDraftTools(
             JSON.stringify(finalImagePaths),
             now,
             now,
-          ]
+          ],
         );
 
         log.info('草稿创建成功', { draftId, title: params.title, imageCount: finalImagePaths.length });
@@ -263,7 +262,7 @@ export async function handleDraftTools(
                   images: finalImagePaths,
                 },
                 null,
-                2
+                2,
               ),
             },
           ],
@@ -411,10 +410,7 @@ export async function handleDraftTools(
       values.push(new Date().toISOString());
       values.push(params.draftId);
 
-      db.run(
-        `UPDATE note_drafts SET ${updates.join(', ')} WHERE id = ?`,
-        values
-      );
+      db.run(`UPDATE note_drafts SET ${updates.join(', ')} WHERE id = ?`, values);
 
       log.info('草稿已更新', { draftId: params.draftId });
 
@@ -520,16 +516,17 @@ export async function handleDraftTools(
             scheduleTime: params.scheduleTime,
           });
         },
-        { logParams: { draftId: params.draftId, title: draft.title } }
+        { logParams: { draftId: params.draftId, title: draft.title } },
       );
 
       // 更新草稿状态
       const allSuccess = results.every((r) => r.success);
       if (allSuccess) {
-        db.run(
-          'UPDATE note_drafts SET published_at = ?, updated_at = ? WHERE id = ?',
-          [new Date().toISOString(), new Date().toISOString(), params.draftId]
-        );
+        db.run('UPDATE note_drafts SET published_at = ?, updated_at = ? WHERE id = ?', [
+          new Date().toISOString(),
+          new Date().toISOString(),
+          params.draftId,
+        ]);
       }
 
       // 格式化结果
@@ -553,7 +550,7 @@ export async function handleDraftTools(
                   result: r.result,
                 },
                 null,
-                2
+                2,
               ),
             },
           ],
@@ -575,7 +572,7 @@ export async function handleDraftTools(
                 })),
               },
               null,
-              2
+              2,
             ),
           },
         ],

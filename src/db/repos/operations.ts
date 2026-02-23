@@ -79,7 +79,7 @@ export class OperationRepository {
       params.result ? JSON.stringify(params.result) : null,
       params.success ? 1 : 0,
       params.error || null,
-      params.durationMs || null
+      params.durationMs || null,
     );
     return info.lastInsertRowid as number;
   }
@@ -124,9 +124,15 @@ export class OperationRepository {
    */
   getStats(accountId: string): AccountStats {
     const totalStmt = this.db.prepare('SELECT COUNT(*) as count FROM operation_logs WHERE account_id = ?');
-    const successStmt = this.db.prepare('SELECT COUNT(*) as count FROM operation_logs WHERE account_id = ? AND success = 1');
-    const byActionStmt = this.db.prepare('SELECT action, COUNT(*) as count FROM operation_logs WHERE account_id = ? GROUP BY action');
-    const lastOpStmt = this.db.prepare('SELECT created_at FROM operation_logs WHERE account_id = ? ORDER BY created_at DESC LIMIT 1');
+    const successStmt = this.db.prepare(
+      'SELECT COUNT(*) as count FROM operation_logs WHERE account_id = ? AND success = 1',
+    );
+    const byActionStmt = this.db.prepare(
+      'SELECT action, COUNT(*) as count FROM operation_logs WHERE account_id = ? GROUP BY action',
+    );
+    const lastOpStmt = this.db.prepare(
+      'SELECT created_at FROM operation_logs WHERE account_id = ? ORDER BY created_at DESC LIMIT 1',
+    );
 
     const total = (totalStmt.get(accountId) as { count: number }).count;
     const successful = (successStmt.get(accountId) as { count: number }).count;

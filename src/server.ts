@@ -5,12 +5,7 @@
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-  ErrorCode,
-  McpError,
-} from '@modelcontextprotocol/sdk/types.js';
+import { CallToolRequestSchema, ListToolsRequestSchema, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { AccountPool } from './core/account-pool.js';
 import { XhsDatabase } from './db/index.js';
@@ -44,7 +39,7 @@ export function createMcpServer(pool: AccountPool, db: XhsDatabase): Server {
       capabilities: {
         tools: {},
       },
-    }
+    },
   );
 
   // Collect all tools from all modules

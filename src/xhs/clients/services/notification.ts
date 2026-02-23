@@ -99,7 +99,7 @@ export class NotificationService {
 
     // 处理数组
     if (Array.isArray(obj)) {
-      return obj.map(item => this.extractData(item, depth + 1, maxDepth));
+      return obj.map((item) => this.extractData(item, depth + 1, maxDepth));
     }
 
     // 处理普通对象
@@ -154,7 +154,7 @@ export class NotificationService {
    */
   async getNotifications(
     type: 'mentions' | 'likes' | 'connections' | 'all' = 'all',
-    limit: number = 20
+    limit: number = 20,
   ): Promise<NotificationsResult> {
     await this.ctx.ensureContext();
     const page = await this.ctx.newPage();
@@ -168,22 +168,28 @@ export class NotificationService {
       await sleep(REQUEST_INTERVAL);
 
       // 从页面提取 __INITIAL_STATE__.notification
-      const notificationData = await page.evaluate(() => {
-        const state = (window as any).__INITIAL_STATE__?.notification;
-        if (!state) return null;
+      const notificationData = await page.evaluate(
+        () => {
+          const state = (window as any).__INITIAL_STATE__?.notification;
+          if (!state) return null;
 
-        // 返回原始数据，在 Node 侧解析
-        return JSON.parse(JSON.stringify(state, (key, value) => {
-          // 跳过 Vue 内部属性
-          if (key.startsWith('__v_') || key.startsWith('__ob__')) return undefined;
-          // 处理响应式对象
-          if (value && typeof value === 'object') {
-            if (value._rawValue !== undefined) return value._rawValue;
-            if (value._value !== undefined) return value._value;
-          }
-          return value;
-        }));
-      }, null, false);
+          // 返回原始数据，在 Node 侧解析
+          return JSON.parse(
+            JSON.stringify(state, (key, value) => {
+              // 跳过 Vue 内部属性
+              if (key.startsWith('__v_') || key.startsWith('__ob__')) return undefined;
+              // 处理响应式对象
+              if (value && typeof value === 'object') {
+                if (value._rawValue !== undefined) return value._rawValue;
+                if (value._value !== undefined) return value._value;
+              }
+              return value;
+            }),
+          );
+        },
+        null,
+        false,
+      );
 
       if (!notificationData) {
         return {

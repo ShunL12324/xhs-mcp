@@ -8,14 +8,7 @@ import { Page } from 'patchright';
 import { XhsSearchItem, XhsSearchFilters } from '../../types.js';
 import { sleep, humanScroll } from '../../utils/index.js';
 import { BrowserContextManager, log } from '../context.js';
-import {
-  TIMEOUTS,
-  SEARCH_DEFAULTS,
-  SCROLL_CONFIG,
-  DELAYS,
-  REQUEST_INTERVAL,
-  SEARCH_FILTER_MAP,
-} from '../constants.js';
+import { TIMEOUTS, SEARCH_DEFAULTS, SCROLL_CONFIG, DELAYS, REQUEST_INTERVAL, SEARCH_FILTER_MAP } from '../constants.js';
 
 /**
  * Search service - handles note search functionality
@@ -43,7 +36,7 @@ export class SearchService {
     keyword: string,
     count: number = SEARCH_DEFAULTS.COUNT,
     timeout: number = SEARCH_DEFAULTS.TIMEOUT,
-    filters?: XhsSearchFilters
+    filters?: XhsSearchFilters,
   ): Promise<XhsSearchItem[]> {
     await this.ctx.ensureContext();
     const page = await this.ctx.newPage();
@@ -62,7 +55,7 @@ export class SearchService {
 
       // 等待 __INITIAL_STATE__ 存在
       await page.waitForFunction(() => (window as any).__INITIAL_STATE__ !== undefined, {
-        timeout: TIMEOUTS.PAGE_LOAD
+        timeout: TIMEOUTS.PAGE_LOAD,
       });
 
       await sleep(REQUEST_INTERVAL);
@@ -78,17 +71,21 @@ export class SearchService {
 
       // 获取当前数据的辅助函数
       const getCurrentFeeds = async (): Promise<any[]> => {
-        const result = await page.evaluate(() => {
-          const state = (window as any).__INITIAL_STATE__;
-          if (state?.search?.feeds) {
-            const feeds = state.search.feeds;
-            const feedsData = feeds.value !== undefined ? feeds.value : feeds._value;
-            if (feedsData) {
-              return JSON.stringify(feedsData);
+        const result = await page.evaluate(
+          () => {
+            const state = (window as any).__INITIAL_STATE__;
+            if (state?.search?.feeds) {
+              const feeds = state.search.feeds;
+              const feedsData = feeds.value !== undefined ? feeds.value : feeds._value;
+              if (feedsData) {
+                return JSON.stringify(feedsData);
+              }
             }
-          }
-          return '';
-        }, null, false);
+            return '';
+          },
+          null,
+          false,
+        );
         return result ? JSON.parse(result) : [];
       };
 
@@ -162,11 +159,10 @@ export class SearchService {
         user: {
           nickname: item.noteCard?.user?.nickname || item.note_card?.user?.nickname || '',
           avatar: item.noteCard?.user?.avatar || item.note_card?.user?.avatar || '',
-          userid: item.noteCard?.user?.userId || item.note_card?.user?.user_id || ''
+          userid: item.noteCard?.user?.userId || item.note_card?.user?.user_id || '',
         },
-        likes: item.noteCard?.interactInfo?.likedCount || item.note_card?.interact_info?.liked_count || '0'
+        likes: item.noteCard?.interactInfo?.likedCount || item.note_card?.interact_info?.liked_count || '0',
       }));
-
     } finally {
       await page.close();
     }

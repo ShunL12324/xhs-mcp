@@ -7,11 +7,7 @@
 import { InteractionResult, CommentResult } from '../../types.js';
 import { sleep, navigateWithRetry } from '../../utils/index.js';
 import { BrowserContextManager } from '../context.js';
-import {
-  REQUEST_INTERVAL,
-  INTERACTION_SELECTORS,
-  COMMENT_SELECTORS,
-} from '../constants.js';
+import { REQUEST_INTERVAL, INTERACTION_SELECTORS, COMMENT_SELECTORS } from '../constants.js';
 import { createLogger } from '../../../core/logger.js';
 
 /**
@@ -53,15 +49,19 @@ export class InteractService {
       await sleep(REQUEST_INTERVAL);
 
       // 获取当前点赞状态
-      const isLiked = await page.evaluate(() => {
-        const state = (window as any).__INITIAL_STATE__;
-        const noteDetailMap = state?.note?.noteDetailMap;
-        if (noteDetailMap) {
-          const firstKey = Object.keys(noteDetailMap)[0];
-          return noteDetailMap[firstKey]?.note?.interactInfo?.liked || false;
-        }
-        return false;
-      }, null, false);
+      const isLiked = await page.evaluate(
+        () => {
+          const state = (window as any).__INITIAL_STATE__;
+          const noteDetailMap = state?.note?.noteDetailMap;
+          if (noteDetailMap) {
+            const firstKey = Object.keys(noteDetailMap)[0];
+            return noteDetailMap[firstKey]?.note?.interactInfo?.liked || false;
+          }
+          return false;
+        },
+        null,
+        false,
+      );
 
       // 根据当前状态和目标操作决定是否需要点击
       const shouldClick = (unlike && isLiked) || (!unlike && !isLiked);
@@ -129,15 +129,19 @@ export class InteractService {
       await sleep(REQUEST_INTERVAL);
 
       // 获取当前收藏状态
-      const isCollected = await page.evaluate(() => {
-        const state = (window as any).__INITIAL_STATE__;
-        const noteDetailMap = state?.note?.noteDetailMap;
-        if (noteDetailMap) {
-          const firstKey = Object.keys(noteDetailMap)[0];
-          return noteDetailMap[firstKey]?.note?.interactInfo?.collected || false;
-        }
-        return false;
-      }, null, false);
+      const isCollected = await page.evaluate(
+        () => {
+          const state = (window as any).__INITIAL_STATE__;
+          const noteDetailMap = state?.note?.noteDetailMap;
+          if (noteDetailMap) {
+            const firstKey = Object.keys(noteDetailMap)[0];
+            return noteDetailMap[firstKey]?.note?.interactInfo?.collected || false;
+          }
+          return false;
+        },
+        null,
+        false,
+      );
 
       const shouldClick = (unfavorite && isCollected) || (!unfavorite && !isCollected);
 
@@ -245,12 +249,7 @@ export class InteractService {
    * @param content - Reply content
    * @returns Comment result
    */
-  async replyComment(
-    noteId: string,
-    xsecToken: string,
-    commentId: string,
-    content: string
-  ): Promise<CommentResult> {
+  async replyComment(noteId: string, xsecToken: string, commentId: string, content: string): Promise<CommentResult> {
     await this.ctx.ensureContext();
     const page = await this.ctx.newPage();
 
@@ -265,7 +264,7 @@ export class InteractService {
       if (accessError) {
         return { success: false, error: accessError };
       }
-      await sleep(1000);  // 与 reference project 一致
+      await sleep(1000); // 与 reference project 一致
 
       // 等待评论区加载
       await sleep(2000);
@@ -310,7 +309,7 @@ export class InteractService {
       }
 
       await submitBtn.click();
-      await sleep(2000);  // 等待 2 秒与 reference project 一致
+      await sleep(2000); // 等待 2 秒与 reference project 一致
 
       return { success: true };
     } catch (error) {
@@ -359,10 +358,9 @@ export class InteractService {
     }
 
     // 调试：列出当前页面上的评论ID
-    const commentIds = await page.$$eval(
-      '[id^="comment-"]',
-      (els: Element[]) => els.map((e) => e.id)
-    ).catch(() => [] as string[]);
+    const commentIds = await page
+      .$$eval('[id^="comment-"]', (els: Element[]) => els.map((e) => e.id))
+      .catch(() => [] as string[]);
     this.logger.debug('当前页面评论ID列表', { count: commentIds.length, ids: commentIds.slice(0, 10) });
 
     let lastCommentCount = 0;
@@ -377,10 +375,9 @@ export class InteractService {
       }
 
       // 获取当前评论数量
-      const currentCount = await page.$$eval(
-        '.comment-item, .parent-comment',
-        (els: Element[]) => els.length
-      ).catch(() => 0);
+      const currentCount = await page
+        .$$eval('.comment-item, .parent-comment', (els: Element[]) => els.length)
+        .catch(() => 0);
 
       if (currentCount !== lastCommentCount) {
         lastCommentCount = currentCount;
@@ -430,7 +427,7 @@ export class InteractService {
     noteId: string,
     xsecToken: string,
     commentId: string,
-    unlike: boolean = false
+    unlike: boolean = false,
   ): Promise<InteractionResult> {
     this.logger.info('开始点赞评论', { noteId, commentId, unlike });
     await this.ctx.ensureContext();
@@ -454,7 +451,7 @@ export class InteractService {
           error: accessError,
         };
       }
-      await sleep(1000);  // 与 reference project 一致
+      await sleep(1000); // 与 reference project 一致
 
       // 等待评论区加载
       await sleep(2000);

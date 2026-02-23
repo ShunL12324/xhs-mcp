@@ -15,7 +15,8 @@ import { XhsDatabase } from '../db/index.js';
 export const statsTools: Tool[] = [
   {
     name: 'xhs_get_account_stats',
-    description: 'Get operation statistics for an account including total operations, success rate, and breakdown by action type.',
+    description:
+      'Get operation statistics for an account including total operations, success rate, and breakdown by action type.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -64,12 +65,7 @@ export const statsTools: Tool[] = [
  * @param db - Database instance
  * @returns MCP tool response
  */
-export async function handleStatsTools(
-  name: string,
-  args: any,
-  pool: AccountPool,
-  db: XhsDatabase
-) {
+export async function handleStatsTools(name: string, args: any, pool: AccountPool, db: XhsDatabase) {
   switch (name) {
     case 'xhs_get_account_stats': {
       const params = z
@@ -124,7 +120,7 @@ export async function handleStatsTools(
                 },
               },
               null,
-              2
+              2,
             ),
           },
         ],
@@ -175,7 +171,7 @@ export async function handleStatsTools(
                 })),
               },
               null,
-              2
+              2,
             ),
           },
         ],

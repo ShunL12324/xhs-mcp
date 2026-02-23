@@ -54,11 +54,7 @@ export class CreatorService {
    * @param timeout - 超时时间（毫秒）
    * @returns 已发布笔记列表
    */
-  async getMyPublishedNotes(
-    tab: number = 0,
-    limit: number = 100,
-    timeout: number = 60000
-  ): Promise<PublishedNote[]> {
+  async getMyPublishedNotes(tab: number = 0, limit: number = 100, timeout: number = 60000): Promise<PublishedNote[]> {
     await this.ctx.ensureContext();
     const page = await this.ctx.newPage();
 
@@ -93,7 +89,7 @@ export class CreatorService {
 
                 // 添加到结果（避免重复）
                 for (const note of notes) {
-                  if (!allNotes.some(n => n.id === note.id)) {
+                  if (!allNotes.some((n) => n.id === note.id)) {
                     allNotes.push(note);
                   }
                 }
@@ -122,11 +118,7 @@ export class CreatorService {
       await this.waitForApiResponse(page, timeout);
 
       // 滚动加载更多
-      while (
-        lastPage !== -1 &&
-        allNotes.length < limit &&
-        Date.now() - startTime < timeout
-      ) {
+      while (lastPage !== -1 && allNotes.length < limit && Date.now() - startTime < timeout) {
         // 滚动页面
         await this.scrollDown(page);
         await sleep(SCROLL_CONFIG.WAIT_AFTER_SCROLL);
@@ -160,7 +152,6 @@ export class CreatorService {
 
       // 返回限制数量的笔记
       return allNotes.slice(0, limit);
-
     } finally {
       await page.close();
     }
@@ -171,10 +162,9 @@ export class CreatorService {
    */
   private async waitForApiResponse(page: Page, timeout: number): Promise<void> {
     try {
-      await page.waitForResponse(
-        (response) => response.url().includes(CREATOR_URLS.POSTED_NOTES_API),
-        { timeout: Math.min(timeout, SCROLL_CONFIG.API_RESPONSE_TIMEOUT) }
-      );
+      await page.waitForResponse((response) => response.url().includes(CREATOR_URLS.POSTED_NOTES_API), {
+        timeout: Math.min(timeout, SCROLL_CONFIG.API_RESPONSE_TIMEOUT),
+      });
     } catch (e) {
       log.warn('Timeout waiting for initial API response');
     }

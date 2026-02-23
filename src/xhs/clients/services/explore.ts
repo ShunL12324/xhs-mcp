@@ -9,7 +9,14 @@ import { BrowserContextManager, log } from '../context.js';
 import { sleep } from '../../utils/index.js';
 import { config } from '../../../core/config.js';
 import { getDatabase, ExploreSessionResult } from '../../../db/index.js';
-import { selectNoteToOpen, generateComment, selectLikeTarget, NoteBrief, AccountInfo, CommentBrief } from '../../../core/explore-ai.js';
+import {
+  selectNoteToOpen,
+  generateComment,
+  selectLikeTarget,
+  NoteBrief,
+  AccountInfo,
+  CommentBrief,
+} from '../../../core/explore-ai.js';
 import { EXPLORE_SELECTORS } from '../constants.js';
 
 /**
@@ -217,9 +224,7 @@ export class ExploreService {
 
         // 停顿阅读：正常 3-8 秒，10% 概率长时间停留 10-20 秒
         const isLongPause = Math.random() < 0.1;
-        const readingDelay = isLongPause
-          ? 10000 + Math.random() * 10000
-          : 3000 + Math.random() * 5000;
+        const readingDelay = isLongPause ? 10000 + Math.random() * 10000 : 3000 + Math.random() * 5000;
         if (isLongPause) {
           log.debug('Behavior: long pause');
         }
@@ -227,7 +232,7 @@ export class ExploreService {
 
         // 获取当前 feeds，过滤已看过的（用于统计）
         const feeds = await this.getFeeds(page);
-        const newFeeds = feeds.filter(f => {
+        const newFeeds = feeds.filter((f) => {
           if (seenInSession.has(f.id)) return false;
           if (f.noteCard.type === 'video') return false; // 跳过视频
           return true;
@@ -242,10 +247,13 @@ export class ExploreService {
         // explored 标记只在真正互动（点赞/评论）后才设置，用于跨会话去重
         if (newFeeds.length > 0) {
           notesSeen += newFeeds.length;
-          db.explore.logSeenNotes(sessionId, newFeeds.map(f => ({
-            id: f.id,
-            title: f.noteCard.displayTitle || f.noteCard.title || '',
-          })));
+          db.explore.logSeenNotes(
+            sessionId,
+            newFeeds.map((f) => ({
+              id: f.id,
+              title: f.noteCard.displayTitle || f.noteCard.title || '',
+            })),
+          );
         }
 
         log.debug('Feeds after scroll', { total: feeds.length, new: newFeeds.length });
@@ -260,19 +268,17 @@ export class ExploreService {
           log.debug('Visible notes in DOM', { count: visibleIds.size });
 
           // 从可见笔记中筛选：排除会话内已打开、视频
-          let candidateFeeds = feeds.filter(f =>
-            visibleIds.has(f.id) &&
-            !openedInSession.has(f.id) &&
-            f.noteCard.type !== 'video'
+          let candidateFeeds = feeds.filter(
+            (f) => visibleIds.has(f.id) && !openedInSession.has(f.id) && f.noteCard.type !== 'video',
           );
 
           // 跨会话去重：排除之前互动过的笔记
           if (deduplicate && candidateFeeds.length > 0) {
-            const candidateIds = candidateFeeds.map(f => f.id);
+            const candidateIds = candidateFeeds.map((f) => f.id);
             const unexploredIds = db.explore.filterUnexploredNotes(accountId, candidateIds);
             const unexploredSet = new Set(unexploredIds);
             const beforeCount = candidateFeeds.length;
-            candidateFeeds = candidateFeeds.filter(f => unexploredSet.has(f.id));
+            candidateFeeds = candidateFeeds.filter((f) => unexploredSet.has(f.id));
             if (beforeCount !== candidateFeeds.length) {
               log.debug('Cross-session dedup', { before: beforeCount, after: candidateFeeds.length });
             }
@@ -287,7 +293,7 @@ export class ExploreService {
           }
 
           // 调用 AI 选择一篇
-          const noteBriefs: NoteBrief[] = candidateFeeds.slice(0, 10).map(f => ({
+          const noteBriefs: NoteBrief[] = candidateFeeds.slice(0, 10).map((f) => ({
             id: f.id,
             title: f.noteCard.displayTitle || f.noteCard.title || '',
             likes: f.noteCard.interactInfo?.likedCount || '0',
@@ -298,7 +304,7 @@ export class ExploreService {
 
           if (selection.noteId) {
             skippedRounds = 0; // 重置跳过计数
-            const selectedFeed = candidateFeeds.find(f => f.id === selection.noteId);
+            const selectedFeed = candidateFeeds.find((f) => f.id === selection.noteId);
             if (selectedFeed) {
               log.info('AI selected note', { noteId: selection.noteId, reason: selection.reason });
 
@@ -329,9 +335,7 @@ export class ExploreService {
 
                 // 正常阅读：3-8 秒，10% 概率长时间 10-20 秒
                 const isDeepRead = Math.random() < 0.1;
-                const modalReadDelay = isDeepRead
-                  ? 10000 + Math.random() * 10000
-                  : 3000 + Math.random() * 5000;
+                const modalReadDelay = isDeepRead ? 10000 + Math.random() * 10000 : 3000 + Math.random() * 5000;
                 if (isDeepRead) {
                   log.debug('Behavior: deep reading');
                 }
@@ -346,7 +350,7 @@ export class ExploreService {
                     accountInfo,
                     noteDetail.title,
                     noteDetail.desc,
-                    noteDetail.comments
+                    noteDetail.comments,
                   );
 
                   if (likeTarget.target === 'post') {
@@ -427,7 +431,6 @@ export class ExploreService {
       const endStatus = abortController.signal.aborted ? 'stopped' : 'completed';
       db.explore.endSession(sessionId, endStatus);
       log.info('Explore session ended', { status: endStatus, notesSeen, notesOpened, notesLiked, notesCommented });
-
     } catch (error) {
       log.error('Explore error', { error });
       db.explore.endSession(sessionId, 'stopped');
@@ -465,17 +468,21 @@ export class ExploreService {
    */
   private async getFeeds(page: Page): Promise<FeedItem[]> {
     try {
-      const feedsJson = await page.evaluate(() => {
-        const state = (window as any).__INITIAL_STATE__;
-        if (state?.feed?.feeds) {
-          const feeds = state.feed.feeds;
-          const feedsData = feeds.value !== undefined ? feeds.value : feeds._value || feeds;
-          if (Array.isArray(feedsData)) {
-            return JSON.stringify(feedsData);
+      const feedsJson = await page.evaluate(
+        () => {
+          const state = (window as any).__INITIAL_STATE__;
+          if (state?.feed?.feeds) {
+            const feeds = state.feed.feeds;
+            const feedsData = feeds.value !== undefined ? feeds.value : feeds._value || feeds;
+            if (Array.isArray(feedsData)) {
+              return JSON.stringify(feedsData);
+            }
           }
-        }
-        return '[]';
-      }, null, false);
+          return '[]';
+        },
+        null,
+        false,
+      );
       return JSON.parse(feedsJson);
     } catch (error) {
       log.warn('Failed to get feeds', { error });
@@ -489,13 +496,15 @@ export class ExploreService {
    */
   private async getVisibleNoteIds(page: Page): Promise<Set<string>> {
     try {
-      const ids = await page.$$eval(EXPLORE_SELECTORS.noteCover, els =>
-        els.map(el => {
-          const href = el.getAttribute('href') || '';
-          // 从 href 中提取 noteId，格式如 /explore/xxx?xsec_token=...
-          const match = href.match(/\/explore\/([a-f0-9]+)/);
-          return match ? match[1] : '';
-        }).filter(Boolean)
+      const ids = await page.$$eval(EXPLORE_SELECTORS.noteCover, (els) =>
+        els
+          .map((el) => {
+            const href = el.getAttribute('href') || '';
+            // 从 href 中提取 noteId，格式如 /explore/xxx?xsec_token=...
+            const match = href.match(/\/explore\/([a-f0-9]+)/);
+            return match ? match[1] : '';
+          })
+          .filter(Boolean),
       );
       return new Set(ids);
     } catch (error) {
@@ -530,7 +539,6 @@ export class ExploreService {
       await page.waitForSelector(EXPLORE_SELECTORS.noteContainer, { timeout: 5000 });
       log.info('Modal opened', { noteId });
       return true;
-
     } catch (error) {
       log.warn('Failed to open modal', { noteId, error });
       return false;
@@ -542,33 +550,37 @@ export class ExploreService {
    */
   private async getNoteDetailFromModal(page: Page, noteId: string): Promise<NoteDetail | null> {
     try {
-      const detailJson = await page.evaluate((id) => {
-        const state = (window as any).__INITIAL_STATE__;
-        const noteMap = state?.note?.noteDetailMap;
-        if (noteMap) {
-          const mapData = noteMap.value !== undefined ? noteMap.value : noteMap._value || noteMap;
-          // 找到正确的 key（跳过 undefined）
-          const actualId = Object.keys(mapData).find(k => k !== 'undefined' && k === id) || id;
-          const detail = mapData[actualId];
-          if (detail) {
-            const note = detail.note || detail;
-            // 提取评论列表（前 10 条）
-            const commentList = detail.comments?.list || [];
-            const comments = commentList.slice(0, 10).map((c: any) => ({
-              id: c.id || '',
-              content: c.content || '',
-              likeCount: c.likeCount || '0',
-              liked: !!c.liked,
-            }));
-            return JSON.stringify({
-              title: note.title || '',
-              desc: note.desc || '',
-              comments,
-            });
+      const detailJson = await page.evaluate(
+        (id) => {
+          const state = (window as any).__INITIAL_STATE__;
+          const noteMap = state?.note?.noteDetailMap;
+          if (noteMap) {
+            const mapData = noteMap.value !== undefined ? noteMap.value : noteMap._value || noteMap;
+            // 找到正确的 key（跳过 undefined）
+            const actualId = Object.keys(mapData).find((k) => k !== 'undefined' && k === id) || id;
+            const detail = mapData[actualId];
+            if (detail) {
+              const note = detail.note || detail;
+              // 提取评论列表（前 10 条）
+              const commentList = detail.comments?.list || [];
+              const comments = commentList.slice(0, 10).map((c: any) => ({
+                id: c.id || '',
+                content: c.content || '',
+                likeCount: c.likeCount || '0',
+                liked: !!c.liked,
+              }));
+              return JSON.stringify({
+                title: note.title || '',
+                desc: note.desc || '',
+                comments,
+              });
+            }
           }
-        }
-        return null;
-      }, noteId, false);
+          return null;
+        },
+        noteId,
+        false,
+      );
 
       return detailJson ? JSON.parse(detailJson) : null;
     } catch (error) {
@@ -604,7 +616,6 @@ export class ExploreService {
       await likeBtn.click();
       await sleep(500);
       return true;
-
     } catch (error) {
       log.warn('Failed to like in modal', { error });
       return false;
@@ -649,7 +660,6 @@ export class ExploreService {
       await sleep(500);
       log.debug('Liked comment', { commentId });
       return true;
-
     } catch (error) {
       log.warn('Failed to like comment', { commentId, error });
       return false;
@@ -695,7 +705,6 @@ export class ExploreService {
       await submitBtn.click();
       await sleep(2000);
       return true;
-
     } catch (error) {
       log.warn('Failed to comment in modal', { error });
       return false;
@@ -718,7 +727,6 @@ export class ExploreService {
       // 备选：按 ESC
       await page.keyboard.press('Escape');
       await sleep(500);
-
     } catch (error) {
       log.warn('Failed to close modal', { error });
       // 尝试按 ESC

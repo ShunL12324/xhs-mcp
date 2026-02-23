@@ -12,7 +12,7 @@ import https from 'https';
 export async function uploadToLitterbox(
   imageBuffer: Buffer,
   filename: string = 'qrcode.png',
-  expiry: '1h' | '12h' | '24h' | '72h' = '1h'
+  expiry: '1h' | '12h' | '24h' | '72h' = '1h',
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const boundary = '----FormBoundary' + Math.random().toString(36).substring(2);
@@ -20,25 +20,23 @@ export async function uploadToLitterbox(
     const bodyParts: Buffer[] = [];
 
     // Add time field
-    bodyParts.push(Buffer.from(
-      `--${boundary}\r\n` +
-      `Content-Disposition: form-data; name="time"\r\n\r\n` +
-      `${expiry}\r\n`
-    ));
+    bodyParts.push(
+      Buffer.from(`--${boundary}\r\n` + `Content-Disposition: form-data; name="time"\r\n\r\n` + `${expiry}\r\n`),
+    );
 
     // Add reqtype field
-    bodyParts.push(Buffer.from(
-      `--${boundary}\r\n` +
-      `Content-Disposition: form-data; name="reqtype"\r\n\r\n` +
-      `fileupload\r\n`
-    ));
+    bodyParts.push(
+      Buffer.from(`--${boundary}\r\n` + `Content-Disposition: form-data; name="reqtype"\r\n\r\n` + `fileupload\r\n`),
+    );
 
     // Add file field
-    bodyParts.push(Buffer.from(
-      `--${boundary}\r\n` +
-      `Content-Disposition: form-data; name="fileToUpload"; filename="${filename}"\r\n` +
-      `Content-Type: image/png\r\n\r\n`
-    ));
+    bodyParts.push(
+      Buffer.from(
+        `--${boundary}\r\n` +
+          `Content-Disposition: form-data; name="fileToUpload"; filename="${filename}"\r\n` +
+          `Content-Type: image/png\r\n\r\n`,
+      ),
+    );
     bodyParts.push(imageBuffer);
     bodyParts.push(Buffer.from(`\r\n--${boundary}--\r\n`));
 
@@ -83,21 +81,20 @@ export async function uploadToLitterbox(
 /**
  * Upload to 0x0.st (simple file hosting, no expiry control but files persist for a while)
  */
-export async function uploadTo0x0(
-  imageBuffer: Buffer,
-  filename: string = 'qrcode.png'
-): Promise<string> {
+export async function uploadTo0x0(imageBuffer: Buffer, filename: string = 'qrcode.png'): Promise<string> {
   return new Promise((resolve, reject) => {
     const boundary = '----FormBoundary' + Math.random().toString(36).substring(2);
 
     const bodyParts: Buffer[] = [];
 
     // Add file field
-    bodyParts.push(Buffer.from(
-      `--${boundary}\r\n` +
-      `Content-Disposition: form-data; name="file"; filename="${filename}"\r\n` +
-      `Content-Type: image/png\r\n\r\n`
-    ));
+    bodyParts.push(
+      Buffer.from(
+        `--${boundary}\r\n` +
+          `Content-Disposition: form-data; name="file"; filename="${filename}"\r\n` +
+          `Content-Type: image/png\r\n\r\n`,
+      ),
+    );
     bodyParts.push(imageBuffer);
     bodyParts.push(Buffer.from(`\r\n--${boundary}--\r\n`));
 

@@ -40,7 +40,7 @@ export class PublishedRepository {
       params.videoPath || null,
       params.tags ? JSON.stringify(params.tags) : null,
       params.status || 'published',
-      params.publishedAt?.toISOString() || new Date().toISOString()
+      params.publishedAt?.toISOString() || new Date().toISOString(),
     );
     return info.lastInsertRowid as number;
   }

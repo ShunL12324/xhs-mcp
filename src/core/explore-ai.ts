@@ -105,9 +105,10 @@ function getAIClient(): GoogleGenAI {
 
   return new GoogleGenAI({
     apiKey: config.gemini.apiKey,
-    httpOptions: config.gemini.baseUrl !== 'https://generativelanguage.googleapis.com'
-      ? { baseUrl: config.gemini.baseUrl }
-      : undefined,
+    httpOptions:
+      config.gemini.baseUrl !== 'https://generativelanguage.googleapis.com'
+        ? { baseUrl: config.gemini.baseUrl }
+        : undefined,
   });
 }
 
@@ -120,14 +121,14 @@ function getAIClient(): GoogleGenAI {
 export async function selectNoteToOpen(
   account: AccountInfo,
   notes: NoteBrief[],
-  interests: string[] = []
+  interests: string[] = [],
 ): Promise<SelectNoteResult> {
   const ai = getAIClient();
 
   // 格式化笔记列表
-  const notesText = notes.map((n, i) =>
-    `${i + 1}. [${n.id}] ${n.title} (${n.likes}赞, ${n.type === 'video' ? '视频' : '图文'})`
-  ).join('\n');
+  const notesText = notes
+    .map((n, i) => `${i + 1}. [${n.id}] ${n.title} (${n.likes}赞, ${n.type === 'video' ? '视频' : '图文'})`)
+    .join('\n');
 
   // 使用 prompt-manager 渲染 prompt
   const prompt = await renderPrompt(account.name, account.id, 'select', {
@@ -147,7 +148,7 @@ export async function selectNoteToOpen(
     log.debug('AI response', { text: text.slice(0, 200) });
 
     const result = safeParseJson<SelectNoteResult>(text);
-    if (result && (result.noteId !== undefined)) {
+    if (result && result.noteId !== undefined) {
       return result;
     }
 
@@ -164,14 +165,12 @@ export async function selectNoteToOpen(
 export async function generateComment(
   account: AccountInfo,
   title: string,
-  content: string
+  content: string,
 ): Promise<GenerateCommentResult> {
   const ai = getAIClient();
 
   // 截断过长的内容
-  const truncatedContent = content.length > 500
-    ? content.slice(0, 500) + '...'
-    : content;
+  const truncatedContent = content.length > 500 ? content.slice(0, 500) + '...' : content;
 
   // 使用 prompt-manager 渲染 prompt
   const prompt = await renderPrompt(account.name, account.id, 'comment', {
@@ -214,24 +213,26 @@ export async function selectLikeTarget(
   account: AccountInfo,
   noteTitle: string,
   noteDesc: string,
-  comments: CommentBrief[]
+  comments: CommentBrief[],
 ): Promise<SelectLikeTargetResult> {
   const ai = getAIClient();
 
   // 过滤已点赞的评论
-  const availableComments = comments.filter(c => !c.liked);
+  const availableComments = comments.filter((c) => !c.liked);
 
   // 格式化评论列表
-  const commentsText = availableComments.length > 0
-    ? availableComments.map((c, i) =>
-        `${i + 1}. [${c.id}] ${c.content.slice(0, 50)}${c.content.length > 50 ? '...' : ''} (${c.likeCount}赞)`
-      ).join('\n')
-    : '（暂无评论）';
+  const commentsText =
+    availableComments.length > 0
+      ? availableComments
+          .map(
+            (c, i) =>
+              `${i + 1}. [${c.id}] ${c.content.slice(0, 50)}${c.content.length > 50 ? '...' : ''} (${c.likeCount}赞)`,
+          )
+          .join('\n')
+      : '（暂无评论）';
 
   // 截断过长的内容
-  const truncatedContent = noteDesc.length > 200
-    ? noteDesc.slice(0, 200) + '...'
-    : noteDesc;
+  const truncatedContent = noteDesc.length > 200 ? noteDesc.slice(0, 200) + '...' : noteDesc;
 
   // 使用 prompt-manager 渲染 prompt
   const prompt = await renderPrompt(account.name, account.id, 'like-target', {

@@ -72,7 +72,7 @@ export async function executeWithAccount<T>(
   options?: {
     logParams?: any;
     lockTimeout?: number;
-  }
+  },
 ): Promise<OperationResult<T>> {
   const account = pool.getAccount(accountIdOrName);
   if (!account) {
@@ -180,7 +180,7 @@ export async function executeWithMultipleAccounts<T>(
     logParams?: any;
     lockTimeout?: number;
     sequential?: boolean; // Run operations sequentially instead of in parallel
-  }
+  },
 ): Promise<OperationResult<T>[]> {
   // 确定要使用的账户列表
   let accountNames: string[];
@@ -242,7 +242,7 @@ export async function executeWithMultipleAccounts<T>(
   } else {
     // 并行执行：同时在所有账户上执行（默认）
     const promises = accountNames.map((accountName) =>
-      executeWithAccount(pool, db, accountName, action, operation, options)
+      executeWithAccount(pool, db, accountName, action, operation, options),
     );
     return Promise.all(promises);
   }
@@ -259,7 +259,7 @@ export async function executeWithMultipleAccounts<T>(
  */
 export function resolveAccount(
   pool: AccountPool,
-  params: MultiAccountParams
+  params: MultiAccountParams,
 ): { account: string | null; error?: string } {
   if (params.account) {
     const account = pool.getAccount(params.account);

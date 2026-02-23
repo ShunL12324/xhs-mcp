@@ -26,20 +26,17 @@ export const notificationTools: Tool[] = [
       properties: {
         account: {
           type: 'string',
-          description:
-            'Account name or ID to use. If not specified and only one account exists, uses that.',
+          description: 'Account name or ID to use. If not specified and only one account exists, uses that.',
         },
         type: {
           type: 'string',
           enum: ['mentions', 'likes', 'connections', 'all'],
-          description:
-            'Type of notifications to fetch. Default: all',
+          description: 'Type of notifications to fetch. Default: all',
           default: 'all',
         },
         limit: {
           type: 'number',
-          description:
-            'Maximum number of notifications per type. Default: 20',
+          description: 'Maximum number of notifications per type. Default: 20',
           default: 20,
         },
       },
@@ -56,12 +53,7 @@ export const notificationTools: Tool[] = [
  * @param db - Database instance
  * @returns MCP tool response
  */
-export async function handleNotificationTools(
-  name: string,
-  args: any,
-  pool: AccountPool,
-  db: XhsDatabase
-) {
+export async function handleNotificationTools(name: string, args: any, pool: AccountPool, db: XhsDatabase) {
   switch (name) {
     case 'xhs_get_notifications': {
       const params = z
@@ -84,7 +76,7 @@ export async function handleNotificationTools(
                   error: resolved.error,
                 },
                 null,
-                2
+                2,
               ),
             },
           ],
@@ -92,15 +84,9 @@ export async function handleNotificationTools(
         };
       }
 
-      const result = await executeWithAccount(
-        pool,
-        db,
-        resolved.account,
-        'get_notifications',
-        async (ctx) => {
-          return await ctx.client.getNotifications(params.type, params.limit);
-        }
-      );
+      const result = await executeWithAccount(pool, db, resolved.account, 'get_notifications', async (ctx) => {
+        return await ctx.client.getNotifications(params.type, params.limit);
+      });
 
       if (!result.success) {
         return {
@@ -114,7 +100,7 @@ export async function handleNotificationTools(
                   error: result.error,
                 },
                 null,
-                2
+                2,
               ),
             },
           ],

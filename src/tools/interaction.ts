@@ -204,12 +204,7 @@ export const interactionTools: Tool[] = [
  * @param db - Database instance
  * @returns MCP tool response
  */
-export async function handleInteractionTools(
-  name: string,
-  args: any,
-  pool: AccountPool,
-  db: XhsDatabase
-) {
+export async function handleInteractionTools(name: string, args: any, pool: AccountPool, db: XhsDatabase) {
   switch (name) {
     case 'xhs_like_feed': {
       const params = z
@@ -246,7 +241,7 @@ export async function handleInteractionTools(
 
           return result;
         },
-        { logParams: { noteId: params.noteId, unlike: params.unlike } }
+        { logParams: { noteId: params.noteId, unlike: params.unlike } },
       );
 
       if (results.length === 1) {
@@ -294,7 +289,7 @@ export async function handleInteractionTools(
 
           return result;
         },
-        { logParams: { noteId: params.noteId, unfavorite: params.unfavorite } }
+        { logParams: { noteId: params.noteId, unfavorite: params.unfavorite } },
       );
 
       if (results.length === 1) {
@@ -344,7 +339,7 @@ export async function handleInteractionTools(
 
           return result;
         },
-        { logParams: { noteId: params.noteId } }
+        { logParams: { noteId: params.noteId } },
       );
 
       if (results.length === 1) {
@@ -381,7 +376,7 @@ export async function handleInteractionTools(
             params.noteId,
             params.xsecToken,
             params.commentId,
-            params.content
+            params.content,
           );
 
           db.interactions.record({
@@ -396,7 +391,7 @@ export async function handleInteractionTools(
 
           return result;
         },
-        { logParams: { noteId: params.noteId, commentId: params.commentId } }
+        { logParams: { noteId: params.noteId, commentId: params.commentId } },
       );
 
       return {
@@ -427,12 +422,7 @@ export async function handleInteractionTools(
         multiParams,
         params.unlike ? 'unlike_comment' : 'like_comment',
         async (ctx) => {
-          const result = await ctx.client.likeComment(
-            params.noteId,
-            params.xsecToken,
-            params.commentId,
-            params.unlike
-          );
+          const result = await ctx.client.likeComment(params.noteId, params.xsecToken, params.commentId, params.unlike);
 
           db.interactions.record({
             accountId: ctx.accountId,
@@ -445,7 +435,7 @@ export async function handleInteractionTools(
 
           return result;
         },
-        { logParams: { noteId: params.noteId, commentId: params.commentId, unlike: params.unlike } }
+        { logParams: { noteId: params.noteId, commentId: params.commentId, unlike: params.unlike } },
       );
 
       if (results.length === 1) {

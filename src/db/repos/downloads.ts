@@ -31,7 +31,7 @@ export class DownloadRepository {
       params.fileType,
       params.filePath,
       params.originalUrl || null,
-      params.fileSize || null
+      params.fileSize || null,
     );
     return info.lastInsertRowid as number;
   }

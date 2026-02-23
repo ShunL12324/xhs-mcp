@@ -59,14 +59,13 @@ export const creatorTools: Tool[] = [
   {
     name: 'xhs_get_my_notes',
     description:
-      'Get list of published notes from the current account\'s creator center. Fetches from API and caches to database. Returns notes with stats (views, likes, comments, etc.) and permission status.',
+      "Get list of published notes from the current account's creator center. Fetches from API and caches to database. Returns notes with stats (views, likes, comments, etc.) and permission status.",
     inputSchema: {
       type: 'object',
       properties: {
         account: {
           type: 'string',
-          description:
-            'Account name or ID to use. If not specified and only one account exists, uses that.',
+          description: 'Account name or ID to use. If not specified and only one account exists, uses that.',
         },
         tab: {
           type: 'number',
@@ -95,8 +94,7 @@ export const creatorTools: Tool[] = [
       properties: {
         account: {
           type: 'string',
-          description:
-            'Account name or ID to query. If not specified and only one account exists, uses that.',
+          description: 'Account name or ID to query. If not specified and only one account exists, uses that.',
         },
         type: {
           type: 'string',
@@ -179,12 +177,7 @@ export const creatorTools: Tool[] = [
  * @param db - Database instance
  * @returns MCP tool response
  */
-export async function handleCreatorTools(
-  name: string,
-  args: any,
-  pool: AccountPool,
-  db: XhsDatabase
-) {
+export async function handleCreatorTools(name: string, args: any, pool: AccountPool, db: XhsDatabase) {
   switch (name) {
     case 'xhs_get_my_notes': {
       const params = z
@@ -208,7 +201,7 @@ export async function handleCreatorTools(
                   error: resolved.error,
                 },
                 null,
-                2
+                2,
               ),
             },
           ],
@@ -216,15 +209,9 @@ export async function handleCreatorTools(
         };
       }
 
-      const result = await executeWithAccount(
-        pool,
-        db,
-        resolved.account,
-        'get_my_notes',
-        async (ctx) => {
-          return await ctx.client.getMyPublishedNotes(params.tab, params.limit, params.timeout);
-        }
-      );
+      const result = await executeWithAccount(pool, db, resolved.account, 'get_my_notes', async (ctx) => {
+        return await ctx.client.getMyPublishedNotes(params.tab, params.limit, params.timeout);
+      });
 
       if (!result.success) {
         return {
@@ -238,7 +225,7 @@ export async function handleCreatorTools(
                   error: result.error,
                 },
                 null,
-                2
+                2,
               ),
             },
           ],
@@ -249,9 +236,7 @@ export async function handleCreatorTools(
       const notes = result.result! as PublishedNote[];
 
       // 缓存笔记到数据库（upsert 去重更新）
-      const accountInfo = pool.listAccounts().find(
-        (a) => a.name === resolved.account || a.id === resolved.account
-      );
+      const accountInfo = pool.listAccounts().find((a) => a.name === resolved.account || a.id === resolved.account);
       if (accountInfo) {
         const cacheResult = db.myNotes.upsertBatch(
           accountInfo.id,
@@ -272,11 +257,9 @@ export async function handleCreatorTools(
             permissionMsg: note.permissionMsg,
             schedulePostTime: note.schedulePostTime,
             xsecToken: note.xsecToken,
-          }))
+          })),
         );
-        log.info(
-          `缓存笔记到数据库: 新增 ${cacheResult.inserted}, 更新 ${cacheResult.updated}`
-        );
+        log.info(`缓存笔记到数据库: 新增 ${cacheResult.inserted}, 更新 ${cacheResult.updated}`);
       }
 
       return {
@@ -309,7 +292,7 @@ export async function handleCreatorTools(
                 })),
               },
               null,
-              2
+              2,
             ),
           },
         ],
@@ -353,7 +336,7 @@ export async function handleCreatorTools(
                   error: resolved.error,
                 },
                 null,
-                2
+                2,
               ),
             },
           ],
@@ -362,9 +345,7 @@ export async function handleCreatorTools(
       }
 
       // 获取账户 ID
-      const accountInfo = pool.listAccounts().find(
-        (a) => a.name === resolved.account || a.id === resolved.account
-      );
+      const accountInfo = pool.listAccounts().find((a) => a.name === resolved.account || a.id === resolved.account);
       if (!accountInfo) {
         return {
           content: [
@@ -376,7 +357,7 @@ export async function handleCreatorTools(
                   error: `Account not found: ${resolved.account}`,
                 },
                 null,
-                2
+                2,
               ),
             },
           ],
