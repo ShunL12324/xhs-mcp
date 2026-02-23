@@ -19,7 +19,7 @@ const __dirname = path.dirname(__filename);
  * @param ms - Duration in milliseconds
  */
 export function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -81,17 +81,14 @@ export interface HumanScrollOptions {
  * @param page - Playwright page instance
  * @param options - Scrolling behavior options
  */
-export async function humanScroll(
-  page: Page,
-  options: HumanScrollOptions = {}
-): Promise<void> {
+export async function humanScroll(page: Page, options: HumanScrollOptions = {}): Promise<void> {
   const {
     minDistance = 300,
     maxDistance = 700,
     minDelay = 800,
     maxDelay = 2500,
     scrollBackChance = 0.1,
-    mouseMoveChance = 0.4
+    mouseMoveChance = 0.4,
   } = options;
 
   // Random total scroll distance
@@ -164,7 +161,7 @@ export async function humanScroll(
  */
 export async function humanScrollToBottom(
   page: Page,
-  options: HumanScrollOptions & { maxScrolls?: number } = {}
+  options: HumanScrollOptions & { maxScrolls?: number } = {},
 ): Promise<boolean> {
   const { maxScrolls = 50, ...scrollOptions } = options;
 
@@ -176,7 +173,7 @@ export async function humanScrollToBottom(
     const { scrollTop, scrollHeight, clientHeight } = await page.evaluate(() => ({
       scrollTop: window.scrollY,
       scrollHeight: document.body.scrollHeight,
-      clientHeight: window.innerHeight
+      clientHeight: window.innerHeight,
     }));
 
     // Check if we've reached the bottom
@@ -301,7 +298,7 @@ export async function navigateWithRetry(
   page: Page,
   url: string,
   maxRetries: number = 3,
-  retryDelay: [number, number] = [3000, 5000]
+  retryDelay: [number, number] = [3000, 5000],
 ): Promise<string | null> {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     await page.goto(url, { waitUntil: 'domcontentloaded' });
@@ -375,7 +372,7 @@ export async function downloadImageFromUrl(imageUrl: string): Promise<string> {
 
   // 如果文件已存在（基于哈希），直接返回
   const existingFiles = await fs.readdir(paths.tempImages);
-  const existingFile = existingFiles.find(f => f.includes(shortHash));
+  const existingFile = existingFiles.find((f) => f.includes(shortHash));
   if (existingFile) {
     return path.join(paths.tempImages, existingFile);
   }
@@ -395,12 +392,12 @@ function detectImageExtension(buffer: Buffer): string | null {
   if (buffer.length < 4) return null;
 
   // JPEG: FF D8 FF
-  if (buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) {
+  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
     return 'jpg';
   }
 
   // PNG: 89 50 4E 47 0D 0A 1A 0A
-  if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) {
+  if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47) {
     return 'png';
   }
 
@@ -410,14 +407,22 @@ function detectImageExtension(buffer: Buffer): string | null {
   }
 
   // WebP: 52 49 46 46 ... 57 45 42 50
-  if (buffer.length >= 12 &&
-      buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 &&
-      buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50) {
+  if (
+    buffer.length >= 12 &&
+    buffer[0] === 0x52 &&
+    buffer[1] === 0x49 &&
+    buffer[2] === 0x46 &&
+    buffer[3] === 0x46 &&
+    buffer[8] === 0x57 &&
+    buffer[9] === 0x45 &&
+    buffer[10] === 0x42 &&
+    buffer[11] === 0x50
+  ) {
     return 'webp';
   }
 
   // BMP: 42 4D
-  if (buffer[0] === 0x42 && buffer[1] === 0x4D) {
+  if (buffer[0] === 0x42 && buffer[1] === 0x4d) {
     return 'bmp';
   }
 

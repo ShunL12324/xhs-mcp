@@ -35,8 +35,7 @@ Returns a session report with all actions taken.`,
       properties: {
         account: {
           type: 'string',
-          description:
-            'Account name or ID to use. If not specified and only one account exists, uses that.',
+          description: 'Account name or ID to use. If not specified and only one account exists, uses that.',
         },
         duration: {
           type: 'number',
@@ -46,25 +45,21 @@ Returns a session report with all actions taken.`,
         interests: {
           type: 'array',
           items: { type: 'string' },
-          description:
-            'Interest keywords to guide AI note selection (e.g., ["美食", "咖啡", "探店"])',
+          description: 'Interest keywords to guide AI note selection (e.g., ["美食", "咖啡", "探店"])',
         },
         openRate: {
           type: 'number',
-          description:
-            'Probability of opening a note after scrolling (0-1). Default: 0.5',
+          description: 'Probability of opening a note after scrolling (0-1). Default: 0.5',
           default: 0.5,
         },
         likeRate: {
           type: 'number',
-          description:
-            'Probability of liking after opening a note (0-1). Default: 0.5',
+          description: 'Probability of liking after opening a note (0-1). Default: 0.5',
           default: 0.5,
         },
         commentRate: {
           type: 'number',
-          description:
-            'Probability of commenting after opening a note (0-1). Default: 0.1',
+          description: 'Probability of commenting after opening a note (0-1). Default: 0.1',
           default: 0.1,
         },
       },
@@ -82,13 +77,11 @@ If no sessionId is provided, stops all active explore sessions for the account.`
       properties: {
         account: {
           type: 'string',
-          description:
-            'Account name or ID. If not specified and only one account exists, uses that.',
+          description: 'Account name or ID. If not specified and only one account exists, uses that.',
         },
         sessionId: {
           type: 'string',
-          description:
-            'Specific session ID to stop. If not provided, stops all active sessions for the account.',
+          description: 'Specific session ID to stop. If not provided, stops all active sessions for the account.',
         },
       },
     },
@@ -104,12 +97,7 @@ If no sessionId is provided, stops all active explore sessions for the account.`
  * @param db - Database instance
  * @returns MCP tool response
  */
-export async function handleExploreTools(
-  name: string,
-  args: any,
-  pool: AccountPool,
-  db: XhsDatabase
-) {
+export async function handleExploreTools(name: string, args: any, pool: AccountPool, db: XhsDatabase) {
   switch (name) {
     case 'xhs_explore': {
       const params = z
@@ -135,7 +123,7 @@ export async function handleExploreTools(
                   error: resolved.error,
                 },
                 null,
-                2
+                2,
               ),
             },
           ],
@@ -149,21 +137,15 @@ export async function handleExploreTools(
         interests: params.interests,
       });
 
-      const result = await executeWithAccount(
-        pool,
-        db,
-        resolved.account,
-        'explore',
-        async (ctx) => {
-          return await ctx.client.explore({
-            duration: params.duration,
-            interests: params.interests,
-            openRate: params.openRate,
-            likeRate: params.likeRate,
-            commentRate: params.commentRate,
-          });
-        }
-      );
+      const result = await executeWithAccount(pool, db, resolved.account, 'explore', async (ctx) => {
+        return await ctx.client.explore({
+          duration: params.duration,
+          interests: params.interests,
+          openRate: params.openRate,
+          likeRate: params.likeRate,
+          commentRate: params.commentRate,
+        });
+      });
 
       if (!result.success) {
         return {
@@ -177,7 +159,7 @@ export async function handleExploreTools(
                   error: result.error,
                 },
                 null,
-                2
+                2,
               ),
             },
           ],
@@ -226,7 +208,7 @@ export async function handleExploreTools(
                   error: resolved.error,
                 },
                 null,
-                2
+                2,
               ),
             },
           ],
@@ -236,16 +218,10 @@ export async function handleExploreTools(
 
       log.info('Stopping explore', { account: resolved.account, sessionId: params.sessionId });
 
-      const result = await executeWithAccount(
-        pool,
-        db,
-        resolved.account,
-        'stop_explore',
-        async (ctx) => {
-          const stoppedSessions = ctx.client.stopExplore(params.sessionId);
-          return { stoppedSessions };
-        }
-      );
+      const result = await executeWithAccount(pool, db, resolved.account, 'stop_explore', async (ctx) => {
+        const stoppedSessions = ctx.client.stopExplore(params.sessionId);
+        return { stoppedSessions };
+      });
 
       if (!result.success) {
         return {
@@ -259,7 +235,7 @@ export async function handleExploreTools(
                   error: result.error,
                 },
                 null,
-                2
+                2,
               ),
             },
           ],
@@ -278,12 +254,13 @@ export async function handleExploreTools(
                 account: result.account,
                 success: true,
                 stoppedSessions,
-                message: stoppedSessions.length > 0
-                  ? `Stopped ${stoppedSessions.length} explore session(s)`
-                  : 'No active explore sessions to stop',
+                message:
+                  stoppedSessions.length > 0
+                    ? `Stopped ${stoppedSessions.length} explore session(s)`
+                    : 'No active explore sessions to stop',
               },
               null,
-              2
+              2,
             ),
           },
         ],

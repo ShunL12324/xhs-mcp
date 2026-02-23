@@ -7,23 +7,24 @@
 import { config } from '../../core/config.js';
 
 // Fixed User-Agent matching Playwright's Chromium version (Chrome 143)
-export const USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36';
+export const USER_AGENT =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36';
 
 // Anti-detection browser launch arguments (based on MediaCrawler)
 export const BROWSER_ARGS = [
   '--no-sandbox',
   '--disable-setuid-sandbox',
-  '--disable-blink-features=AutomationControlled',  // Disable automation control flag
-  '--disable-infobars',                              // Disable info bars
+  '--disable-blink-features=AutomationControlled', // Disable automation control flag
+  '--disable-infobars', // Disable info bars
   '--disable-background-timer-throttling',
   '--disable-backgrounding-occluded-windows',
   '--disable-renderer-backgrounding',
-  '--disable-notifications',                         // 禁用通知弹窗
-  '--disable-features=ExternalProtocolDialog',       // 禁用"访问其他应用"对话框
-  '--disable-session-crashed-bubble',                // 禁用"意外关闭"恢复提示
-  '--hide-crash-restore-bubble',                     // 隐藏崩溃恢复气泡
-  '--noerrdialogs',                                  // 禁用错误对话框
-  '--deny-permission-prompts',                       // 拒绝所有权限请求（地理位置等）
+  '--disable-notifications', // 禁用通知弹窗
+  '--disable-features=ExternalProtocolDialog', // 禁用"访问其他应用"对话框
+  '--disable-session-crashed-bubble', // 禁用"意外关闭"恢复提示
+  '--hide-crash-restore-bubble', // 隐藏崩溃恢复气泡
+  '--noerrdialogs', // 禁用错误对话框
+  '--deny-permission-prompts', // 拒绝所有权限请求（地理位置等）
 ];
 
 /**
@@ -213,7 +214,8 @@ export const EXPLORE_SELECTORS = {
 } as const;
 
 // QR code selector for login (matching Go project: .login-container .qrcode-img)
-export const QR_CODE_SELECTOR = '.login-container .qrcode-img, #app > div:nth-child(1) > div > div.login-container > div.left > div.code-area > div.qrcode.force-light > img';
+export const QR_CODE_SELECTOR =
+  '.login-container .qrcode-img, #app > div:nth-child(1) > div > div.login-container > div.left > div.code-area > div.qrcode.force-light > img';
 
 // Login status selector (matching Go project: .main-container .user .link-wrapper .channel)
 export const LOGIN_STATUS_SELECTOR = '.main-container .user .link-wrapper .channel';

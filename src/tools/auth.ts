@@ -26,8 +26,7 @@ export const authTools: Tool[] = [
       properties: {
         account: {
           type: 'string',
-          description:
-            'Account name or ID to check. If not specified and only one account exists, uses that.',
+          description: 'Account name or ID to check. If not specified and only one account exists, uses that.',
         },
       },
     },
@@ -43,12 +42,7 @@ export const authTools: Tool[] = [
  * @param db - Database instance
  * @returns MCP tool response
  */
-export async function handleAuthTools(
-  name: string,
-  args: any,
-  pool: AccountPool,
-  db: XhsDatabase
-) {
+export async function handleAuthTools(name: string, args: any, pool: AccountPool, db: XhsDatabase) {
   switch (name) {
     case 'xhs_check_auth_status': {
       const params = z
@@ -69,7 +63,7 @@ export async function handleAuthTools(
                   error: resolved.error,
                 },
                 null,
-                2
+                2,
               ),
             },
           ],
@@ -90,7 +84,7 @@ export async function handleAuthTools(
                   error: `Account not found: ${resolved.account}`,
                 },
                 null,
-                2
+                2,
               ),
             },
           ],
@@ -98,15 +92,9 @@ export async function handleAuthTools(
         };
       }
 
-      const result = await executeWithAccount(
-        pool,
-        db,
-        resolved.account,
-        'check_login',
-        async (ctx) => {
-          return await ctx.client.checkLoginStatus();
-        }
-      );
+      const result = await executeWithAccount(pool, db, resolved.account, 'check_login', async (ctx) => {
+        return await ctx.client.checkLoginStatus();
+      });
 
       if (!result.success) {
         return {
@@ -120,7 +108,7 @@ export async function handleAuthTools(
                   error: result.error,
                 },
                 null,
-                2
+                2,
               ),
             },
           ],
@@ -165,9 +153,7 @@ export async function handleAuthTools(
         // 如果账户名是默认名称（如 manual-import），更新为 nickname
         const currentName = accountObj.name;
         const isDefaultName =
-          currentName.startsWith('manual') ||
-          currentName.startsWith('acc_') ||
-          currentName.includes('import');
+          currentName.startsWith('manual') || currentName.startsWith('acc_') || currentName.includes('import');
 
         if (isDefaultName && profile.nickname) {
           try {
@@ -208,9 +194,7 @@ export async function handleAuthTools(
         // 如果账户名是默认名称，更新为 nickname
         const currentName = accountObj.name;
         const isDefaultName =
-          currentName.startsWith('manual') ||
-          currentName.startsWith('acc_') ||
-          currentName.includes('import');
+          currentName.startsWith('manual') || currentName.startsWith('acc_') || currentName.includes('import');
 
         if (isDefaultName && userInfo.nickname) {
           try {
@@ -272,7 +256,7 @@ export async function handleAuthTools(
                   : 'Please use xhs_add_account to login.',
               },
               null,
-              2
+              2,
             ),
           },
         ],

@@ -134,12 +134,7 @@ async function downloadFile(url: string, destPath: string): Promise<{ size: numb
  * @param db - Database instance
  * @returns MCP tool response
  */
-export async function handleDownloadTools(
-  name: string,
-  args: any,
-  pool: AccountPool,
-  db: XhsDatabase
-) {
+export async function handleDownloadTools(name: string, args: any, pool: AccountPool, db: XhsDatabase) {
   switch (name) {
     case 'xhs_download_images': {
       const params = z
@@ -153,15 +148,9 @@ export async function handleDownloadTools(
       const multiParams: MultiAccountParams = { account: params.account };
 
       // First get the note details
-      const results = await executeWithMultipleAccounts(
-        pool,
-        db,
-        multiParams,
-        'get_note_for_download',
-        async (ctx) => {
-          return await ctx.client.getNote(params.noteId, params.xsecToken);
-        }
-      );
+      const results = await executeWithMultipleAccounts(pool, db, multiParams, 'get_note_for_download', async (ctx) => {
+        return await ctx.client.getNote(params.noteId, params.xsecToken);
+      });
 
       const r = results[0];
       if (!r.success || !r.result) {
@@ -234,7 +223,7 @@ export async function handleDownloadTools(
                 errors: errors.length > 0 ? errors : undefined,
               },
               null,
-              2
+              2,
             ),
           },
         ],
@@ -253,15 +242,9 @@ export async function handleDownloadTools(
       const multiParams: MultiAccountParams = { account: params.account };
 
       // Get the note details
-      const results = await executeWithMultipleAccounts(
-        pool,
-        db,
-        multiParams,
-        'get_note_for_download',
-        async (ctx) => {
-          return await ctx.client.getNote(params.noteId, params.xsecToken);
-        }
-      );
+      const results = await executeWithMultipleAccounts(pool, db, multiParams, 'get_note_for_download', async (ctx) => {
+        return await ctx.client.getNote(params.noteId, params.xsecToken);
+      });
 
       const r = results[0];
       if (!r.success || !r.result) {
@@ -311,7 +294,7 @@ export async function handleDownloadTools(
                   duration: note.video.duration,
                 },
                 null,
-                2
+                2,
               ),
             },
           ],
@@ -328,7 +311,7 @@ export async function handleDownloadTools(
                   error: error instanceof Error ? error.message : String(error),
                 },
                 null,
-                2
+                2,
               ),
             },
           ],

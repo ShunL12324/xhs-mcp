@@ -131,7 +131,7 @@ function safeParseJson(text: string): NoteImageUnderstanding | null {
 export async function understandNoteImages(
   title: string,
   desc: string,
-  imageUrls: string[]
+  imageUrls: string[],
 ): Promise<NoteImageUnderstanding> {
   if (!config.gemini.apiKey) {
     throw new Error('GEMINI_API_KEY is not configured');
@@ -149,9 +149,10 @@ export async function understandNoteImages(
   // 初始化 Gemini 客户端
   const ai = new GoogleGenAI({
     apiKey: config.gemini.apiKey,
-    httpOptions: config.gemini.baseUrl !== 'https://generativelanguage.googleapis.com'
-      ? { baseUrl: config.gemini.baseUrl }
-      : undefined,
+    httpOptions:
+      config.gemini.baseUrl !== 'https://generativelanguage.googleapis.com'
+        ? { baseUrl: config.gemini.baseUrl }
+        : undefined,
   });
 
   // 下载并压缩所有图片
@@ -373,20 +374,14 @@ export function buildImagePrompt(params: StructuredImageParams): string {
  * @param options 生成选项（prompt、aspectRatio、outputDir）
  * @returns 生成结果，包含本地路径
  */
-export async function generateImage(
-  options: GenerateImageOptions | string
-): Promise<GenerateImageResult> {
+export async function generateImage(options: GenerateImageOptions | string): Promise<GenerateImageResult> {
   // 兼容旧的字符串参数
-  const opts: GenerateImageOptions = typeof options === 'string'
-    ? { prompt: options }
-    : options;
+  const opts: GenerateImageOptions = typeof options === 'string' ? { prompt: options } : options;
 
   const { prompt: promptInput, aspectRatio = GENERATE_CONFIG.DEFAULT_ASPECT_RATIO, outputDir } = opts;
 
   // 构建最终提示词
-  const finalPrompt = typeof promptInput === 'string'
-    ? promptInput
-    : buildImagePrompt(promptInput);
+  const finalPrompt = typeof promptInput === 'string' ? promptInput : buildImagePrompt(promptInput);
 
   if (!config.gemini.apiKey) {
     return { success: false, error: 'GEMINI_API_KEY is not configured' };
@@ -400,9 +395,10 @@ export async function generateImage(
   // 初始化 Gemini 客户端
   const ai = new GoogleGenAI({
     apiKey: config.gemini.apiKey,
-    httpOptions: config.gemini.baseUrl !== 'https://generativelanguage.googleapis.com'
-      ? { baseUrl: config.gemini.baseUrl }
-      : undefined,
+    httpOptions:
+      config.gemini.baseUrl !== 'https://generativelanguage.googleapis.com'
+        ? { baseUrl: config.gemini.baseUrl }
+        : undefined,
   });
 
   // 确保输出目录存在
@@ -449,7 +445,6 @@ export async function generateImage(
       // 没有找到图片数据
       lastError = new Error('No image data in response');
       log.warn('No image data in response, retrying...');
-
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
       log.warn(`Generation attempt ${attempt} failed`, { error: lastError.message });
@@ -457,7 +452,7 @@ export async function generateImage(
 
     // 等待后重试
     if (attempt < GENERATE_CONFIG.MAX_RETRIES) {
-      await new Promise(resolve => setTimeout(resolve, GENERATE_CONFIG.RETRY_DELAY));
+      await new Promise((resolve) => setTimeout(resolve, GENERATE_CONFIG.RETRY_DELAY));
     }
   }
 

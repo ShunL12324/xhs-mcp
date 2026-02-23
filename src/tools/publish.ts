@@ -17,7 +17,8 @@ import { executeWithMultipleAccounts, MultiAccountParams } from '../core/multi-a
 export const publishTools: Tool[] = [
   {
     name: 'xhs_publish_video',
-    description: 'Publish a new video note to Xiaohongshu. Opens a visible browser window for the publishing process. Requires login.',
+    description:
+      'Publish a new video note to Xiaohongshu. Opens a visible browser window for the publishing process. Requires login.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -72,12 +73,7 @@ export const publishTools: Tool[] = [
  * @param db - Database instance
  * @returns MCP tool response
  */
-export async function handlePublishTools(
-  name: string,
-  args: any,
-  pool: AccountPool,
-  db: XhsDatabase
-) {
+export async function handlePublishTools(name: string, args: any, pool: AccountPool, db: XhsDatabase) {
   switch (name) {
     case 'xhs_publish_video': {
       const params = z
@@ -132,7 +128,7 @@ export async function handlePublishTools(
         {
           logParams: { title: params.title, videoPath: params.videoPath },
           sequential: true,
-        }
+        },
       );
 
       if (results.length === 1) {

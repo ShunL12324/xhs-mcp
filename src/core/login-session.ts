@@ -43,7 +43,8 @@ const SESSION_TIMEOUTS = {
 } as const;
 
 // 浏览器常量（与 browser.ts 相同）
-const USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36';
+const USER_AGENT =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36';
 
 /**
  * 反自动化检测浏览器启动参数
@@ -188,20 +189,24 @@ export class LoginSessionManager {
 
     try {
       // Try to find the login token from the page
-      const qrCodeData = await page.evaluate(() => {
-        // Check if there's a qrcode-related data in the page
-        const state = (window as any).__INITIAL_STATE__;
-        if (state?.login?.qrcodeInfo?.qrcode) {
-          return state.login.qrcodeInfo.qrcode;
-        }
-        // Try to find it in script tags or other elements
-        const scripts = Array.from(document.querySelectorAll('script'));
-        for (const script of scripts) {
-          const match = script.textContent?.match(/qr_code['":\s]+['"]([^'"]+)['"]/);
-          if (match) return match[1];
-        }
-        return null;
-      }, null, false);
+      const qrCodeData = await page.evaluate(
+        () => {
+          // Check if there's a qrcode-related data in the page
+          const state = (window as any).__INITIAL_STATE__;
+          if (state?.login?.qrcodeInfo?.qrcode) {
+            return state.login.qrcodeInfo.qrcode;
+          }
+          // Try to find it in script tags or other elements
+          const scripts = Array.from(document.querySelectorAll('script'));
+          for (const script of scripts) {
+            const match = script.textContent?.match(/qr_code['":\s]+['"]([^'"]+)['"]/);
+            if (match) return match[1];
+          }
+          return null;
+        },
+        null,
+        false,
+      );
 
       if (qrCodeData) {
         // Construct the full URL
@@ -229,7 +234,6 @@ export class LoginSessionManager {
       // Return a URL that users can use to view the QR code
       // This is a fallback - ideally we extract the actual content
       return `https://www.xiaohongshu.com/login/qr/${Date.now()}`;
-
     } catch (e) {
       log.error('Failed to extract QR code content', { error: e });
       throw new Error('Failed to extract QR code content from page');
@@ -245,7 +249,7 @@ export class LoginSessionManager {
 
     // Launch browser
     const launchOptions: any = {
-      headless: config.browser.headless,  // 可通过 XHS_MCP_HEADLESS 控制
+      headless: config.browser.headless, // 可通过 XHS_MCP_HEADLESS 控制
       channel: 'chrome',
       args: BROWSER_ARGS,
     };
@@ -262,12 +266,14 @@ export class LoginSessionManager {
     });
 
     // Add webId cookie
-    await context.addCookies([{
-      name: 'webId',
-      value: generateWebId(),
-      domain: '.xiaohongshu.com',
-      path: '/',
-    }]);
+    await context.addCookies([
+      {
+        name: 'webId',
+        value: generateWebId(),
+        domain: '.xiaohongshu.com',
+        path: '/',
+      },
+    ]);
 
     const page = await context.newPage();
 
@@ -335,14 +341,18 @@ export class LoginSessionManager {
 
     try {
       // Try to get the login URL from page state
-      const loginData = await page.evaluate(() => {
-        const state = (window as any).__INITIAL_STATE__;
-        // Different possible locations for the QR data
-        if (state?.login?.qrcodeInfo) {
-          return state.login.qrcodeInfo;
-        }
-        return null;
-      }, null, false);
+      const loginData = await page.evaluate(
+        () => {
+          const state = (window as any).__INITIAL_STATE__;
+          // Different possible locations for the QR data
+          if (state?.login?.qrcodeInfo) {
+            return state.login.qrcodeInfo;
+          }
+          return null;
+        },
+        null,
+        false,
+      );
 
       if (loginData?.qrcode) {
         qrCodeContent = `xhsdiscover://qrcode/login?qr_code=${loginData.qrcode}`;
@@ -465,7 +475,11 @@ export class LoginSessionManager {
     }
 
     // Check verification timeout
-    if (session.status === 'verification_required' && session.verificationExpiresAt && now > session.verificationExpiresAt) {
+    if (
+      session.status === 'verification_required' &&
+      session.verificationExpiresAt &&
+      now > session.verificationExpiresAt
+    ) {
       session.status = 'failed';
       session.error = 'Verification code expired (1 minute limit). Please start a new login session.';
       log.info('Verification expired', { sessionId });
@@ -478,12 +492,12 @@ export class LoginSessionManager {
 
     if (pageStatus === 'logged_in') {
       session.status = 'success';
-      session.userInfo = await this.extractUserInfo(session.page) || undefined;
+      session.userInfo = (await this.extractUserInfo(session.page)) || undefined;
       session.state = await session.context.storageState();
 
       // 获取完整用户资料（粉丝数、关注数等）
       if (session.userInfo?.userId) {
-        session.fullProfile = await this.extractFullUserProfile(session.page, session.userInfo.userId) || undefined;
+        session.fullProfile = (await this.extractFullUserProfile(session.page, session.userInfo.userId)) || undefined;
       }
 
       log.info('Login successful', { sessionId, userId: session.userInfo?.userId });
@@ -510,7 +524,9 @@ export class LoginSessionManager {
   /**
    * Detect the current page status
    */
-  private async detectPageStatus(session: LoginSession): Promise<'waiting_scan' | 'scanned' | 'verification_required' | 'logged_in' | 'failed'> {
+  private async detectPageStatus(
+    session: LoginSession,
+  ): Promise<'waiting_scan' | 'scanned' | 'verification_required' | 'logged_in' | 'failed'> {
     const { page } = session;
 
     try {
@@ -545,30 +561,33 @@ export class LoginSessionManager {
   private async extractUserInfo(page: Page): Promise<LoginUserInfo | null> {
     try {
       // Wait for state to be available
-      await page.waitForFunction(
-        () => (window as any).__INITIAL_STATE__?.user?.userInfo !== undefined,
-        { timeout: 10000 }
-      ).catch(() => {});
+      await page
+        .waitForFunction(() => (window as any).__INITIAL_STATE__?.user?.userInfo !== undefined, { timeout: 10000 })
+        .catch(() => {});
 
-      const result = await page.evaluate(() => {
-        const state = (window as any).__INITIAL_STATE__;
-        if (!state?.user?.userInfo) return null;
+      const result = await page.evaluate(
+        () => {
+          const state = (window as any).__INITIAL_STATE__;
+          if (!state?.user?.userInfo) return null;
 
-        const userInfo = state.user.userInfo;
-        const data = userInfo._value || userInfo._rawValue || userInfo;
+          const userInfo = state.user.userInfo;
+          const data = userInfo._value || userInfo._rawValue || userInfo;
 
-        if (!data || !data.userId) return null;
+          if (!data || !data.userId) return null;
 
-        return {
-          userId: data.userId,
-          redId: data.redId || '',
-          nickname: data.nickname || '',
-          desc: data.desc || '',
-          gender: data.gender || 0,
-          avatar: data.images || '',
-          avatarLarge: data.imageb || '',
-        };
-      }, null, false);
+          return {
+            userId: data.userId,
+            redId: data.redId || '',
+            nickname: data.nickname || '',
+            desc: data.desc || '',
+            gender: data.gender || 0,
+            avatar: data.images || '',
+            avatarLarge: data.imageb || '',
+          };
+        },
+        null,
+        false,
+      );
 
       return result;
     } catch (e) {
@@ -582,10 +601,7 @@ export class LoginSessionManager {
    */
   private async extractVerificationPhone(page: Page): Promise<string> {
     try {
-      const phoneText = await page.$eval(
-        VERIFICATION_SELECTORS.phoneNumber,
-        el => el.textContent
-      );
+      const phoneText = await page.$eval(VERIFICATION_SELECTORS.phoneNumber, (el) => el.textContent);
       // Extract phone number from text like "验证码已发送至   +86 189******35"
       const match = phoneText?.match(/\+?\d+[\s\d*]+\d+/);
       return match ? match[0].trim() : phoneText?.trim() || 'Unknown';
@@ -608,78 +624,87 @@ export class LoginSessionManager {
 
       // 等待 __INITIAL_STATE__ 加载
       await page.waitForFunction(() => (window as any).__INITIAL_STATE__ !== undefined, {
-        timeout: 30000
+        timeout: 30000,
       });
 
       // 等待用户数据加载
-      await page.waitForFunction(() => {
-        const state = (window as any).__INITIAL_STATE__;
-        const userPageData = state?.user?.userPageData;
-        const basicInfo = userPageData?._rawValue?.basicInfo || userPageData?.basicInfo;
-        return basicInfo?.nickname;
-      }, { timeout: 10000 }).catch(() => {});
+      await page
+        .waitForFunction(
+          () => {
+            const state = (window as any).__INITIAL_STATE__;
+            const userPageData = state?.user?.userPageData;
+            const basicInfo = userPageData?._rawValue?.basicInfo || userPageData?.basicInfo;
+            return basicInfo?.nickname;
+          },
+          { timeout: 10000 },
+        )
+        .catch(() => {});
 
       // 提取完整用户信息
-      const result = await page.evaluate((uid: string) => {
-        const state = (window as any).__INITIAL_STATE__;
-        if (!state?.user) return null;
+      const result = await page.evaluate(
+        (uid: string) => {
+          const state = (window as any).__INITIAL_STATE__;
+          if (!state?.user) return null;
 
-        const user = state.user;
-        const userPageData = user.userPageData;
-        const bannedInfo = user.bannedInfo;
+          const user = state.user;
+          const userPageData = user.userPageData;
+          const bannedInfo = user.bannedInfo;
 
-        // 处理 Vue 响应式对象
-        const extract = (obj: any) => {
-          if (!obj) return null;
-          if (obj._rawValue !== undefined) return obj._rawValue;
-          if (obj._value !== undefined) return obj._value;
-          return obj;
-        };
+          // 处理 Vue 响应式对象
+          const extract = (obj: any) => {
+            if (!obj) return null;
+            if (obj._rawValue !== undefined) return obj._rawValue;
+            if (obj._value !== undefined) return obj._value;
+            return obj;
+          };
 
-        const pageData = extract(userPageData);
-        const banned = extract(bannedInfo);
+          const pageData = extract(userPageData);
+          const banned = extract(bannedInfo);
 
-        if (!pageData?.basicInfo) return null;
+          if (!pageData?.basicInfo) return null;
 
-        const basicInfo = pageData.basicInfo;
-        const interactions = pageData.interactions || [];
+          const basicInfo = pageData.basicInfo;
+          const interactions = pageData.interactions || [];
 
-        // 解析 interactions 数组
-        const statsMap: Record<string, string> = {};
-        for (const item of interactions) {
-          if (item?.type) {
-            statsMap[item.type] = item.count || '0';
+          // 解析 interactions 数组
+          const statsMap: Record<string, string> = {};
+          for (const item of interactions) {
+            if (item?.type) {
+              statsMap[item.type] = item.count || '0';
+            }
           }
-        }
 
-        return {
-          // 基础信息
-          userId: uid,
-          redId: basicInfo.redId || '',
-          nickname: basicInfo.nickname || '',
-          avatar: basicInfo.images || basicInfo.image || '',
-          description: basicInfo.desc || '',
-          gender: basicInfo.gender || 0,
-          ipLocation: basicInfo.ipLocation || '',
+          return {
+            // 基础信息
+            userId: uid,
+            redId: basicInfo.redId || '',
+            nickname: basicInfo.nickname || '',
+            avatar: basicInfo.images || basicInfo.image || '',
+            description: basicInfo.desc || '',
+            gender: basicInfo.gender || 0,
+            ipLocation: basicInfo.ipLocation || '',
 
-          // 统计数据
-          followers: parseInt(statsMap['fans'] || '0', 10),
-          following: parseInt(statsMap['follows'] || '0', 10),
-          likeAndCollect: parseInt(statsMap['interaction'] || '0', 10),
+            // 统计数据
+            followers: parseInt(statsMap['fans'] || '0', 10),
+            following: parseInt(statsMap['follows'] || '0', 10),
+            likeAndCollect: parseInt(statsMap['interaction'] || '0', 10),
 
-          // 封禁状态
-          isBanned: banned?.serverBanned || false,
-          banCode: banned?.code || 0,
-          banReason: banned?.reason || '',
-        };
-      }, userId, false);
+            // 封禁状态
+            isBanned: banned?.serverBanned || false,
+            banCode: banned?.code || 0,
+            banReason: banned?.reason || '',
+          };
+        },
+        userId,
+        false,
+      );
 
       if (result) {
         log.info('Extracted full user profile', {
           userId: result.userId,
           nickname: result.nickname,
           followers: result.followers,
-          isBanned: result.isBanned
+          isBanned: result.isBanned,
         });
       }
 
@@ -700,11 +725,15 @@ export class LoginSessionManager {
     }
 
     if (session.status !== 'verification_required') {
-      throw new Error(`Cannot submit verification in status: ${session.status}. ${
-        session.status === 'waiting_scan' ? 'QR code not scanned yet.' :
-        session.status === 'success' ? 'Already logged in.' :
-        'Please start a new login session.'
-      }`);
+      throw new Error(
+        `Cannot submit verification in status: ${session.status}. ${
+          session.status === 'waiting_scan'
+            ? 'QR code not scanned yet.'
+            : session.status === 'success'
+              ? 'Already logged in.'
+              : 'Please start a new login session.'
+        }`,
+      );
     }
 
     // Check verification timeout
@@ -729,7 +758,9 @@ export class LoginSessionManager {
       await sleep(500);
 
       // Wait for submit button to be enabled (it has btn-disabled class initially)
-      await page.waitForSelector(`${VERIFICATION_SELECTORS.submitButton}:not(.btn-disabled)`, { timeout: 3000 }).catch(() => {});
+      await page
+        .waitForSelector(`${VERIFICATION_SELECTORS.submitButton}:not(.btn-disabled)`, { timeout: 3000 })
+        .catch(() => {});
 
       // Click submit button
       const submitBtn = await page.$(VERIFICATION_SELECTORS.submitButton);
@@ -760,12 +791,12 @@ export class LoginSessionManager {
 
       if (pageStatus === 'logged_in') {
         session.status = 'success';
-        session.userInfo = await this.extractUserInfo(page) || undefined;
+        session.userInfo = (await this.extractUserInfo(page)) || undefined;
         session.state = await session.context.storageState();
 
         // 获取完整用户资料
         if (session.userInfo?.userId) {
-          session.fullProfile = await this.extractFullUserProfile(page, session.userInfo.userId) || undefined;
+          session.fullProfile = (await this.extractFullUserProfile(page, session.userInfo.userId)) || undefined;
         }
 
         log.info('Verification successful', { sessionId });
@@ -780,12 +811,12 @@ export class LoginSessionManager {
         const finalStatus = await this.detectPageStatus(session);
         if (finalStatus === 'logged_in') {
           session.status = 'success';
-          session.userInfo = await this.extractUserInfo(page) || undefined;
+          session.userInfo = (await this.extractUserInfo(page)) || undefined;
           session.state = await session.context.storageState();
 
           // 获取完整用户资料
           if (session.userInfo?.userId) {
-            session.fullProfile = await this.extractFullUserProfile(page, session.userInfo.userId) || undefined;
+            session.fullProfile = (await this.extractFullUserProfile(page, session.userInfo.userId)) || undefined;
           }
 
           log.info('Verification successful (delayed)', { sessionId });
@@ -806,7 +837,9 @@ export class LoginSessionManager {
   /**
    * 完成会话并清理浏览器
    */
-  async completeSession(sessionId: string): Promise<{ state: any; userInfo: LoginUserInfo; fullProfile?: FullUserProfile }> {
+  async completeSession(
+    sessionId: string,
+  ): Promise<{ state: any; userInfo: LoginUserInfo; fullProfile?: FullUserProfile }> {
     const session = this.sessions.get(sessionId);
     if (!session) {
       throw new Error('Session not found');

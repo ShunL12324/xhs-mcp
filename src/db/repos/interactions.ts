@@ -36,7 +36,7 @@ export class InteractionRepository {
       params.commentId || null,
       params.commentContent || null,
       params.success ? 1 : 0,
-      params.error || null
+      params.error || null,
     );
     return info.lastInsertRowid as number;
   }

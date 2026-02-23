@@ -9,13 +9,7 @@ import { PublishContentParams, PublishVideoParams, PublishResult } from '../../t
 import { sleep, resolveImagePaths, isHttpUrl } from '../../utils/index.js';
 import { config } from '../../../core/config.js';
 import { BrowserContextManager, log } from '../context.js';
-import {
-  USER_AGENT,
-  BROWSER_ARGS,
-  TIMEOUTS,
-  PUBLISH_SELECTORS,
-  URLS,
-} from '../constants.js';
+import { USER_AGENT, BROWSER_ARGS, TIMEOUTS, PUBLISH_SELECTORS, URLS } from '../constants.js';
 
 /**
  * Publish service - handles content publishing
@@ -40,7 +34,7 @@ export class PublishService {
 
     // 处理 HTTP URL 图片：下载到本地临时目录
     let imagePaths = params.images;
-    const hasHttpUrls = params.images.some(p => isHttpUrl(p));
+    const hasHttpUrls = params.images.some((p) => isHttpUrl(p));
     if (hasHttpUrls) {
       log.info('Detected HTTP image URLs, downloading to local...');
       try {
@@ -48,7 +42,10 @@ export class PublishService {
         log.info('HTTP images downloaded', { count: imagePaths.length });
       } catch (error) {
         log.error('Failed to download HTTP images', { error: error instanceof Error ? error.message : String(error) });
-        return { success: false, error: `Failed to download HTTP images: ${error instanceof Error ? error.message : String(error)}` };
+        return {
+          success: false,
+          error: `Failed to download HTTP images: ${error instanceof Error ? error.message : String(error)}`,
+        };
       }
     }
 
@@ -58,7 +55,7 @@ export class PublishService {
     }
 
     const launchOptions: any = {
-      headless: config.browser.headless,  // 发布操作建议使用可见模式 (XHS_MCP_HEADLESS=false)
+      headless: config.browser.headless, // 发布操作建议使用可见模式 (XHS_MCP_HEADLESS=false)
       channel: 'chrome',
       args: BROWSER_ARGS,
     };
@@ -144,7 +141,7 @@ export class PublishService {
             log.warn('Image file not found', { path: imgPath });
           }
         } catch {
-          validPaths.push(imgPath);  // Let Playwright handle the error
+          validPaths.push(imgPath); // Let Playwright handle the error
         }
       }
 
@@ -359,7 +356,7 @@ export class PublishService {
     }
 
     const launchOptions: any = {
-      headless: config.browser.headless,  // 可通过 XHS_MCP_HEADLESS 控制
+      headless: config.browser.headless, // 可通过 XHS_MCP_HEADLESS 控制
       channel: 'chrome',
       args: BROWSER_ARGS,
     };

@@ -47,10 +47,13 @@ export async function startHttpServer(port: number = config.server.port) {
   const app = new Hono();
 
   // Enable CORS for all origins
-  app.use('*', cors({
-    origin: '*',
-    exposeHeaders: ['Mcp-Session-Id'],
-  }));
+  app.use(
+    '*',
+    cors({
+      origin: '*',
+      exposeHeaders: ['Mcp-Session-Id'],
+    }),
+  );
 
   // MCP endpoint using StreamableHTTPServerTransport
   app.post('/mcp', async (c) => {
@@ -126,14 +129,17 @@ export async function startHttpServer(port: number = config.server.port) {
       return response;
     } catch (error) {
       console.error('Error handling MCP request:', error);
-      return c.json({
-        jsonrpc: '2.0',
-        error: {
-          code: -32603,
-          message: 'Internal server error',
+      return c.json(
+        {
+          jsonrpc: '2.0',
+          error: {
+            code: -32603,
+            message: 'Internal server error',
+          },
+          id: null,
         },
-        id: null,
-      }, 500);
+        500,
+      );
     } finally {
       // Clean up transport and server
       if (transport) {
@@ -147,25 +153,31 @@ export async function startHttpServer(port: number = config.server.port) {
 
   // Method not allowed for GET/DELETE
   app.get('/mcp', (c) => {
-    return c.json({
-      jsonrpc: '2.0',
-      error: {
-        code: -32000,
-        message: 'Method not allowed.',
+    return c.json(
+      {
+        jsonrpc: '2.0',
+        error: {
+          code: -32000,
+          message: 'Method not allowed.',
+        },
+        id: null,
       },
-      id: null,
-    }, 405);
+      405,
+    );
   });
 
   app.delete('/mcp', (c) => {
-    return c.json({
-      jsonrpc: '2.0',
-      error: {
-        code: -32000,
-        message: 'Method not allowed.',
+    return c.json(
+      {
+        jsonrpc: '2.0',
+        error: {
+          code: -32000,
+          message: 'Method not allowed.',
+        },
+        id: null,
       },
-      id: null,
-    }, 405);
+      405,
+    );
   });
 
   // Health check endpoint

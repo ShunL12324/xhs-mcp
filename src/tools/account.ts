@@ -40,7 +40,8 @@ Flow:
       properties: {
         name: {
           type: 'string',
-          description: 'Optional account name. If provided and account exists, triggers re-login. If not provided, nickname from login will be used.',
+          description:
+            'Optional account name. If provided and account exists, triggers re-login. If not provided, nickname from login will be used.',
         },
         proxy: {
           type: 'string',
@@ -137,7 +138,8 @@ Verification code expires in 1 minute.`,
   },
   {
     name: 'xhs_get_account_prompt',
-    description: 'Get the prompt file content for an account. Prompts control AI behavior during explore (note selection and comment generation).',
+    description:
+      'Get the prompt file content for an account. Prompts control AI behavior during explore (note selection and comment generation).',
     inputSchema: {
       type: 'object',
       properties: {
@@ -148,7 +150,8 @@ Verification code expires in 1 minute.`,
         type: {
           type: 'string',
           enum: ['persona', 'select', 'comment'],
-          description: 'Type of prompt to get: persona (base character), select (note selection), comment (comment generation)',
+          description:
+            'Type of prompt to get: persona (base character), select (note selection), comment (comment generation)',
         },
       },
       required: ['account', 'type'],
@@ -184,11 +187,12 @@ Verification code expires in 1 minute.`,
  */
 function formatSessionResponse(session: LoginSession, extra?: Record<string, any>) {
   const now = new Date();
-  const remainingTime = session.status === 'waiting_scan'
-    ? Math.max(0, Math.floor((session.qrExpiresAt.getTime() - now.getTime()) / 1000))
-    : session.verificationExpiresAt
-      ? Math.max(0, Math.floor((session.verificationExpiresAt.getTime() - now.getTime()) / 1000))
-      : undefined;
+  const remainingTime =
+    session.status === 'waiting_scan'
+      ? Math.max(0, Math.floor((session.qrExpiresAt.getTime() - now.getTime()) / 1000))
+      : session.verificationExpiresAt
+        ? Math.max(0, Math.floor((session.verificationExpiresAt.getTime() - now.getTime()) / 1000))
+        : undefined;
 
   const nextAction = getNextAction(session);
 
@@ -199,7 +203,10 @@ function formatSessionResponse(session: LoginSession, extra?: Record<string, any
     ...(session.qrCodeUrl && session.status === 'waiting_scan' && { qrCodeUrl: session.qrCodeUrl }),
     ...(session.verificationPhone && { phone: session.verificationPhone }),
     ...(remainingTime !== undefined && { remainingTime }),
-    ...(session.rateLimited && { rateLimited: true, rateLimitMessage: 'SMS rate limit reached for today. Try again tomorrow.' }),
+    ...(session.rateLimited && {
+      rateLimited: true,
+      rateLimitMessage: 'SMS rate limit reached for today. Try again tomorrow.',
+    }),
     ...(session.error && { error: session.error }),
     ...(nextAction && { nextAction }),
     ...extra,
@@ -217,9 +224,7 @@ function getNextAction(session: LoginSession): string | null {
       return 'QR code scanned. Call xhs_check_login_session again to check if login is complete.';
     case 'verification_required':
       return `SMS verification required. Ask user for the 6-digit code, then call xhs_submit_verification within ${
-        session.verificationExpiresAt
-          ? Math.ceil((session.verificationExpiresAt.getTime() - Date.now()) / 1000)
-          : 60
+        session.verificationExpiresAt ? Math.ceil((session.verificationExpiresAt.getTime() - Date.now()) / 1000) : 60
       } seconds.`;
     case 'success':
       return null;
@@ -241,12 +246,7 @@ function getNextAction(session: LoginSession): string | null {
  * @param db - Database instance
  * @returns MCP tool response
  */
-export async function handleAccountTools(
-  name: string,
-  args: any,
-  pool: AccountPool,
-  db: XhsDatabase
-) {
+export async function handleAccountTools(name: string, args: any, pool: AccountPool, db: XhsDatabase) {
   const sessionManager = getLoginSessionManager();
 
   switch (name) {
@@ -273,9 +273,8 @@ export async function handleAccountTools(
             : null,
           stats: {
             totalOperations: stats.totalOperations,
-            successRate: stats.totalOperations > 0
-              ? Math.round((stats.successfulOperations / stats.totalOperations) * 100)
-              : 0,
+            successRate:
+              stats.totalOperations > 0 ? Math.round((stats.successfulOperations / stats.totalOperations) * 100) : 0,
           },
           lastLoginAt: acc.lastLoginAt?.toISOString() || null,
           lastActiveAt: acc.lastActiveAt?.toISOString() || null,
@@ -293,7 +292,7 @@ export async function handleAccountTools(
                 accounts: accountList,
               },
               null,
-              2
+              2,
             ),
           },
         ],
@@ -341,7 +340,7 @@ export async function handleAccountTools(
                   nextAction: 'Fix the issue and call xhs_add_account again.',
                 },
                 null,
-                2
+                2,
               ),
             },
           ],
@@ -370,7 +369,7 @@ export async function handleAccountTools(
             accountName,
             state,
             session.proxy,
-            userInfo.userId
+            userInfo.userId,
           );
 
           // Save user profile（优先使用完整资料）
@@ -442,11 +441,13 @@ export async function handleAccountTools(
                       status: account.status,
                     },
                     userInfo: returnUserInfo,
-                    message: isExisting ? 'Login successful. Existing account session updated.' : 'Login successful. Account created.',
+                    message: isExisting
+                      ? 'Login successful. Existing account session updated.'
+                      : 'Login successful. Account created.',
                     nextAction: null,
                   },
                   null,
-                  2
+                  2,
                 ),
               },
             ],
@@ -473,7 +474,7 @@ export async function handleAccountTools(
                   nextAction: 'Call xhs_add_account to start a new login session.',
                 },
                 null,
-                2
+                2,
               ),
             },
           ],
@@ -503,7 +504,7 @@ export async function handleAccountTools(
             accountName,
             state,
             session.proxy,
-            userInfo.userId
+            userInfo.userId,
           );
 
           // Save user profile（优先使用完整资料）
@@ -575,11 +576,13 @@ export async function handleAccountTools(
                       status: account.status,
                     },
                     userInfo: returnUserInfo,
-                    message: isExisting ? 'Verification successful. Existing account session updated.' : 'Verification successful. Account created.',
+                    message: isExisting
+                      ? 'Verification successful. Existing account session updated.'
+                      : 'Verification successful. Account created.',
                     nextAction: null,
                   },
                   null,
-                  2
+                  2,
                 ),
               },
             ],
@@ -603,12 +606,13 @@ export async function handleAccountTools(
                 {
                   success: false,
                   error: error instanceof Error ? error.message : String(error),
-                  nextAction: error instanceof Error && error.message.includes('status')
-                    ? 'Check current status with xhs_check_login_session first.'
-                    : 'Try submitting the code again or start a new login.',
+                  nextAction:
+                    error instanceof Error && error.message.includes('status')
+                      ? 'Check current status with xhs_check_login_session first.'
+                      : 'Try submitting the code again or start a new login.',
                 },
                 null,
-                2
+                2,
               ),
             },
           ],
@@ -649,12 +653,10 @@ export async function handleAccountTools(
             text: JSON.stringify(
               {
                 success: removed,
-                message: removed
-                  ? `Account "${account.name}" has been removed.`
-                  : 'Failed to remove account.',
+                message: removed ? `Account "${account.name}" has been removed.` : 'Failed to remove account.',
               },
               null,
-              2
+              2,
             ),
           },
         ],
@@ -717,7 +719,7 @@ export async function handleAccountTools(
                   : null,
               },
               null,
-              2
+              2,
             ),
           },
         ],
@@ -758,7 +760,7 @@ export async function handleAccountTools(
                 content,
               },
               null,
-              2
+              2,
             ),
           },
         ],
@@ -801,7 +803,7 @@ export async function handleAccountTools(
                 message: `Prompt "${params.type}" updated successfully.`,
               },
               null,
-              2
+              2,
             ),
           },
         ],

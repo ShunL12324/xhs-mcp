@@ -19,7 +19,8 @@ import { config } from '../core/config.js';
 export const contentTools: Tool[] = [
   {
     name: 'xhs_search',
-    description: 'Search for notes on Xiaohongshu. Supports scrolling to load more results and filtering. Returns notes with id, xsecToken, title, cover, user info, and likes.',
+    description:
+      'Search for notes on Xiaohongshu. Supports scrolling to load more results and filtering. Returns notes with id, xsecToken, title, cover, user info, and likes.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -65,7 +66,8 @@ export const contentTools: Tool[] = [
   },
   {
     name: 'xhs_get_note',
-    description: 'Get details of a specific note including content, images, stats, and comments. Use xsecToken from search results for reliable access.',
+    description:
+      'Get details of a specific note including content, images, stats, and comments. Use xsecToken from search results for reliable access.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -79,7 +81,8 @@ export const contentTools: Tool[] = [
         },
         describeImages: {
           type: 'boolean',
-          description: 'If true, use LLM to analyze and describe all images in the note. Note: This consumes significant tokens.',
+          description:
+            'If true, use LLM to analyze and describe all images in the note. Note: This consumes significant tokens.',
         },
         account: {
           type: 'string',
@@ -91,7 +94,8 @@ export const contentTools: Tool[] = [
   },
   {
     name: 'xhs_user_profile',
-    description: 'Get user profile information including basic info, stats (followers, fans), and their published notes.',
+    description:
+      'Get user profile information including basic info, stats (followers, fans), and their published notes.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -135,12 +139,7 @@ export const contentTools: Tool[] = [
  * @param db - Database instance
  * @returns MCP tool response
  */
-export async function handleContentTools(
-  name: string,
-  args: any,
-  pool: AccountPool,
-  db: XhsDatabase
-) {
+export async function handleContentTools(name: string, args: any, pool: AccountPool, db: XhsDatabase) {
   switch (name) {
     case 'xhs_search': {
       const params = z
@@ -176,7 +175,7 @@ export async function handleContentTools(
         async (ctx) => {
           return await ctx.client.search(params.keyword, params.count, params.timeout, filters);
         },
-        { logParams: { keyword: params.keyword, count: params.count } }
+        { logParams: { keyword: params.keyword, count: params.count } },
       );
 
       // For single account, return simple format
@@ -212,7 +211,7 @@ export async function handleContentTools(
                 error: r.error,
               })),
               null,
-              2
+              2,
             ),
           },
         ],
@@ -239,7 +238,7 @@ export async function handleContentTools(
         async (ctx) => {
           return await ctx.client.getNote(params.noteId, params.xsecToken);
         },
-        { logParams: { noteId: params.noteId } }
+        { logParams: { noteId: params.noteId } },
       );
 
       const r = results[0];
@@ -277,7 +276,7 @@ export async function handleContentTools(
                     },
                   },
                   null,
-                  2
+                  2,
                 ),
               },
             ],
@@ -286,11 +285,7 @@ export async function handleContentTools(
 
         try {
           const imageUrls = r.result.imageList?.map((img: any) => img.url) || [];
-          const understanding = await understandNoteImages(
-            r.result.title || '',
-            r.result.desc || '',
-            imageUrls
-          );
+          const understanding = await understandNoteImages(r.result.title || '', r.result.desc || '', imageUrls);
 
           return {
             content: [
@@ -302,7 +297,7 @@ export async function handleContentTools(
                     imageUnderstanding: understanding,
                   },
                   null,
-                  2
+                  2,
                 ),
               },
             ],
@@ -320,7 +315,7 @@ export async function handleContentTools(
                     },
                   },
                   null,
-                  2
+                  2,
                 ),
               },
             ],
@@ -352,7 +347,7 @@ export async function handleContentTools(
         async (ctx) => {
           return await ctx.client.getUserProfile(params.userId, params.xsecToken);
         },
-        { logParams: { userId: params.userId } }
+        { logParams: { userId: params.userId } },
       );
 
       const r = results[0];
@@ -384,15 +379,9 @@ export async function handleContentTools(
 
       const multiParams: MultiAccountParams = { account: params.account };
 
-      const results = await executeWithMultipleAccounts(
-        pool,
-        db,
-        multiParams,
-        'list_feeds',
-        async (ctx) => {
-          return await ctx.client.listFeeds();
-        }
-      );
+      const results = await executeWithMultipleAccounts(pool, db, multiParams, 'list_feeds', async (ctx) => {
+        return await ctx.client.listFeeds();
+      });
 
       const r = results[0];
       if (!r.success) {

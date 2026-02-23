@@ -72,10 +72,14 @@ export class ExploreRepository {
     const sessionId = randomUUID();
     const now = new Date().toISOString();
 
-    this.db.prepare(`
+    this.db
+      .prepare(
+        `
       INSERT INTO explore_sessions (id, account_id, started_at, config, status)
       VALUES (?, ?, ?, ?, 'running')
-    `).run(sessionId, accountId, now, config ? JSON.stringify(config) : null);
+    `,
+      )
+      .run(sessionId, accountId, now, config ? JSON.stringify(config) : null);
 
     return sessionId;
   }
@@ -107,9 +111,13 @@ export class ExploreRepository {
     if (updates.length === 0) return;
 
     values.push(sessionId);
-    this.db.prepare(`
+    this.db
+      .prepare(
+        `
       UPDATE explore_sessions SET ${updates.join(', ')} WHERE id = ?
-    `).run(...values);
+    `,
+      )
+      .run(...values);
   }
 
   /**
@@ -117,26 +125,34 @@ export class ExploreRepository {
    */
   endSession(sessionId: string, status: 'completed' | 'stopped' = 'completed'): void {
     const now = new Date().toISOString();
-    this.db.prepare(`
+    this.db
+      .prepare(
+        `
       UPDATE explore_sessions SET ended_at = ?, status = ? WHERE id = ?
-    `).run(now, status, sessionId);
+    `,
+      )
+      .run(now, status, sessionId);
   }
 
   /**
    * 记录探索日志
    */
   logAction(sessionId: string, entry: ExploreLogEntry): void {
-    this.db.prepare(`
+    this.db
+      .prepare(
+        `
       INSERT INTO explore_logs (session_id, note_id, note_title, action, content, ai_reason)
       VALUES (?, ?, ?, ?, ?, ?)
-    `).run(
-      sessionId,
-      entry.noteId,
-      entry.noteTitle || null,
-      entry.action,
-      entry.content || null,
-      entry.aiReason || null
-    );
+    `,
+      )
+      .run(
+        sessionId,
+        entry.noteId,
+        entry.noteTitle || null,
+        entry.action,
+        entry.content || null,
+        entry.aiReason || null,
+      );
   }
 
   /**
@@ -157,15 +173,23 @@ export class ExploreRepository {
    * 记录已探索的笔记（用于去重）
    */
   markNoteExplored(accountId: string, noteId: string, interacted: boolean = false): void {
-    this.db.prepare(`
+    this.db
+      .prepare(
+        `
       INSERT OR IGNORE INTO explored_notes (account_id, note_id, interacted)
       VALUES (?, ?, ?)
-    `).run(accountId, noteId, interacted ? 1 : 0);
+    `,
+      )
+      .run(accountId, noteId, interacted ? 1 : 0);
 
     if (interacted) {
-      this.db.prepare(`
+      this.db
+        .prepare(
+          `
         UPDATE explored_notes SET interacted = 1 WHERE account_id = ? AND note_id = ?
-      `).run(accountId, noteId);
+      `,
+        )
+        .run(accountId, noteId);
     }
   }
 
@@ -187,9 +211,13 @@ export class ExploreRepository {
    * 检查笔记是否已探索过
    */
   isNoteExplored(accountId: string, noteId: string): boolean {
-    const row = this.db.prepare(`
+    const row = this.db
+      .prepare(
+        `
       SELECT 1 FROM explored_notes WHERE account_id = ? AND note_id = ?
-    `).get(accountId, noteId);
+    `,
+      )
+      .get(accountId, noteId);
     return !!row;
   }
 
@@ -200,30 +228,42 @@ export class ExploreRepository {
     if (noteIds.length === 0) return [];
 
     const placeholders = noteIds.map(() => '?').join(',');
-    const exploredRows = this.db.prepare(`
+    const exploredRows = this.db
+      .prepare(
+        `
       SELECT note_id FROM explored_notes
       WHERE account_id = ? AND note_id IN (${placeholders})
-    `).all(accountId, ...noteIds) as { note_id: string }[];
+    `,
+      )
+      .all(accountId, ...noteIds) as { note_id: string }[];
 
-    const exploredSet = new Set(exploredRows.map(r => r.note_id));
-    return noteIds.filter(id => !exploredSet.has(id));
+    const exploredSet = new Set(exploredRows.map((r) => r.note_id));
+    return noteIds.filter((id) => !exploredSet.has(id));
   }
 
   /**
    * 获取会话结果
    */
   getSessionResult(sessionId: string): ExploreSessionResult | null {
-    const session = this.db.prepare(`
+    const session = this.db
+      .prepare(
+        `
       SELECT * FROM explore_sessions WHERE id = ?
-    `).get(sessionId) as ExploreSessionRow | undefined;
+    `,
+      )
+      .get(sessionId) as ExploreSessionRow | undefined;
 
     if (!session) return null;
 
-    const logs = this.db.prepare(`
+    const logs = this.db
+      .prepare(
+        `
       SELECT * FROM explore_logs
       WHERE session_id = ? AND action != 'seen'
       ORDER BY created_at ASC
-    `).all(sessionId) as ExploreLogRow[];
+    `,
+      )
+      .all(sessionId) as ExploreLogRow[];
 
     // 计算持续时间
     const startedAt = new Date(session.started_at);
@@ -242,7 +282,7 @@ export class ExploreRepository {
         notesLiked: session.notes_liked,
         notesCommented: session.notes_commented,
       },
-      actions: logs.map(log => ({
+      actions: logs.map((log) => ({
         noteId: log.note_id,
         noteTitle: log.note_title,
         action: log.action,
@@ -257,11 +297,15 @@ export class ExploreRepository {
    * 获取账户的最近探索会话
    */
   getRecentSessions(accountId: string, limit: number = 10): ExploreSessionRow[] {
-    return this.db.prepare(`
+    return this.db
+      .prepare(
+        `
       SELECT * FROM explore_sessions
       WHERE account_id = ?
       ORDER BY started_at DESC
       LIMIT ?
-    `).all(accountId, limit) as ExploreSessionRow[];
+    `,
+      )
+      .all(accountId, limit) as ExploreSessionRow[];
   }
 }

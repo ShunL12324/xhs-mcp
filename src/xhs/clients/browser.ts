@@ -161,7 +161,7 @@ export class BrowserClient {
     keyword: string,
     count?: number,
     timeout?: number,
-    filters?: XhsSearchFilters
+    filters?: XhsSearchFilters,
   ): Promise<XhsSearchItem[]> {
     return this.searchService.search(keyword, count, timeout, filters);
   }
@@ -231,12 +231,7 @@ export class BrowserClient {
   /**
    * Reply to a comment on a note
    */
-  async replyComment(
-    noteId: string,
-    xsecToken: string,
-    commentId: string,
-    content: string
-  ): Promise<CommentResult> {
+  async replyComment(noteId: string, xsecToken: string, commentId: string, content: string): Promise<CommentResult> {
     return this.interactService.replyComment(noteId, xsecToken, commentId, content);
   }
 
@@ -247,7 +242,7 @@ export class BrowserClient {
     noteId: string,
     xsecToken: string,
     commentId: string,
-    unlike?: boolean
+    unlike?: boolean,
   ): Promise<InteractionResult> {
     return this.interactService.likeComment(noteId, xsecToken, commentId, unlike);
   }
@@ -268,7 +263,7 @@ export class BrowserClient {
    */
   async getNotifications(
     type?: 'mentions' | 'likes' | 'connections' | 'all',
-    limit?: number
+    limit?: number,
   ): Promise<NotificationsResult> {
     return this.notificationService.getNotifications(type, limit);
   }

@@ -121,7 +121,10 @@ export class AccountRepository {
   /**
    * Update account configuration
    */
-  updateConfig(id: string, updates: { name?: string; proxy?: string; status?: 'active' | 'suspended' | 'banned' }): void {
+  updateConfig(
+    id: string,
+    updates: { name?: string; proxy?: string; status?: 'active' | 'suspended' | 'banned' },
+  ): void {
     const now = new Date().toISOString();
     const sets: string[] = ['updated_at = ?'];
     const values: any[] = [now];
