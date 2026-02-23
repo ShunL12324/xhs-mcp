@@ -1,15 +1,14 @@
 /**
  * @fileoverview Authentication service for BrowserClient.
- * Contains login and session management functionality.
+ * Handles login status checking and user info extraction.
  * @module xhs/clients/services/auth
  */
 
-import { chromium } from 'patchright';
 import { LoginUserInfo, FullUserProfile } from '../../types.js';
-import { sleep, generateWebId } from '../../utils/index.js';
+import { sleep } from '../../utils/index.js';
 import { config } from '../../../core/config.js';
 import { BrowserContextManager, log } from '../context.js';
-import { BROWSER_ARGS, TIMEOUTS, QR_CODE_SELECTOR, LOGIN_STATUS_SELECTOR, URLS } from '../constants.js';
+import { TIMEOUTS, LOGIN_STATUS_SELECTOR, URLS } from '../constants.js';
 
 /**
  * Authentication service - handles login status checking

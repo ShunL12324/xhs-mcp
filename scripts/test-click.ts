@@ -14,7 +14,7 @@ async function main() {
   // 读取账户 cookies
   const dbPath = path.join(os.homedir(), '.xhs-mcp', 'data.db');
   const db = new Database(dbPath);
-  const account = db.prepare("SELECT * FROM accounts WHERE name = ?").get('ls12324-DEV') as any;
+  const account = db.prepare('SELECT * FROM accounts WHERE name = ?').get('ls12324-DEV') as any;
   db.close();
 
   if (!account || !account.state) {
@@ -28,7 +28,8 @@ async function main() {
   const browser = await chromium.launch({ headless: false });
   const context = await browser.newContext({
     storageState: state,
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    userAgent:
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
   });
   const page = await context.newPage();
 
@@ -90,7 +91,7 @@ async function main() {
   // 方法 2: dispatchEvent MouseEvent
   console.log('\n--- Method 2: dispatchEvent MouseEvent ---');
   try {
-    await card2.evaluate(el => {
+    await card2.evaluate((el) => {
       el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
     });
     await page.waitForTimeout(2000);
