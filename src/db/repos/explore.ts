@@ -5,7 +5,7 @@
 
 import type { Database } from 'better-sqlite3';
 import { randomUUID } from 'crypto';
-import type { ExploreSessionRow, ExploreLogRow, ExploredNoteRow } from '../schema.js';
+import type { ExploreSessionRow, ExploreLogRow } from '../schema.js';
 
 /**
  * 探索会话配置

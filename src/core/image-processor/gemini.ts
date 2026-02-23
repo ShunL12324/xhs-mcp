@@ -3,7 +3,6 @@
  */
 
 import { GoogleGenAI } from '@google/genai';
-import { readFileSync } from 'fs';
 import sharp from 'sharp';
 import { jsonrepair } from 'jsonrepair';
 import { GEMINI_CONFIG } from '../config.js';
@@ -134,7 +133,7 @@ export function parseJsonResponse<T>(text: string): T {
       return JSON.parse(repaired);
     } catch (e) {
       log.error('Failed to parse JSON', { preview: jsonStr.slice(0, 500) });
-      throw new Error(`Failed to parse AI response as JSON: ${e}`);
+      throw new Error(`Failed to parse AI response as JSON: ${e}`, { cause: e });
     }
   }
 }

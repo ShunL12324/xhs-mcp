@@ -6,10 +6,6 @@
 
 import { config } from '../../core/config.js';
 
-// Fixed User-Agent matching Playwright's Chromium version (Chrome 143)
-export const USER_AGENT =
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36';
-
 // Anti-detection browser launch arguments (based on MediaCrawler)
 export const BROWSER_ARGS = [
   '--no-sandbox',

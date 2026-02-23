@@ -4,7 +4,7 @@
  * @module xhs
  */
 
-import { BrowserClient, BrowserClientOptions } from './clients/browser.js';
+import { BrowserClient } from './clients/browser.js';
 import {
   XhsNote,
   XhsSearchItem,
@@ -73,10 +73,6 @@ export class XhsClient {
 
   async init() {
     await this.browserClient.init();
-  }
-
-  async login(): Promise<{ qrCodePath: string; waitForLogin: () => Promise<any> }> {
-    return await this.browserClient.login();
   }
 
   async checkLoginStatus(): Promise<{

@@ -22,12 +22,13 @@
     "start:http": "node dist/index.js --http",
     "start:bun": "bun dist/index.js",
     "start:bun:http": "bun dist/index.js --http",
-    "test:login": "bun scripts/test-xhs.ts login",
     "test:search": "bun scripts/test-xhs.ts search",
     "test:note": "bun scripts/test-xhs.ts note",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs"
+    "docs:preview": "vitepress preview docs",
+    "lint": "eslint src/ scripts/",
+    "lint:fix": "eslint src/ scripts/ --fix"
   },
   "keywords": [
     "mcp",
@@ -58,30 +59,28 @@
     "@langchain/core": "^1.1.18",
     "@langchain/langgraph": "^1.1.2",
     "@modelcontextprotocol/sdk": "^1.23.0",
-    "@types/pngjs": "^6.0.5",
-    "@types/qrcode": "^1.5.6",
     "better-sqlite3": "^12.6.2",
     "canvas": "^3.2.1",
     "fs-extra": "^11.3.2",
     "hono": "^4.7.0",
     "jsonrepair": "^3.13.2",
-    "jsqr": "^1.4.0",
     "liquidjs": "^10.24.0",
     "patchright": "^1.57.0",
     "patchright-core": "^1.57.0",
-    "playwright": "^1.57.0",
-    "pngjs": "^7.0.0",
-    "qrcode": "^1.5.4",
     "sharp": "^0.34.5",
     "zod": "^4.1.13"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/better-sqlite3": "^7.6.13",
     "@types/bun": "^1.2.1",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^24.10.1",
+    "eslint": "^10.0.1",
+    "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.8.1",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.56.0",
     "vitepress": "^1.6.4"
   }
 }

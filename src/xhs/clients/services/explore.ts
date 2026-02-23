@@ -15,7 +15,6 @@ import {
   selectLikeTarget,
   NoteBrief,
   AccountInfo,
-  CommentBrief,
 } from '../../../core/explore-ai.js';
 import { EXPLORE_SELECTORS } from '../constants.js';
 

@@ -215,16 +215,6 @@ export interface FullUserProfile {
   banReason: string;
 }
 
-/**
- * Result of a login operation.
- */
-export interface LoginResult {
-  /** Path or URL to the QR code image */
-  qrCodePath: string;
-  /** Function to wait for login completion */
-  waitForLogin: () => Promise<{ state: any; userInfo: LoginUserInfo | null }>;
-}
-
 // ============================================================================
 // Search Filter Types
 // ============================================================================

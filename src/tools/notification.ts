@@ -9,9 +9,6 @@ import { z } from 'zod';
 import { AccountPool } from '../core/account-pool.js';
 import { XhsDatabase } from '../db/index.js';
 import { resolveAccount, executeWithAccount } from '../core/multi-account.js';
-import { createLogger } from '../core/logger.js';
-
-const log = createLogger('tools:notification');
 
 /**
  * Notification tool definitions for MCP.

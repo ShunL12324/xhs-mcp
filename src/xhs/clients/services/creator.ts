@@ -8,7 +8,7 @@ import { Page, Response } from 'patchright';
 import { PublishedNote } from '../../../tools/creator.js';
 import { sleep } from '../../utils/index.js';
 import { BrowserContextManager, log } from '../context.js';
-import { TIMEOUTS, REQUEST_INTERVAL } from '../constants.js';
+import { TIMEOUTS } from '../constants.js';
 
 /**
  * Creator 中心 URL
@@ -165,7 +165,7 @@ export class CreatorService {
       await page.waitForResponse((response) => response.url().includes(CREATOR_URLS.POSTED_NOTES_API), {
         timeout: Math.min(timeout, SCROLL_CONFIG.API_RESPONSE_TIMEOUT),
       });
-    } catch (e) {
+    } catch {
       log.warn('Timeout waiting for initial API response');
     }
   }

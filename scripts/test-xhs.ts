@@ -7,12 +7,7 @@ async function main() {
 
   try {
     switch (command) {
-      case 'login':
-        console.log('Starting login flow...');
-        await client.login();
-        break;
-
-      case 'search':
+      case 'search': {
         const keyword = args[1];
         if (!keyword) {
           console.error('Please provide a keyword: npm run test:search -- <keyword>');
@@ -22,8 +17,9 @@ async function main() {
         const results = await client.search(keyword);
         console.log(JSON.stringify(results, null, 2));
         break;
+      }
 
-      case 'note':
+      case 'note': {
         const noteId = args[1];
         if (!noteId) {
           console.error('Please provide a note ID: npm run test:note -- <noteId>');
@@ -33,10 +29,10 @@ async function main() {
         const note = await client.getNote(noteId);
         console.log(JSON.stringify(note, null, 2));
         break;
+      }
 
       default:
         console.log('Usage:');
-        console.log('  npm run test:login');
         console.log('  npm run test:search -- <keyword>');
         console.log('  npm run test:note -- <noteId>');
         break;

@@ -9,7 +9,7 @@ import { PublishContentParams, PublishVideoParams, PublishResult } from '../../t
 import { sleep, resolveImagePaths, isHttpUrl } from '../../utils/index.js';
 import { config } from '../../../core/config.js';
 import { BrowserContextManager, log } from '../context.js';
-import { USER_AGENT, BROWSER_ARGS, TIMEOUTS, PUBLISH_SELECTORS, URLS } from '../constants.js';
+import { BROWSER_ARGS, TIMEOUTS, PUBLISH_SELECTORS, URLS } from '../constants.js';
 
 /**
  * Publish service - handles content publishing
@@ -68,7 +68,6 @@ export class PublishService {
     this.ctx.browser = await chromium.launch(launchOptions);
 
     this.ctx.context = await this.ctx.browser.newContext({
-      userAgent: USER_AGENT,
       storageState: this.ctx.options.state,
       viewport: { width: 1920, height: 1080 },
     });
@@ -368,7 +367,6 @@ export class PublishService {
     this.ctx.browser = await chromium.launch(launchOptions);
 
     this.ctx.context = await this.ctx.browser.newContext({
-      userAgent: USER_AGENT,
       storageState: this.ctx.options.state,
       viewport: { width: 1920, height: 1080 },
     });

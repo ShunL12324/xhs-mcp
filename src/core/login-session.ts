@@ -9,6 +9,7 @@ import { LoginUserInfo, FullUserProfile } from '../xhs/types.js';
 import { sleep, generateWebId } from '../xhs/utils/index.js';
 import { createLogger } from './logger.js';
 import { config } from './config.js';
+import { BROWSER_ARGS, QR_CODE_SELECTOR, LOGIN_STATUS_SELECTOR, URLS } from '../xhs/clients/constants.js';
 
 const log = createLogger('login-session');
 
@@ -41,35 +42,6 @@ const SESSION_TIMEOUTS = {
   /** 等待 QR 码出现超时 */
   QR_WAIT: 30000,
 } as const;
-
-// 浏览器常量（与 browser.ts 相同）
-const USER_AGENT =
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36';
-
-/**
- * 反自动化检测浏览器启动参数
- * 用于绕过网站的机器人检测
- */
-const BROWSER_ARGS = [
-  '--no-sandbox',
-  '--disable-setuid-sandbox',
-  '--disable-blink-features=AutomationControlled',
-  '--disable-infobars',
-  '--disable-background-timer-throttling',
-  '--disable-backgrounding-occluded-windows',
-  '--disable-renderer-backgrounding',
-];
-
-// 页面 URL
-const URLS = {
-  EXPLORE: 'https://www.xiaohongshu.com/explore',
-};
-
-/** QR 码元素选择器 */
-const QR_CODE_SELECTOR = '.qrcode-img';
-
-/** 登录成功状态选择器（用于检测用户是否已登录） */
-const LOGIN_STATUS_SELECTOR = '.user.side-bar-component, .user-info, .avatar-component';
 
 /**
  * 短信验证弹窗元素选择器
@@ -175,72 +147,6 @@ export class LoginSessionManager {
   }
 
   /**
-   * Extract QR code content from base64 image.
-   * The QR code image on the page contains a URL that users scan.
-   */
-  private async extractQrCodeContent(page: Page): Promise<string> {
-    // The QR code contains a URL in this format:
-    // xhsdiscover://qrcode/login?qr_code=xxx
-    // We need to decode the QR image to get this URL
-
-    // For now, we'll use a workaround: get the base64 and use a decoder
-    // But since we can't easily decode base64 QR in Node without dependencies,
-    // we'll extract the qr_code parameter from the page state if available
-
-    try {
-      // Try to find the login token from the page
-      const qrCodeData = await page.evaluate(
-        () => {
-          // Check if there's a qrcode-related data in the page
-          const state = (window as any).__INITIAL_STATE__;
-          if (state?.login?.qrcodeInfo?.qrcode) {
-            return state.login.qrcodeInfo.qrcode;
-          }
-          // Try to find it in script tags or other elements
-          const scripts = Array.from(document.querySelectorAll('script'));
-          for (const script of scripts) {
-            const match = script.textContent?.match(/qr_code['":\s]+['"]([^'"]+)['"]/);
-            if (match) return match[1];
-          }
-          return null;
-        },
-        null,
-        false,
-      );
-
-      if (qrCodeData) {
-        // Construct the full URL
-        const loginUrl = `xhsdiscover://qrcode/login?qr_code=${qrCodeData}`;
-        log.debug('Extracted QR code content from page state', { loginUrl });
-        return loginUrl;
-      }
-
-      // Fallback: Get the image src and try to construct a scannable URL
-      const qrImg = await page.$(QR_CODE_SELECTOR);
-      if (!qrImg) {
-        throw new Error('QR code element not found');
-      }
-
-      const src = await qrImg.getAttribute('src');
-      if (!src || !src.startsWith('data:image')) {
-        throw new Error('QR code image not found or not base64');
-      }
-
-      // Since we can't decode the QR easily, we'll return a URL that points to the image
-      // The user will need to scan the actual page QR or we use a different approach
-      // For now, return a placeholder that indicates the session
-      log.warn('Could not extract QR content, using image-based approach');
-
-      // Return a URL that users can use to view the QR code
-      // This is a fallback - ideally we extract the actual content
-      return `https://www.xiaohongshu.com/login/qr/${Date.now()}`;
-    } catch (e) {
-      log.error('Failed to extract QR code content', { error: e });
-      throw new Error('Failed to extract QR code content from page');
-    }
-  }
-
-  /**
    * Create a new login session
    */
   async createSession(accountName?: string, proxy?: string): Promise<LoginSession> {
@@ -261,7 +167,6 @@ export class LoginSessionManager {
     const browser = await chromium.launch(launchOptions);
 
     const context = await browser.newContext({
-      userAgent: USER_AGENT,
       viewport: { width: 1920, height: 1080 },
     });
 
@@ -312,65 +217,36 @@ export class LoginSessionManager {
 
     // 等待 QR 码出现
     log.debug('Waiting for QR code to appear');
-    let qrImg;
     try {
-      qrImg = await page.waitForSelector(QR_CODE_SELECTOR, { timeout: SESSION_TIMEOUTS.QR_WAIT });
+      await page.waitForSelector(QR_CODE_SELECTOR, { timeout: SESSION_TIMEOUTS.QR_WAIT });
     } catch (e) {
       await browser.close();
-      throw new Error('QR code not found. Login page may have changed.');
+      throw new Error('QR code not found. Login page may have changed.', { cause: e });
     }
 
     await sleep(1000);
 
-    // Get QR code content
-    // Since extracting QR content is complex, we'll take a screenshot approach
-    // and upload it to get a URL
-    const src = await qrImg.getAttribute('src');
-    if (!src || !src.startsWith('data:image')) {
+    // 从页面状态提取 QR 码数据
+    const loginData = await page.evaluate(
+      () => {
+        const state = (window as any).__INITIAL_STATE__;
+        if (state?.login?.qrcodeInfo) {
+          return state.login.qrcodeInfo;
+        }
+        return null;
+      },
+      null,
+      false,
+    );
+
+    if (!loginData?.qrcode) {
       await browser.close();
-      throw new Error('QR code image not found');
+      throw new Error('Failed to extract QR code data from page state.');
     }
 
-    // For the QR code URL, we have two options:
-    // 1. Upload the image to a temp hosting service (like before)
-    // 2. Try to decode the QR and use api.qrserver.com
-
-    // Let's try to decode the QR content from the page state first
-    let qrCodeContent: string;
-    let qrCodeUrl: string;
-
-    try {
-      // Try to get the login URL from page state
-      const loginData = await page.evaluate(
-        () => {
-          const state = (window as any).__INITIAL_STATE__;
-          // Different possible locations for the QR data
-          if (state?.login?.qrcodeInfo) {
-            return state.login.qrcodeInfo;
-          }
-          return null;
-        },
-        null,
-        false,
-      );
-
-      if (loginData?.qrcode) {
-        qrCodeContent = `xhsdiscover://qrcode/login?qr_code=${loginData.qrcode}`;
-        qrCodeUrl = this.generateQrCodeUrl(qrCodeContent);
-        log.info('Generated QR code URL from page state');
-      } else {
-        // Fallback: upload the base64 image to a temp service
-        log.info('Falling back to image upload approach');
-        const base64Data = src.split(',')[1];
-        qrCodeUrl = await this.uploadQrCodeImage(base64Data);
-        qrCodeContent = 'image-based';
-      }
-    } catch (e) {
-      log.warn('Failed to extract QR data, using image upload', { error: e });
-      const base64Data = src.split(',')[1];
-      qrCodeUrl = await this.uploadQrCodeImage(base64Data);
-      qrCodeContent = 'image-based';
-    }
+    const qrCodeContent = `xhsdiscover://qrcode/login?qr_code=${loginData.qrcode}`;
+    const qrCodeUrl = this.generateQrCodeUrl(qrCodeContent);
+    log.info('Generated QR code URL from page state');
 
     const now = new Date();
     const session: LoginSession = {
@@ -391,57 +267,6 @@ export class LoginSessionManager {
     log.info('Login session created', { id, qrCodeUrl });
 
     return session;
-  }
-
-  /**
-   * Upload QR code image to temp hosting and return URL
-   */
-  private async uploadQrCodeImage(base64Data: string): Promise<string> {
-    const imageBuffer = Buffer.from(base64Data, 'base64');
-
-    // Try litterbox.catbox.moe first
-    try {
-      const formData = new FormData();
-      formData.append('reqtype', 'fileupload');
-      formData.append('time', '1h');
-      formData.append('fileToUpload', new Blob([imageBuffer], { type: 'image/png' }), 'qrcode.png');
-
-      const response = await fetch('https://litterbox.catbox.moe/resources/internals/api.php', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (response.ok) {
-        const url = await response.text();
-        if (url.startsWith('http')) {
-          log.debug('Uploaded QR code to litterbox', { url });
-          return url.trim();
-        }
-      }
-    } catch (e) {
-      log.warn('Failed to upload to litterbox', { error: e });
-    }
-
-    // Fallback to 0x0.st
-    try {
-      const formData = new FormData();
-      formData.append('file', new Blob([imageBuffer], { type: 'image/png' }), 'qrcode.png');
-
-      const response = await fetch('https://0x0.st', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (response.ok) {
-        const url = await response.text();
-        log.debug('Uploaded QR code to 0x0.st', { url });
-        return url.trim();
-      }
-    } catch (e) {
-      log.warn('Failed to upload to 0x0.st', { error: e });
-    }
-
-    throw new Error('Failed to upload QR code image');
   }
 
   /**

@@ -4,7 +4,7 @@
  * @module core/account-pool
  */
 
-import { XhsClient, XhsClientOptions } from '../xhs/index.js';
+import { XhsClient } from '../xhs/index.js';
 import { XhsDatabase, Account, getDatabase } from '../db/index.js';
 import { AccountLock, getAccountLock } from './account-lock.js';
 

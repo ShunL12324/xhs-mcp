@@ -114,7 +114,7 @@ async function placeScreenshot(
 
   let targetWidth: number;
   let targetHeight: number;
-  let resizeOptions: sharp.ResizeOptions = {};
+  let resizeOptions: sharp.ResizeOptions;
 
   switch (mode) {
     case 'fill':
@@ -123,7 +123,7 @@ async function placeScreenshot(
       resizeOptions = { width: targetWidth, height: targetHeight, fit: 'cover' };
       break;
 
-    case 'fit':
+    case 'fit': {
       const scaleX = availableWidth / imgWidth;
       const scaleY = availableHeight / imgHeight;
       const scale = Math.min(scaleX, scaleY);
@@ -131,6 +131,7 @@ async function placeScreenshot(
       targetHeight = Math.round(imgHeight * scale);
       resizeOptions = { width: targetWidth, height: targetHeight, fit: 'inside' };
       break;
+    }
 
     case 'crop':
       targetWidth = availableWidth;

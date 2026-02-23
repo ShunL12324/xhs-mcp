@@ -50,7 +50,7 @@ export class ContentService {
 
       // 获取笔记详情和评论（参照 xiaohongshu-mcp）
       const result = await page.evaluate(
-        (nid: string) => {
+        (_nid: string) => {
           const state = (window as any).__INITIAL_STATE__;
           if (state?.note?.noteDetailMap) {
             const noteDetailMap = state.note.noteDetailMap;

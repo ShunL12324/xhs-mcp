@@ -11,7 +11,7 @@ import sharp from 'sharp';
 import { GEMINI_CONFIG } from '../../../config.js';
 import { renderPrompt } from '../../prompt-manager.js';
 import { createLogger } from '../../../logger.js';
-import type { GraphStateType, ProcessedSlide, SlideLayout, SlideType, Position } from '../state.js';
+import type { GraphStateType, ProcessedSlide, SlideLayout, Position } from '../state.js';
 
 const log = createLogger('image-processor:beautify');
 
@@ -25,7 +25,7 @@ const genai = new GoogleGenAI({
  * 美化节点
  */
 export async function beautifyNode(state: GraphStateType): Promise<Partial<GraphStateType>> {
-  const { baseSlides, layoutPlan, sessionId } = state;
+  const { baseSlides, layoutPlan } = state;
 
   log.info('AI 美化');
 
@@ -98,7 +98,7 @@ async function beautifySlide(
         .jpeg({ quality: 70 })
         .toBuffer();
       referenceImageBase64 = compressedRef.toString('base64');
-    } catch (e) {
+    } catch {
       // 参考图读取失败，忽略
     }
   }

@@ -75,18 +75,22 @@ const existingAccount = db.prepare('SELECT id FROM accounts WHERE name = ?').get
 
 if (existingAccount) {
   // 更新现有账户
-  db.prepare(`
+  db.prepare(
+    `
     UPDATE accounts
     SET state = ?, last_login_at = datetime('now'), updated_at = datetime('now')
     WHERE name = ?
-  `).run(JSON.stringify(state), accountName);
+  `,
+  ).run(JSON.stringify(state), accountName);
   console.log(`✅ 已更新账户: ${accountName}`);
 } else {
   // 创建新账户
-  db.prepare(`
+  db.prepare(
+    `
     INSERT INTO accounts (id, name, state, status, created_at, updated_at, last_login_at)
     VALUES (?, ?, ?, 'active', datetime('now'), datetime('now'), datetime('now'))
-  `).run(accountId, accountName, JSON.stringify(state));
+  `,
+  ).run(accountId, accountName, JSON.stringify(state));
   console.log(`✅ 已创建账户: ${accountName} (ID: ${accountId})`);
 }
 
