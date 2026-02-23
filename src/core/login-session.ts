@@ -221,7 +221,7 @@ export class LoginSessionManager {
       await page.waitForSelector(QR_CODE_SELECTOR, { timeout: SESSION_TIMEOUTS.QR_WAIT });
     } catch (e) {
       await browser.close();
-      throw new Error('QR code not found. Login page may have changed.');
+      throw new Error('QR code not found. Login page may have changed.', { cause: e });
     }
 
     await sleep(1000);

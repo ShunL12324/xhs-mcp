@@ -92,7 +92,7 @@ function writeLog(level: LogLevel, module: string, message: string, data?: any):
   try {
     const stream = getLogStream();
     stream.write(formatted + '\n');
-  } catch (e) {
+  } catch {
     // Ignore file write errors
   }
 }

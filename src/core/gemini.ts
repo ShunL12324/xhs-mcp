@@ -416,7 +416,6 @@ export async function generateImage(options: GenerateImageOptions | string): Pro
         contents: [{ role: 'user', parts: [{ text: finalPrompt }] }],
         config: {
           responseModalities: ['TEXT', 'IMAGE'],
-          // @ts-ignore - imageConfig 是 Gemini 图片生成的有效参数
           imageConfig: {
             aspectRatio: aspectRatio,
           },

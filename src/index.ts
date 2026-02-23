@@ -7,8 +7,8 @@
 
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { createMcpServer } from './server.js';
-import { initDatabase, getDatabase } from './db/index.js';
-import { AccountPool, getAccountPool } from './core/account-pool.js';
+import { initDatabase } from './db/index.js';
+import { getAccountPool } from './core/account-pool.js';
 import { startHttpServer } from './http-server.js';
 import { config } from './core/config.js';
 

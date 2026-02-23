@@ -4,7 +4,7 @@
  * @module xhs
  */
 
-import { BrowserClient, BrowserClientOptions } from './clients/browser.js';
+import { BrowserClient } from './clients/browser.js';
 import {
   XhsNote,
   XhsSearchItem,

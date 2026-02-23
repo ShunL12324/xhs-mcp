@@ -26,7 +26,9 @@
     "test:note": "bun scripts/test-xhs.ts note",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs"
+    "docs:preview": "vitepress preview docs",
+    "lint": "eslint src/ scripts/",
+    "lint:fix": "eslint src/ scripts/ --fix"
   },
   "keywords": [
     "mcp",
@@ -69,12 +71,16 @@
     "zod": "^4.1.13"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/better-sqlite3": "^7.6.13",
     "@types/bun": "^1.2.1",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^24.10.1",
+    "eslint": "^10.0.1",
+    "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.8.1",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.56.0",
     "vitepress": "^1.6.4"
   }
 }

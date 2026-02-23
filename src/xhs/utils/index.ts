@@ -97,7 +97,7 @@ export async function humanScroll(page: Page, options: HumanScrollOptions = {}):
   // Split into 5-12 small steps (simulates smooth scrolling)
   const steps = Math.floor(randomBetween(5, 12));
 
-  let scrolled = 0;
+  let _scrolled = 0;
 
   for (let i = 0; i < steps; i++) {
     // Use easing function to calculate speed factor at current progress
@@ -112,7 +112,7 @@ export async function humanScroll(page: Page, options: HumanScrollOptions = {}):
 
     // Execute scroll
     await page.mouse.wheel(0, stepDistance);
-    scrolled += stepDistance;
+    _scrolled += stepDistance;
 
     // Add small horizontal jitter (more realistic)
     if (Math.random() < 0.3) {
