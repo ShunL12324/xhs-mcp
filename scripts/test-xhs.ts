@@ -7,11 +7,6 @@ async function main() {
 
   try {
     switch (command) {
-      case 'login':
-        console.log('Starting login flow...');
-        await client.login();
-        break;
-
       case 'search':
         const keyword = args[1];
         if (!keyword) {
@@ -36,7 +31,6 @@ async function main() {
 
       default:
         console.log('Usage:');
-        console.log('  npm run test:login');
         console.log('  npm run test:search -- <keyword>');
         console.log('  npm run test:note -- <noteId>');
         break;

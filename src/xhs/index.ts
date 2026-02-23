@@ -75,10 +75,6 @@ export class XhsClient {
     await this.browserClient.init();
   }
 
-  async login(): Promise<{ qrCodePath: string; waitForLogin: () => Promise<any> }> {
-    return await this.browserClient.login();
-  }
-
   async checkLoginStatus(): Promise<{
     loggedIn: boolean;
     message: string;

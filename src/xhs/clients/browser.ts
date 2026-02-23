@@ -15,7 +15,6 @@
 // Re-export types and constants for backwards compatibility
 export { BrowserClientOptions } from './context.js';
 export {
-  USER_AGENT,
   BROWSER_ARGS,
   TIMEOUTS,
   SEARCH_DEFAULTS,
@@ -45,7 +44,6 @@ import { ExploreSessionResult } from '../../db/index.js';
 
 // Import types for method signatures
 import {
-  LoginResult,
   LoginUserInfo,
   FullUserProfile,
   XhsSearchItem,
@@ -132,13 +130,6 @@ export class BrowserClient {
   }
 
   // ============ Auth Methods ============
-
-  /**
-   * Login via QR code
-   */
-  async login(): Promise<LoginResult> {
-    return this.authService.login();
-  }
 
   /**
    * Check login status and extract user info

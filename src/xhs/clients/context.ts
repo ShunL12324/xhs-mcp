@@ -9,7 +9,7 @@ import { LoginUserInfo, FullUserProfile } from '../types.js';
 import { generateWebId } from '../utils/index.js';
 import { createLogger } from '../../core/logger.js';
 import { config } from '../../core/config.js';
-import { USER_AGENT, BROWSER_ARGS } from './constants.js';
+import { BROWSER_ARGS } from './constants.js';
 
 // Create logger for browser module
 export const log = createLogger('browser');
@@ -67,7 +67,6 @@ export class BrowserContextManager {
     this.browser = await chromium.launch(launchOptions);
 
     const contextOptions: any = {
-      userAgent: USER_AGENT,
       viewport: { width: 1920, height: 1080 },
     };
 
