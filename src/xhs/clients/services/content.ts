@@ -56,7 +56,7 @@ export class ContentService {
           return JSON.stringify(noteDetailMap);
         }
         return '';
-      }, noteId);
+      }, noteId, false);
 
       if (!result) {
         log.warn('Note detail not found in __INITIAL_STATE__', { noteId });
@@ -215,7 +215,7 @@ export class ContentService {
             likes: n.interactInfo?.likedCount || n.interact_info?.liked_count || '0'
           }))
         });
-      }, userId);
+      }, userId, false);
 
       if (!result) {
         return null;
@@ -257,7 +257,7 @@ export class ContentService {
           }
         }
         return '';
-      });
+      }, null, false);
 
       if (!result) {
         return [];

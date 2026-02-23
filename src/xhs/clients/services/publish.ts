@@ -4,9 +4,9 @@
  * @module xhs/clients/services/publish
  */
 
-import { chromium, Page } from 'playwright';
+import { chromium, Page } from 'patchright';
 import { PublishContentParams, PublishVideoParams, PublishResult } from '../../types.js';
-import { getStealthScript, sleep, resolveImagePaths, isHttpUrl } from '../../utils/index.js';
+import { sleep, resolveImagePaths, isHttpUrl } from '../../utils/index.js';
 import { config } from '../../../core/config.js';
 import { BrowserContextManager, log } from '../context.js';
 import {
@@ -59,6 +59,7 @@ export class PublishService {
 
     const launchOptions: any = {
       headless: config.browser.headless,  // 发布操作建议使用可见模式 (XHS_MCP_HEADLESS=false)
+      channel: 'chrome',
       args: BROWSER_ARGS,
     };
 
@@ -69,17 +70,11 @@ export class PublishService {
     log.debug('Launching browser for publishing...');
     this.ctx.browser = await chromium.launch(launchOptions);
 
-    const stealthScript = await getStealthScript();
-
     this.ctx.context = await this.ctx.browser.newContext({
       userAgent: USER_AGENT,
       storageState: this.ctx.options.state,
       viewport: { width: 1920, height: 1080 },
     });
-
-    if (stealthScript) {
-      await this.ctx.context.addInitScript(stealthScript);
-    }
 
     const page = await this.ctx.context.newPage();
 
@@ -365,6 +360,7 @@ export class PublishService {
 
     const launchOptions: any = {
       headless: config.browser.headless,  // 可通过 XHS_MCP_HEADLESS 控制
+      channel: 'chrome',
       args: BROWSER_ARGS,
     };
 
@@ -374,17 +370,11 @@ export class PublishService {
 
     this.ctx.browser = await chromium.launch(launchOptions);
 
-    const stealthScript = await getStealthScript();
-
     this.ctx.context = await this.ctx.browser.newContext({
       userAgent: USER_AGENT,
       storageState: this.ctx.options.state,
       viewport: { width: 1920, height: 1080 },
     });
-
-    if (stealthScript) {
-      await this.ctx.context.addInitScript(stealthScript);
-    }
 
     const page = await this.ctx.context.newPage();
 

@@ -4,9 +4,9 @@
  * @module xhs/clients/context
  */
 
-import { chromium, Browser, BrowserContext, Page } from 'playwright';
+import { chromium, Browser, BrowserContext, Page } from 'patchright';
 import { LoginUserInfo, FullUserProfile } from '../types.js';
-import { getStealthScript, generateWebId } from '../utils/index.js';
+import { generateWebId } from '../utils/index.js';
 import { createLogger } from '../../core/logger.js';
 import { config } from '../../core/config.js';
 import { USER_AGENT, BROWSER_ARGS } from './constants.js';
@@ -56,6 +56,7 @@ export class BrowserContextManager {
   async init(headless = config.browser.headless): Promise<void> {
     const launchOptions: any = {
       headless,
+      channel: 'chrome',
       args: BROWSER_ARGS,
     };
 
@@ -64,8 +65,6 @@ export class BrowserContextManager {
     }
 
     this.browser = await chromium.launch(launchOptions);
-
-    const stealthScript = await getStealthScript();
 
     const contextOptions: any = {
       userAgent: USER_AGENT,
@@ -77,10 +76,6 @@ export class BrowserContextManager {
     }
 
     this.context = await this.browser.newContext(contextOptions);
-
-    if (stealthScript) {
-      await this.context.addInitScript(stealthScript);
-    }
 
     await this.context.addCookies([
       {
@@ -146,7 +141,7 @@ export class BrowserContextManager {
           avatar: data.images || '',
           avatarLarge: data.imageb || '',
         };
-      });
+      }, null, false);
 
       if (result) {
         log.info('Extracted user info', { userId: result.userId, nickname: result.nickname });
@@ -278,7 +273,7 @@ export class BrowserContextManager {
           banCode: banned?.code || 0,
           banReason: banned?.reason || '',
         };
-      }, userId);
+      }, userId, false);
 
       if (result) {
         log.info('Extracted full user profile', {

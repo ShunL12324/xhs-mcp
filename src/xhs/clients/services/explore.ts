@@ -4,7 +4,7 @@
  * @module xhs/clients/services/explore
  */
 
-import { Page } from 'playwright';
+import { Page } from 'patchright';
 import { BrowserContextManager, log } from '../context.js';
 import { sleep } from '../../utils/index.js';
 import { config } from '../../../core/config.js';
@@ -475,7 +475,7 @@ export class ExploreService {
           }
         }
         return '[]';
-      });
+      }, null, false);
       return JSON.parse(feedsJson);
     } catch (error) {
       log.warn('Failed to get feeds', { error });
@@ -568,7 +568,7 @@ export class ExploreService {
           }
         }
         return null;
-      }, noteId);
+      }, noteId, false);
 
       return detailJson ? JSON.parse(detailJson) : null;
     } catch (error) {

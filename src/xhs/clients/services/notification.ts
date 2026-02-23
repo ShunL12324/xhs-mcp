@@ -183,7 +183,7 @@ export class NotificationService {
           }
           return value;
         }));
-      });
+      }, null, false);
 
       if (!notificationData) {
         return {

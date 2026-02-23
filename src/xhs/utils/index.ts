@@ -1,6 +1,6 @@
 /**
  * @fileoverview Utility functions for browser automation.
- * Includes anti-detection helpers, human-like scrolling, and stealth script loading.
+ * Includes human-like scrolling and helper functions.
  * @module xhs/utils
  */
 
@@ -8,24 +8,11 @@ import fs from 'fs-extra';
 import path from 'path';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
-import type { Page } from 'playwright';
+import type { Page } from 'patchright';
 import { paths } from '../../core/config.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-/**
- * Load the stealth script for anti-detection.
- * The script modifies browser fingerprints to avoid detection.
- * @returns Stealth script content or empty string if not found
- */
-export async function getStealthScript(): Promise<string> {
-  const stealthPath = path.join(__dirname, 'stealth.js');
-  if (await fs.pathExists(stealthPath)) {
-    return await fs.readFile(stealthPath, 'utf-8');
-  }
-  return '';
-}
 
 /**
  * Sleep for a specified duration.

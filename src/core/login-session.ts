@@ -4,9 +4,9 @@
  * @module core/login-session
  */
 
-import { chromium, Browser, BrowserContext, Page } from 'playwright';
+import { chromium, Browser, BrowserContext, Page } from 'patchright';
 import { LoginUserInfo, FullUserProfile } from '../xhs/types.js';
-import { getStealthScript, sleep, generateWebId } from '../xhs/utils/index.js';
+import { sleep, generateWebId } from '../xhs/utils/index.js';
 import { createLogger } from './logger.js';
 import { config } from './config.js';
 
@@ -201,7 +201,7 @@ export class LoginSessionManager {
           if (match) return match[1];
         }
         return null;
-      });
+      }, null, false);
 
       if (qrCodeData) {
         // Construct the full URL
@@ -246,6 +246,7 @@ export class LoginSessionManager {
     // Launch browser
     const launchOptions: any = {
       headless: config.browser.headless,  // 可通过 XHS_MCP_HEADLESS 控制
+      channel: 'chrome',
       args: BROWSER_ARGS,
     };
 
@@ -254,16 +255,11 @@ export class LoginSessionManager {
     }
 
     const browser = await chromium.launch(launchOptions);
-    const stealthScript = await getStealthScript();
 
     const context = await browser.newContext({
       userAgent: USER_AGENT,
       viewport: { width: 1920, height: 1080 },
     });
-
-    if (stealthScript) {
-      await context.addInitScript(stealthScript);
-    }
 
     // Add webId cookie
     await context.addCookies([{
@@ -346,7 +342,7 @@ export class LoginSessionManager {
           return state.login.qrcodeInfo;
         }
         return null;
-      });
+      }, null, false);
 
       if (loginData?.qrcode) {
         qrCodeContent = `xhsdiscover://qrcode/login?qr_code=${loginData.qrcode}`;
@@ -572,7 +568,7 @@ export class LoginSessionManager {
           avatar: data.images || '',
           avatarLarge: data.imageb || '',
         };
-      });
+      }, null, false);
 
       return result;
     } catch (e) {
@@ -676,7 +672,7 @@ export class LoginSessionManager {
           banCode: banned?.code || 0,
           banReason: banned?.reason || '',
         };
-      }, userId);
+      }, userId, false);
 
       if (result) {
         log.info('Extracted full user profile', {

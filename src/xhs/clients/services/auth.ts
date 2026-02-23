@@ -4,9 +4,9 @@
  * @module xhs/clients/services/auth
  */
 
-import { chromium } from 'playwright';
+import { chromium } from 'patchright';
 import { LoginResult, LoginUserInfo, FullUserProfile } from '../../types.js';
-import { getStealthScript, sleep, generateWebId } from '../../utils/index.js';
+import { sleep, generateWebId } from '../../utils/index.js';
 import { saveAndOpenQrCode } from '../../../core/qrcode-utils.js';
 import { config } from '../../../core/config.js';
 import { BrowserContextManager, log } from '../context.js';
@@ -43,6 +43,7 @@ export class AuthService {
 
     const launchOptions: any = {
       headless: config.browser.headless,  // 可通过 XHS_MCP_HEADLESS 控制
+      channel: 'chrome',
       args: BROWSER_ARGS,
     };
 
@@ -54,17 +55,10 @@ export class AuthService {
     log.debug('Launching browser...');
     this.ctx.browser = await chromium.launch(launchOptions);
 
-    const stealthScript = await getStealthScript();
-
     this.ctx.context = await this.ctx.browser.newContext({
       userAgent: USER_AGENT,
       viewport: { width: 1920, height: 1080 }
     });
-
-    if (stealthScript) {
-      await this.ctx.context.addInitScript(stealthScript);
-      log.debug('Stealth script applied');
-    }
 
     // Add webId cookie to bypass slider verification
     await this.ctx.context.addCookies([
